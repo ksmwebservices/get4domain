@@ -1,0 +1,491 @@
+{
+  "schemaVersion": 1,
+  "status": "inference",
+  "note": "Inference made by the theme kit (THEMES-CC-0): the backend states none of this. \"flow\" is the nearest as-built flow family (8) and \"packKey\" the nearest as-built category pack (24) for each of the 41 V3 categories. Accepted by the owner as an inference for now; review before the importer relies on it.",
+  "generatedFrom": "themes/lib/categories.mjs (node themes/cli.mjs category-map)",
+  "flows": [
+    "shop",
+    "booking",
+    "enquiry",
+    "packages",
+    "menu",
+    "portfolio",
+    "listings",
+    "courses"
+  ],
+  "families": {
+    "auto-services": {
+      "label": "Auto services",
+      "track": "handyman",
+      "variant": "dark-bento"
+    },
+    "creative-consulting": {
+      "label": "Creative and consulting",
+      "track": "professional",
+      "variant": "portfolio-first"
+    },
+    "education": {
+      "label": "Education",
+      "track": "professional",
+      "variant": "card-stack"
+    },
+    "electronics-home": {
+      "label": "Electronics and home",
+      "track": "ecommerce",
+      "variant": "product-first"
+    },
+    "fashion-lifestyle": {
+      "label": "Fashion and lifestyle",
+      "track": "ecommerce",
+      "variant": "product-first"
+    },
+    "food-grocery": {
+      "label": "Food and grocery",
+      "track": "ecommerce",
+      "variant": "product-first"
+    },
+    "gifts-books": {
+      "label": "Gifts and books",
+      "track": "ecommerce",
+      "variant": "product-first"
+    },
+    "healthcare": {
+      "label": "Healthcare",
+      "track": "professional",
+      "variant": "calm-centered"
+    },
+    "home-services": {
+      "label": "Home services",
+      "track": "handyman",
+      "variant": "bold-split"
+    },
+    "hospitality-property": {
+      "label": "Hospitality and property",
+      "track": "professional",
+      "variant": "fullbleed-booking"
+    },
+    "legal-finance": {
+      "label": "Legal and finance",
+      "track": "professional",
+      "variant": "structured-split"
+    },
+    "wellness-beauty": {
+      "label": "Wellness and beauty",
+      "track": "professional",
+      "variant": "fullbleed-bento"
+    }
+  },
+  "categories": {
+    "ac-appliance-repair": {
+      "track": "handyman",
+      "family": "home-services",
+      "flow": "booking",
+      "packKey": "home-services",
+      "schemaType": "HVACBusiness",
+      "ctaPrimary": "Book a visit"
+    },
+    "auto-mechanic": {
+      "track": "handyman",
+      "family": "auto-services",
+      "flow": "booking",
+      "packKey": "automobile",
+      "schemaType": "AutoRepair",
+      "ctaPrimary": "Book a visit"
+    },
+    "bakery-sweets": {
+      "track": "ecommerce",
+      "family": "food-grocery",
+      "flow": "shop",
+      "packKey": "retail",
+      "schemaType": "Bakery",
+      "ctaPrimary": "Order now"
+    },
+    "books-stationery": {
+      "track": "ecommerce",
+      "family": "gifts-books",
+      "flow": "shop",
+      "packKey": "retail",
+      "schemaType": "BookStore",
+      "ctaPrimary": "Shop now"
+    },
+    "ca-tax-consultant": {
+      "track": "professional",
+      "family": "legal-finance",
+      "flow": "enquiry",
+      "packKey": "finance",
+      "schemaType": "AccountingService",
+      "ctaPrimary": "Book consultation"
+    },
+    "car-wash-detailing": {
+      "track": "handyman",
+      "family": "auto-services",
+      "flow": "booking",
+      "packKey": "automobile",
+      "schemaType": "AutoRepair",
+      "ctaPrimary": "Book a slot"
+    },
+    "carpenter": {
+      "track": "handyman",
+      "family": "home-services",
+      "flow": "enquiry",
+      "packKey": "home-services",
+      "schemaType": "HomeAndConstructionBusiness",
+      "ctaPrimary": "Get a quote"
+    },
+    "cctv-security-installer": {
+      "track": "handyman",
+      "family": "home-services",
+      "flow": "enquiry",
+      "packKey": "home-services",
+      "schemaType": "HomeAndConstructionBusiness",
+      "ctaPrimary": "Get a quote"
+    },
+    "coaching-centre": {
+      "track": "professional",
+      "family": "education",
+      "flow": "courses",
+      "packKey": "coaching",
+      "schemaType": "EducationalOrganization",
+      "ctaPrimary": "Enquire now"
+    },
+    "dentist": {
+      "track": "professional",
+      "family": "healthcare",
+      "flow": "booking",
+      "packKey": "clinic",
+      "schemaType": "Dentist",
+      "ctaPrimary": "Book appointment"
+    },
+    "diagnostics-lab": {
+      "track": "professional",
+      "family": "healthcare",
+      "flow": "booking",
+      "packKey": "diagnostics",
+      "schemaType": "MedicalBusiness",
+      "ctaPrimary": "Book a test"
+    },
+    "doctor-clinic": {
+      "track": "professional",
+      "family": "healthcare",
+      "flow": "booking",
+      "packKey": "clinic",
+      "schemaType": "Physician",
+      "ctaPrimary": "Book appointment"
+    },
+    "electrician": {
+      "track": "handyman",
+      "family": "home-services",
+      "flow": "enquiry",
+      "packKey": "home-services",
+      "schemaType": "Electrician",
+      "ctaPrimary": "Call now"
+    },
+    "electronics-mobile": {
+      "track": "ecommerce",
+      "family": "electronics-home",
+      "flow": "shop",
+      "packKey": "retail",
+      "schemaType": "ElectronicsStore",
+      "ctaPrimary": "Shop now"
+    },
+    "event-planner": {
+      "track": "professional",
+      "family": "creative-consulting",
+      "flow": "portfolio",
+      "packKey": "events",
+      "schemaType": "ProfessionalService",
+      "ctaPrimary": "Get a quote"
+    },
+    "fashion-apparel": {
+      "track": "ecommerce",
+      "family": "fashion-lifestyle",
+      "flow": "shop",
+      "packKey": "retail",
+      "schemaType": "Store",
+      "ctaPrimary": "Shop now"
+    },
+    "gifts-handicrafts": {
+      "track": "ecommerce",
+      "family": "gifts-books",
+      "flow": "shop",
+      "packKey": "retail",
+      "schemaType": "Store",
+      "ctaPrimary": "Shop now"
+    },
+    "grocery-kirana": {
+      "track": "ecommerce",
+      "family": "food-grocery",
+      "flow": "shop",
+      "packKey": "retail",
+      "schemaType": "GroceryStore",
+      "ctaPrimary": "Order now"
+    },
+    "gym-yoga": {
+      "track": "professional",
+      "family": "wellness-beauty",
+      "flow": "booking",
+      "packKey": "gym",
+      "schemaType": "ExerciseGym",
+      "ctaPrimary": "Book a trial"
+    },
+    "home-cleaning": {
+      "track": "handyman",
+      "family": "home-services",
+      "flow": "booking",
+      "packKey": "home-services",
+      "schemaType": "HomeAndConstructionBusiness",
+      "ctaPrimary": "Book a visit"
+    },
+    "home-furniture": {
+      "track": "ecommerce",
+      "family": "electronics-home",
+      "flow": "shop",
+      "packKey": "retail",
+      "schemaType": "FurnitureStore",
+      "ctaPrimary": "Shop now"
+    },
+    "hotel-homestay": {
+      "track": "professional",
+      "family": "hospitality-property",
+      "flow": "packages",
+      "packKey": "hotel",
+      "schemaType": "Hotel",
+      "ctaPrimary": "Check availability"
+    },
+    "insurance-advisor": {
+      "track": "professional",
+      "family": "legal-finance",
+      "flow": "enquiry",
+      "packKey": "finance",
+      "schemaType": "InsuranceAgency",
+      "ctaPrimary": "Get a quote"
+    },
+    "interior-designer-architect": {
+      "track": "professional",
+      "family": "creative-consulting",
+      "flow": "portfolio",
+      "packKey": "construction",
+      "schemaType": "ProfessionalService",
+      "ctaPrimary": "Get a quote"
+    },
+    "it-consultant": {
+      "track": "professional",
+      "family": "creative-consulting",
+      "flow": "enquiry",
+      "packKey": "technology",
+      "schemaType": "ProfessionalService",
+      "ctaPrimary": "Book a call"
+    },
+    "jewellery": {
+      "track": "ecommerce",
+      "family": "fashion-lifestyle",
+      "flow": "shop",
+      "packKey": "retail",
+      "schemaType": "JewelryStore",
+      "ctaPrimary": "Shop now"
+    },
+    "lawyer": {
+      "track": "professional",
+      "family": "legal-finance",
+      "flow": "enquiry",
+      "packKey": "advocate",
+      "schemaType": "LegalService",
+      "ctaPrimary": "Book consultation"
+    },
+    "locksmith": {
+      "track": "handyman",
+      "family": "home-services",
+      "flow": "enquiry",
+      "packKey": "home-services",
+      "schemaType": "Locksmith",
+      "ctaPrimary": "Call now"
+    },
+    "mason-contractor": {
+      "track": "handyman",
+      "family": "home-services",
+      "flow": "portfolio",
+      "packKey": "construction",
+      "schemaType": "GeneralContractor",
+      "ctaPrimary": "Get a quote"
+    },
+    "music-dance-school": {
+      "track": "professional",
+      "family": "education",
+      "flow": "courses",
+      "packKey": "education",
+      "schemaType": "EducationalOrganization",
+      "ctaPrimary": "Book a trial"
+    },
+    "packers-movers": {
+      "track": "handyman",
+      "family": "home-services",
+      "flow": "enquiry",
+      "packKey": "logistics",
+      "schemaType": "MovingCompany",
+      "ctaPrimary": "Get a quote"
+    },
+    "painter": {
+      "track": "handyman",
+      "family": "home-services",
+      "flow": "enquiry",
+      "packKey": "home-services",
+      "schemaType": "HousePainter",
+      "ctaPrimary": "Get a quote"
+    },
+    "pest-control": {
+      "track": "handyman",
+      "family": "home-services",
+      "flow": "booking",
+      "packKey": "home-services",
+      "schemaType": "HomeAndConstructionBusiness",
+      "ctaPrimary": "Book a visit"
+    },
+    "photographer": {
+      "track": "professional",
+      "family": "creative-consulting",
+      "flow": "portfolio",
+      "packKey": "photography",
+      "schemaType": "Photographer",
+      "ctaPrimary": "Check dates"
+    },
+    "physiotherapy": {
+      "track": "professional",
+      "family": "healthcare",
+      "flow": "booking",
+      "packKey": "clinic",
+      "schemaType": "MedicalClinic",
+      "ctaPrimary": "Book appointment"
+    },
+    "plumber": {
+      "track": "handyman",
+      "family": "home-services",
+      "flow": "enquiry",
+      "packKey": "home-services",
+      "schemaType": "Plumber",
+      "ctaPrimary": "Call now"
+    },
+    "real-estate-agent": {
+      "track": "professional",
+      "family": "hospitality-property",
+      "flow": "listings",
+      "packKey": "realestate",
+      "schemaType": "RealEstateAgent",
+      "ctaPrimary": "Enquire now"
+    },
+    "restaurant-cafe": {
+      "track": "professional",
+      "family": "hospitality-property",
+      "flow": "menu",
+      "packKey": "restaurant",
+      "schemaType": "Restaurant",
+      "ctaPrimary": "Reserve a table"
+    },
+    "salon-spa": {
+      "track": "professional",
+      "family": "wellness-beauty",
+      "flow": "booking",
+      "packKey": "salon",
+      "schemaType": "BeautySalon",
+      "ctaPrimary": "Book a slot"
+    },
+    "travel-agency": {
+      "track": "professional",
+      "family": "hospitality-property",
+      "flow": "packages",
+      "packKey": "travel",
+      "schemaType": "TravelAgency",
+      "ctaPrimary": "Plan my trip"
+    },
+    "tutor": {
+      "track": "professional",
+      "family": "education",
+      "flow": "courses",
+      "packKey": "coaching",
+      "schemaType": "LocalBusiness",
+      "ctaPrimary": "Book a demo"
+    }
+  },
+  "packs": {
+    "advocate": [
+      "lawyer"
+    ],
+    "automobile": [
+      "auto-mechanic",
+      "car-wash-detailing"
+    ],
+    "clinic": [
+      "dentist",
+      "doctor-clinic",
+      "physiotherapy"
+    ],
+    "coaching": [
+      "coaching-centre",
+      "tutor"
+    ],
+    "construction": [
+      "interior-designer-architect",
+      "mason-contractor"
+    ],
+    "diagnostics": [
+      "diagnostics-lab"
+    ],
+    "education": [
+      "music-dance-school"
+    ],
+    "events": [
+      "event-planner"
+    ],
+    "finance": [
+      "ca-tax-consultant",
+      "insurance-advisor"
+    ],
+    "gym": [
+      "gym-yoga"
+    ],
+    "home-services": [
+      "ac-appliance-repair",
+      "carpenter",
+      "cctv-security-installer",
+      "electrician",
+      "home-cleaning",
+      "locksmith",
+      "painter",
+      "pest-control",
+      "plumber"
+    ],
+    "hotel": [
+      "hotel-homestay"
+    ],
+    "logistics": [
+      "packers-movers"
+    ],
+    "photography": [
+      "photographer"
+    ],
+    "realestate": [
+      "real-estate-agent"
+    ],
+    "restaurant": [
+      "restaurant-cafe"
+    ],
+    "retail": [
+      "bakery-sweets",
+      "books-stationery",
+      "electronics-mobile",
+      "fashion-apparel",
+      "gifts-handicrafts",
+      "grocery-kirana",
+      "home-furniture",
+      "jewellery"
+    ],
+    "salon": [
+      "salon-spa"
+    ],
+    "technology": [
+      "it-consultant"
+    ],
+    "travel": [
+      "travel-agency"
+    ]
+  }
+}

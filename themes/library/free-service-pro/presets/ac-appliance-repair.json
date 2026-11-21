@@ -1,0 +1,124 @@
+{
+  "category": "ac-appliance-repair",
+  "palette": {
+    "light": {
+      "primary": "#126b7d",
+      "accent": "#133986",
+      "background": "#f3fafc"
+    },
+    "dark": {
+      "primary": "#51d2ec",
+      "accent": "#799fec",
+      "background": "#0f181a"
+    }
+  },
+  "fonts": {
+    "heading": "Manrope",
+    "body": "Inter"
+  },
+  "blocks": [
+    "brandsServiced",
+    "sameDay",
+    "amcPlans"
+  ],
+  "hero": {
+    "pattern": "rings"
+  },
+  "services": {
+    "en": [
+      {
+        "name": "AC service",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "AC gas refill",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Washing machine repair",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Refrigerator repair",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Microwave repair",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Water purifier service",
+        "description": "Ask us for the details and a clear price."
+      }
+    ],
+    "ta": [
+      {
+        "name": "ஏசி சர்வீஸ்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "ஏசி கேஸ் நிரப்புதல்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "வாஷிங் மெஷின் பழுது",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "குளிர்சாதனப் பெட்டி பழுது",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "மைக்ரோவேவ் பழுது",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "வாட்டர் ப்யூரிஃபையர் சர்வீஸ்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      }
+    ]
+  },
+  "faqs": {
+    "en": [
+      {
+        "q": "Do you give a price before you start?",
+        "a": "Yes. We tell you the price first and start only after you agree."
+      },
+      {
+        "q": "Which areas do you cover?",
+        "a": "We cover your city and the areas around it. Call us to confirm your street."
+      },
+      {
+        "q": "Can you come the same day for urgent ac and appliance repair work?",
+        "a": "For urgent jobs we try to reach you the same day. Call us or message us on WhatsApp."
+      },
+      {
+        "q": "How do I pay?",
+        "a": "By UPI, cash or bank transfer, after the work is done and you are happy with it."
+      }
+    ],
+    "ta": [
+      {
+        "q": "வேலையைத் தொடங்கும் முன் விலை சொல்வீர்களா?",
+        "a": "ஆம். முதலில் விலை சொல்வோம், நீங்கள் ஒப்புக்கொண்ட பின்தான் தொடங்குவோம்."
+      },
+      {
+        "q": "எந்தெந்த பகுதிகளில் சேவை செய்கிறீர்கள்?",
+        "a": "உங்கள் நகரத்திலும் அருகிலுள்ள பகுதிகளிலும். உங்கள் தெருவை உறுதிப்படுத்த அழையுங்கள்."
+      },
+      {
+        "q": "அவசர ஏசி பழுது வேலைக்கு அதே நாள் வர முடியுமா?",
+        "a": "அவசர வேலைகளுக்கு அதே நாள் வர முயற்சிப்போம். அழையுங்கள் அல்லது வாட்ஸ்அப்பில் செய்தி அனுப்புங்கள்."
+      },
+      {
+        "q": "எப்படிப் பணம் செலுத்துவது?",
+        "a": "வேலை முடிந்து நீங்கள் திருப்தி அடைந்த பின் UPI, ரொக்கம் அல்லது வங்கிப் பரிமாற்றம் மூலம்."
+      }
+    ]
+  },
+  "sections": {
+    "order": [
+      "highlights"
+    ]
+  }
+}

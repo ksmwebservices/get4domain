@@ -7,6 +7,13 @@ import { RegisterDto } from './dto/register.dto';
 import { VendorsService } from '../vendors/vendors.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { normalizeModules } from '../team/team-access';
+import { Optional } from '@nestjs/common';
+import { packError } from '../v3-packs/pack.errors';
+import { RegistrationHook, SiteAnswer } from '../plans/registration/registration.hook';
+import { TermsSessionFlag } from '../terms/terms-ports';
+import { TrialSignupPolicy } from '../v3-trial/trial-signup.policy';
+import { ReferralAttributionPort } from '../plans/registration/referral-attribution.port';
+import { effectiveStaffRole, PARTNER_ROLE, staffLabelOf } from './guards/admin-role-matrix';
 
 export interface LoginResult {
   accessToken: string;
@@ -16,15 +23,21 @@ export interface LoginResult {
     email: string;
     role: string;
     adminRole?: string;
+    /** Wave 3 Part A: FIELD_EXECUTIVE or TELECALLER, shown beside the SALES role they are folded into. */
+    staffLabel?: string;
     businessName: string;
     industry: string | null;
     subdomain: string | null;
+    /** Slice 5.15: true when a newer published version of the vendor terms is waiting to be accepted (the screen arrives with the Next.js port). Absent for staff. */
+    termsAcceptanceRequired?: boolean;
     /** Present for a vendor team-member login. */
     kind?: string;
     memberId?: string;
     modules?: string[];
     department?: string;
   };
+  /** B2.1: the truth about the vendor's site, on a registration answer only (status LIVE, FAILED or NOT_SWITCHED_ON; published; subdomain; url). */
+  site?: SiteAnswer;
 }
 
 @Injectable()
@@ -33,6 +46,12 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly vendorsService: VendorsService,
+    @Optional() private readonly v3Registration?: RegistrationHook,
+    @Optional() private readonly termsFlag?: TermsSessionFlag,
+    /** Wave 3 Part G: the chosen-subdomain rules (mandatory reserved names, availability). Absent = the old naming from the business name. */
+    @Optional() private readonly trial?: TrialSignupPolicy,
+    /** Wave 3 Part I: attributes a vendor who registers with a referral code (first touch wins). Absent = no attribution. */
+    @Optional() private readonly referrals?: ReferralAttributionPort,
   ) {}
 
   /**
@@ -42,7 +61,12 @@ export class AuthService {
    * straight into the product — the same { accessToken, user } shape as login().
    */
   async register(dto: RegisterDto): Promise<LoginResult> {
-    const subdomain = await this.uniqueSubdomain(dto.businessName);
+    // Wave 3 Part G: registering the same account again (same email, same business, and the RIGHT password) is a replay: it signs in to the account that exists and makes nothing new.
+    // A wrong password, or another business name, falls through to the usual refusal of a taken email.
+    const prior = await this.prisma.vendor.findUnique({ where: { email: dto.email } });
+    if (prior && prior.role === 'VENDOR' && prior.businessName === dto.businessName && (await bcrypt.compare(dto.password, prior.password))) return this.login({ email: dto.email, password: dto.password });
+    await this.requireListedIndustry(dto.industry);
+    const subdomain = this.trial ? await this.trial.resolveSubdomain(dto.subdomain, dto.businessName) : await this.uniqueSubdomain(dto.businessName);
     const vendor = await this.vendorsService.create({
       name: dto.name,
       email: dto.email,
@@ -51,7 +75,9 @@ export class AuthService {
       industry: dto.industry,
       phone: dto.phone,
       subdomain,
-    });
+      // D1 duplicate check: the extra details it uses, and the visitor's answer to "Is this your business?"
+      city: dto.city, area: dto.area, pincode: dto.pincode, gstin: dto.gstin, confirmDistinct: dto.confirmDistinct,
+    }, { path: dto.referralCode ? 'REFERRAL' : 'REGISTER', selfService: true });
     // A LeadSpace signup: the five-tab app instead of the full dashboard until the vendor buys a plan (provisioning switches the mode off then).
     if (dto.product === 'leadspace') {
       for (const addonKey of ['leadspace', 'leadspace_only']) {
@@ -59,7 +85,18 @@ export class AuthService {
       }
     }
 
+    // Wave 3 Part I: a referral code attributes the new vendor to its source (first touch wins; a bad code or a self-referral records nothing). It can never block a signup.
+    if (dto.referralCode) { try { await this.referrals?.attributeAtRegistration({ vendorId: vendor.id, code: dto.referralCode }); } catch { /* registration continues */ } }
+
+    // V3 slice 5.1: the Free plan of the chosen track, only when the plan setting registrationProvisioning is on. It can never block a signup.
+    // B2.1: no track is needed (the hook defaults it from the category); the answer carries what happened to the site.
+    let site: SiteAnswer | undefined;
+    try { site = await this.v3Registration?.afterRegister(vendor.id, dto.track, { industry: dto.industry, businessName: dto.businessName, phone: dto.phone ?? null, city: dto.city ?? null, area: dto.area ?? null, pincode: dto.pincode ?? null }); } catch { /* registration continues */ }
+
     const accessToken = this.signToken({ sub: vendor.id, email: vendor.email, role: vendor.role });
+    // Dispatch G1 B5 (audit journey 1 and 2): a first registration answer carried no `termsAcceptanceRequired`, so the vendor app did not know to ask for the Terms before the first publish. The flag never blocks a signup.
+    let termsAcceptanceRequired: boolean | undefined;
+    if (this.termsFlag && vendor.role === 'VENDOR') { try { termsAcceptanceRequired = await this.termsFlag.acceptanceRequired(vendor.id); } catch { termsAcceptanceRequired = undefined; } }
     return {
       accessToken,
       user: {
@@ -70,8 +107,20 @@ export class AuthService {
         businessName: vendor.businessName,
         industry: vendor.industry,
         subdomain: vendor.subdomain,
+        ...(termsAcceptanceRequired === undefined ? {} : { termsAcceptanceRequired }),
       },
+      ...(site ? { site } : {}),
     };
+  }
+
+  /**
+   * S1.7: the public signup accepts only a category from the same list as GET /v3/public/pack-categories (the active V3 pack categories). Free text made a vendor whose site could not be built or shown.
+   * Checked after the replay above, so an existing account that registered under an older value can still sign in. Partner, admin and import routes do not come through here.
+   */
+  private async requireListedIndustry(industry: unknown): Promise<void> {
+    const key = typeof industry === 'string' ? industry.trim() : '';
+    const row = key ? await this.prisma.v3PackCategory.findFirst({ where: { categoryKey: key, active: true }, select: { categoryKey: true } }) : null;
+    if (!row || row.categoryKey !== industry) throw packError(400, 'INDUSTRY_NOT_IN_LIST', 'Choose your business category from the list.');
   }
 
   /** Slugify the business name into an available subdomain (append -2, -3 … if taken). */
@@ -86,6 +135,18 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<LoginResult> {
+    return this.withTermsFlag(await this.loginCore(dto));
+  }
+
+  /** Adds the acceptance-required flag to a vendor or vendor-team session. A failure of the flag never blocks a sign-in. */
+  private async withTermsFlag(r: LoginResult): Promise<LoginResult> {
+    if (!this.termsFlag || r.user.role !== 'VENDOR') return r;
+    const claims = this.jwtService.decode(r.accessToken) as { sub?: string } | null;
+    if (!claims?.sub) return r;
+    try { return { ...r, user: { ...r.user, termsAcceptanceRequired: await this.termsFlag.acceptanceRequired(claims.sub) } }; } catch { return r; }
+  }
+
+  private async loginCore(dto: LoginDto): Promise<LoginResult> {
     const vendor = await this.prisma.vendor.findUnique({ where: { email: dto.email } });
 
     if (vendor) {
@@ -128,12 +189,17 @@ export class AuthService {
 
       await this.prisma.adminTeamMember.update({ where: { id: member.id }, data: { lastLogin: new Date() } });
 
+      // Wave 3 Part A: a referral partner signs in with the PARTNER role (never ADMIN); a staff label is folded into SALES, the label is shown beside it.
+      const isPartner = member.role === PARTNER_ROLE;
+      const memberRole = isPartner ? 'PARTNER' : 'ADMIN';
+      const memberAdminRole = isPartner ? undefined : effectiveStaffRole(member.role);
+      const staffLabel = isPartner ? undefined : staffLabelOf(member.role);
       const accessToken = this.signToken({
         sub: member.id,
         email: member.email,
-        role: 'ADMIN',
-        adminRole: member.role,
-        kind: 'admin_member',
+        role: memberRole,
+        adminRole: memberAdminRole,
+        kind: isPartner ? 'referral_partner' : 'admin_member',
       });
 
       return {
@@ -142,8 +208,9 @@ export class AuthService {
           id: member.id,
           name: member.name,
           email: member.email,
-          role: 'ADMIN',
-          adminRole: member.role,
+          role: memberRole,
+          adminRole: memberAdminRole,
+          ...(staffLabel ? { staffLabel } : {}),
           businessName: 'Get4Domain',
           industry: null,
           subdomain: null,
@@ -215,10 +282,29 @@ export class AuthService {
    * scope a demo pass to the sandbox vendor's OWN industry (never a client-supplied one).
    * Guarded by the JWT guard at the controller, so a forged/expired token can't reach here.
    */
-  async me(vendorId: string): Promise<{ id: string; email: string; industry: string | null; isSandbox: boolean; role: string }> {
+  async me(vendorId: string): Promise<{ id: string; email: string; industry: string | null; isSandbox: boolean; role: string; termsAcceptanceRequired?: boolean }> {
     const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
     if (!vendor) throw new UnauthorizedException('Account not found');
-    return { id: vendor.id, email: vendor.email, industry: vendor.industry, isSandbox: vendor.isSandbox, role: vendor.role };
+    let termsAcceptanceRequired: boolean | undefined;
+    if (this.termsFlag && vendor.role === 'VENDOR') { try { termsAcceptanceRequired = await this.termsFlag.acceptanceRequired(vendor.id); } catch { termsAcceptanceRequired = undefined; } }
+    return { id: vendor.id, email: vendor.email, industry: vendor.industry, isSandbox: vendor.isSandbox, role: vendor.role, ...(termsAcceptanceRequired === undefined ? {} : { termsAcceptanceRequired }) };
+  }
+
+  /**
+   * Wave 3 Part J: who is signed in, for any kind of principal. A vendor and a vendor team member get exactly what they got before (id, email, industry, isSandbox, role, terms flag) plus their NAME. A staff
+   * member and a referral partner, who are admin-team rows and not vendors, get their own name and role (with the staff role and the label beside it), so the apps can say who is signed in.
+   */
+  async meFor(user: AuthenticatedUser): Promise<{ id: string; email: string; name: string; industry: string | null; isSandbox: boolean; role: string; adminRole?: string; staffLabel?: string; termsAcceptanceRequired?: boolean }> {
+    if (user.kind === 'admin_member' || user.kind === 'referral_partner') {
+      const m = await this.prisma.adminTeamMember.findUnique({ where: { id: user.sub } });
+      if (!m) throw new UnauthorizedException('Account not found');
+      return { id: m.id, email: m.email, name: m.name, industry: null, isSandbox: false, role: user.role, ...(user.adminRole ? { adminRole: user.adminRole } : {}), ...(user.staffLabel ? { staffLabel: user.staffLabel } : {}) };
+    }
+    const base = await this.me(user.sub);
+    const vendor = await this.prisma.vendor.findUnique({ where: { id: user.sub }, select: { name: true } });
+    let name = vendor?.name ?? '';
+    if (user.kind === 'team_member' && user.memberId) { const tm = await this.prisma.teamMember.findUnique({ where: { id: user.memberId }, select: { name: true } }); if (tm?.name) name = tm.name; }
+    return { ...base, name, ...(user.adminRole ? { adminRole: user.adminRole } : {}) };
   }
 
   private signToken(payload: {

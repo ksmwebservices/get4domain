@@ -11,7 +11,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
  *   API from ONE IP, so reads must not be throttled like credential endpoints.
  * - Sensitive routes carry tighter `@Throttle(RATE.x)` limits (login, OTP, payments, webhooks…).
  * - The client IP is Express `req.ip`; main.ts sets `trust proxy` so that behind nginx it is the address
- *   nginx saw (not forgeable via X-Forwarded-For). Set TRUST_PROXY_HOPS to the number of proxies.
+ *   nginx saw (not forgeable via X-Forwarded-For). Set TRUSTED_PROXIES to the proxies' addresses (only they may set the header), or TRUST_PROXY_HOPS to a hop count (common/trust-proxy.ts).
  * - Tuning without a code change: THROTTLE_GLOBAL_LIMIT, THROTTLE_READ_LIMIT (per minute),
  *   THROTTLE_TRUSTED_IPS (comma-separated IPs never limited — e.g. the web server), and the emergency
  *   switch THROTTLE_DISABLED=true.
@@ -28,11 +28,22 @@ export const GLOBAL_LIMIT = { limit: intFromEnv('THROTTLE_GLOBAL_LIMIT', 300), t
 export const READ_LIMIT = { limit: intFromEnv('THROTTLE_READ_LIMIT', 1500), ttl: 60_000 } as const;
 
 export const RATE = {
+  /** Wave 2: a vendor adding or changing a record on a pack tab. Roomy for a person typing, tight for a script. */
+  recordWrite: { default: { limit: 120, ttl: 60_000 } },
+  /** TM1: uploading or validating a theme package (up to 5 MB, a full lint per call): an admin does a few a minute, a script does not. */
+  themeUpload: { default: { limit: 10, ttl: 60_000 } },
+  /** TM1: a server-side theme preview renders every page of a theme; cheap for a person browsing, tight for a script. */
+  themePreview: { default: { limit: 60, ttl: 60_000 } },
   /** Credential endpoints — brute-force / credential-stuffing targets. */
   login: { default: { limit: 10, ttl: 60_000 } },
   register: { default: { limit: 5, ttl: 60_000 } },
   /** Also called server-side by the Next.js demo route (one shared IP), so deliberately roomy. */
   refresh: { default: { limit: 120, ttl: 60_000 } },
+  /** S13 account security: a public refresh/logout is a token-guessing target, and a forgot/reset request sends mail or changes a password. */
+  sessionRefresh: { default: { limit: 30, ttl: 60_000 } },
+  passwordForgot: { default: { limit: 3, ttl: 60_000 } },
+  passwordReset: { default: { limit: 5, ttl: 60_000 } },
+  passwordChange: { default: { limit: 5, ttl: 60_000 } },
   /** OTP — SMS cost + code guessing. */
   otpRequest: { default: { limit: 3, ttl: 60_000 } },
   otpVerify: { default: { limit: 10, ttl: 60_000 } },
@@ -40,6 +51,27 @@ export const RATE = {
   payment: { default: { limit: 20, ttl: 60_000 } },
   /** Public storefront actions (enquiry / checkout order / confirm). */
   publicAction: { default: { limit: 30, ttl: 60_000 } },
+  /** V3 claim links: a public token-guessing target. 20 per minute per IP. */
+  // targets the "reads" throttler: the "default" one skips GET requests
+  claimStatus: { reads: { limit: 20, ttl: 60_000 } },
+  /** V3 public site read (internal consumers: the Next.js app, one IP): roomy, on the "reads" throttler. THROTTLE_TRUSTED_IPS can exempt the app server entirely. */
+  siteRead: { reads: { limit: 300, ttl: 60_000 } },
+  /** V3 AI suggestions cost credits and a model call: 10 per minute per IP. */
+  aiGenerate: { default: { limit: 10, ttl: 60_000 } },
+  /** V3 public directory reads: 120 per minute per IP on the reads throttler (the default one skips GET). */
+  directoryRead: { reads: { limit: 120, ttl: 60_000 } },
+  /** SEO block click-out (a GET that redirects): 60 per minute per IP on the reads throttler. */
+  directoryGo: { reads: { limit: 60, ttl: 60_000 } },
+  /** V3 directory Visit-site beacon (a POST, so the default throttler): 60 per minute per IP. */
+  directoryVisit: { default: { limit: 60, ttl: 60_000 } },
+  /** V3 public requests and orders (slice 5.14): 10 per minute per IP. */
+  requestSubmit: { default: { limit: 10, ttl: 60_000 } },
+  /** V3 public reports: 5 per minute per IP. */
+  reportSubmit: { default: { limit: 5, ttl: 60_000 } },
+  /** V3 public removal requests and confirmations: 5 per minute per IP. */
+  removalRequest: { default: { limit: 5, ttl: 60_000 } },
+  /** V3 domain verification reads DNS: 6 per minute per IP (the service also enforces a minimum interval per domain). */
+  domainVerify: { default: { limit: 6, ttl: 60_000 } },
   /** Provider webhooks: generous (providers retry), but not unlimited. */
   webhook: { default: { limit: 120, ttl: 60_000 } },
   whatsappWebhook: { default: { limit: 300, ttl: 60_000 } },

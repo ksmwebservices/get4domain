@@ -6,7 +6,7 @@ import { createPageMetadata } from '@/lib/metadata';
 export const metadata: Metadata = createPageMetadata({
   title: 'Checkout',
   path: '/checkout',
-  noindex: true,
+  noIndex: true,
 });
 
 export default function CheckoutLayout({ children }: { children: React.ReactNode }) {

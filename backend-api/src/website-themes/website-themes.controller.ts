@@ -8,6 +8,8 @@ import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { RATE } from '../common/throttling';
+import { RequireModule } from '../common/decorators/require-module.decorator';
+import { VendorOwnerGuard } from '../common/guards/vendor-owner.guard';
 
 @ApiTags('website-themes')
 @ApiBearerAuth()
@@ -37,12 +39,14 @@ export class WebsiteThemesController {
   }
 
   // ── Vendor-facing: themes for my industry with unlock status + premium purchase ──
+  @RequireModule('website')   // S8-B: viewing the theme screen needs the website area (reads stay area-gated, not owner-only)
   @Get('mine')
   @ApiOperation({ summary: "Themes for the vendor's industry, each with an `unlocked` flag" })
   mine(@CurrentUser() user: AuthenticatedUser, @Query('industry') industry?: string) {
     return this.service.listForVendor(user.sub, industry);
   }
 
+  @UseGuards(VendorOwnerGuard)   // S8-B: buying a theme is owner-only
   @Throttle(RATE.payment)
   @Post(':id/unlock/order')
   @ApiOperation({ summary: 'Create a one-time Razorpay order to unlock a premium template' })
@@ -50,6 +54,7 @@ export class WebsiteThemesController {
     return this.service.createUnlockOrder(user.sub, id);
   }
 
+  @UseGuards(VendorOwnerGuard)
   @Throttle(RATE.payment)
   @Post(':id/unlock/confirm')
   @ApiOperation({ summary: 'Verify payment and unlock a premium template for this vendor' })

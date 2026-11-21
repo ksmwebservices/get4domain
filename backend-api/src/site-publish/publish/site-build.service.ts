@@ -1,0 +1,212 @@
+import { ConflictException, Inject, Injectable, NotFoundException, Optional, UnprocessableEntityException } from '@nestjs/common';
+import { toRenderEntitlements } from '../../plans/entitlements/entitlement-engine';
+import { EntitlementsService } from '../../plans/entitlements/entitlements.service';
+import { Actor } from '../../plans/admin/audit.service';
+import { B3SettingsService } from '../../b3-settings/b3-settings.service';
+import { VendorHosts } from './vendor-hosts';
+import { SiteLifecycle } from './site-lifecycle';
+import { planError } from '../../plans/plans.errors';
+import { categoryForTrack, limitsFrom, pageArgs, PlannedPage, planPages, toRendererInput } from '../content/content-adapter';
+import type { SourceDocument } from '../content/content-types';
+import { ContentSource } from '../content/content-source';
+import { SnapshotSink } from '../content/snapshot-sink';
+import type { ManagedDoc } from '../../v3-website/core/managed-doc';
+import { resolveTheme } from '../content/theme-resolution';
+import { ThemeRenderError, ThemeRenderService } from '../renderer/theme-render.service';
+import { evaluateIndexing, homeContentOk } from '../seo/indexing-rule';
+import { assembleDocument, buildPageSeo } from '../seo/page-seo';
+import { buildLlmsTxt } from '../seo/llms-txt';
+import { buildRobotsTxt, buildSitemap, SitemapEntry } from '../seo/site-files';
+import { VendorSeoSettings } from '../seo/vendor-seo-settings';
+import { VendorDirectoryFactsPort } from '../seo/vendor-directory-facts';
+import { siteError } from '../site.errors';
+import { CSS_BUDGET_BYTES, DEFAULT_SITE_BASE, PAGE_BUDGET_BYTES, clampMotion, contentTypeFor, kitMotion, parseLanguages, sha256, stableJson } from './site-config';
+import { SiteAudit } from './site-audit';
+import { NewPage, PublicationRow, SiteRepository } from './site.repository';
+
+export interface BuildOptions { themeId?: string; actor: Actor; /** slice 5.5a: build from this managed content document instead of the live one (draft preview, publish, approval) */ overlay?: ManagedDoc }
+export interface BuildResult { publication: PublicationRow; reused: boolean }
+
+/**
+ * Renders a vendor's whole site into a DRAFT_PREVIEW publication (docs/v3/V3_S4_RENDERER_PUBLISH.md section 7). Idempotent: if the newest publication was
+ * built from the same theme, content and settings it is returned and nothing is written. The renderer is pure and the SEO layer is pure, so two builds of the
+ * same inputs are byte-identical. Nothing here publishes anything.
+ */
+@Injectable()
+export class SiteBuildService {
+  /** overridable in tests; the year goes into the content because the renderer has no clock */
+  clock: () => Date = () => new Date();
+  siteBase = process.env.SITE_BASE_DOMAIN || DEFAULT_SITE_BASE;
+  budgets = { page: PAGE_BUDGET_BYTES, css: CSS_BUDGET_BYTES };
+
+  constructor(
+    private readonly repo: SiteRepository,
+    private readonly themes: ThemeRenderService,
+    private readonly content: ContentSource,
+    @Inject(EntitlementsService) private readonly entitlements: Pick<EntitlementsService, 'resolve'>,
+    private readonly audit: SiteAudit,
+    @Optional() private readonly hosts?: VendorHosts,
+    /** the Batch 3 texts (listing lines, seeded notice, customer disclosure) and the indexing mode; absent = the renderer draws no such lines */
+    @Optional() @Inject(B3SettingsService) private readonly b3?: Pick<B3SettingsService, 'get'>,
+    /** seeded-site lifecycle (slice 5.13a); absent = the site was never seeded */
+    @Optional() private readonly lifecycle?: SiteLifecycle,
+    /** slice 5.5a: records the managed document each build used (the live document is the snapshot of the current publication); absent = nothing is recorded */
+    @Optional() @Inject(SnapshotSink) private readonly snapshots?: SnapshotSink,
+    /** slice 6: the staff-editable vendor SEO templates and the crawler list; absent = titles, descriptions and robots.txt are written as before */
+    @Optional() @Inject(VendorSeoSettings) private readonly seoSettings?: VendorSeoSettings,
+    /** the vendor's directory listing: locality, city, pincode and the backlink block as data (prompt 6a, 6b, 8e); absent or no listing = none of it */
+    @Optional() @Inject(VendorDirectoryFactsPort) private readonly dirFacts?: VendorDirectoryFactsPort,
+  ) {}
+
+  /**
+   * Builds the site. TM1 M3: a marketplace theme that throws while drawing a page never produces an error page or a failed publish: the build is repeated with the business's previous theme, then with the
+   * library default of its category (a library theme cannot raise this error, so the loop always ends). The note `theme-render-fallback` is kept with the build.
+   */
+  async build(vendorId: string, opts: BuildOptions): Promise<BuildResult> {
+    const failed: string[] = [];
+    for (;;) {
+      try { return await this.buildWith(vendorId, opts, failed); }
+      catch (e) { if (!(e instanceof ThemeRenderError) || failed.includes(e.themeId) || failed.length >= 3) throw e; failed.push(e.themeId); }
+    }
+  }
+
+  private async buildWith(vendorId: string, opts: BuildOptions, failed: readonly string[]): Promise<BuildResult> {
+    const doc = await this.content.load(vendorId, opts.overlay ? { overlay: opts.overlay } : undefined);
+    if (!doc) throw new NotFoundException(planError('UNKNOWN_VENDOR', 'That vendor does not exist.'));
+    const kit = this.themes.kitApi;
+    const ent = await this.entitlements.resolve(vendorId);
+    const categoryId = categoryForTrack(doc, kit, kit.categoryMap(), ent.track);   // B6.1: a category the kit cannot place uses the neutral design of the vendor's track
+    if (!categoryId) throw new ConflictException(siteError('PUBLISH_BLOCKED', 'This business has no category yet, so its site cannot be built.', { missing: [{ code: 'CATEGORY', label: 'The business needs a category' }] }));
+    const cat = kit.categoryById(categoryId);
+
+    const settings = await this.repo.getSettings(vendorId);
+    const notes: string[] = [];
+    const themeFeature = ent.features['site.themes'];
+    let resolved = resolveTheme({
+      requested: opts.themeId ?? settings?.themeId ?? null, categoryId, track: cat.track, themes: this.themes.listThemes(vendorId, settings?.themeId ?? null), defaultId: this.themes.defaultThemeFor(categoryId),
+      entitlement: themeFeature ? { state: themeFeature.state, enumValue: themeFeature.enumValue, upsellText: themeFeature.upsellText } : null, strict: opts.themeId !== undefined,
+    });
+    notes.push(...resolved.notes);
+    if (failed.length) {   // a marketplace theme failed to draw: the previous theme of this business if it still draws, else the library default
+      const previous = (await this.repo.newestPublication(vendorId))?.themeId ?? null;
+      const usable = (id: string | null): id is string => { if (!id || failed.includes(id)) return false; try { this.themes.getTheme(id); return true; } catch { return false; } };
+      const next = [previous, this.themes.defaultThemeFor(categoryId)].find(usable);
+      if (!next) throw new ConflictException(siteError('THEME_INVALID', 'There is no theme that can draw this site right now.'));
+      resolved = { themeId: next, source: 'default', notes: ['theme-render-fallback'] };
+      notes.push('theme-render-fallback');
+    }
+    const theme = this.themes.getTheme(resolved.themeId);
+
+    const langs = parseLanguages(settings?.language, ent.features['site.language_ta']?.state === 'ACTIVE');
+    notes.push(...langs.notes);
+    const motion = kitMotion(clampMotion(settings?.motionIntensity ?? 'LOW', ent.level));
+    const limits = limitsFrom(ent);
+    const primary = this.hosts ? await this.hosts.primary(vendorId) : { host: null, isCustom: false };
+    const renderEnt = toRenderEntitlements(ent, this.hosts ? await this.hosts.hasVerifiedCustomDomain(vendorId) : false);   // slice 5.6: customDomain only with an ACTIVE verified domain
+    const year = this.clock().getUTCFullYear();
+    // slice 5.4b: the platform's editable texts and the seeded lifecycle go to the renderer as facts about the host; the renderer invents no text
+    const b3 = this.b3 ? await this.b3.get() : null;
+    const seededState = this.lifecycle ? await this.lifecycle.lifecycleOf(vendorId) : null;
+    const isSeeded = seededState === 'SEEDED' || seededState === 'INVITED';
+    const vseo = this.seoSettings ? await this.seoSettings.get() : null;
+    const dfacts = this.dirFacts && vseo ? await this.dirFacts.forVendor(vendorId) : null;
+    const hostExtra = {
+      ...(b3 ? { texts: { listedOn: b3.listedOnLineText, footerBridge: b3.siteFooterBridgeText, seededNotice: b3.seededNoticeText, customerDisclosure: b3.customerDisclosureText } } : {}),
+      ...(seededState ? { lifecycle: seededState } : {}),
+      ...(dfacts?.directoryLinks ? { directoryLinks: dfacts.directoryLinks } : {}),   // prompt 8e: the brand link and up to four directory links, as data; drawing them is a theme task
+    };
+
+    const brandSuffix = !primary.isCustom;   // a get4domain subdomain carries the brand suffix; a custom domain is the vendor's own
+    const hostOpts = { primaryHost: primary.host ?? undefined, customDomain: primary.isCustom && primary.host ? primary.host : undefined };
+    const directions = renderEnt.callsToAction !== false;   // slice B2: Free shows the address as plain text, no directions link
+    const base = toRendererInput(doc, { categoryId, lang: 'en', year, siteBase: this.siteBase, ...hostOpts, limits, motion, directions });
+    notes.push(...base.notes.map((n) => n));
+    const siteName = String((base.content.site as { name: string }).name);
+    const contact = base.content.contact as { address: string; city: string };
+    const indexing = evaluateIndexing({
+      businessName: siteName, categoryId, claimed: doc.claimed, verifiedContact: doc.claimed, address: contact.address, serviceAreas: ((base.content.areas as unknown[]) ?? []).length,
+      homeContent: homeContentOk(base.content as never), forceNoindex: settings?.forceNoindex ?? false,
+      ...(isSeeded ? { seeded: { mode: b3?.seededSiteIndexingMode ?? 'OFF', qualityOk: this.lifecycle ? await this.lifecycle.qualityOk(vendorId) : false } } : {}),
+    });
+
+    // hashes: what the output depends on, so an unchanged site is recognised without rendering
+    const { managed, ...hashable } = doc;   // the managed document is recorded, not hashed: two documents that render the same site are the same build
+    const contentHash = sha256(stableJson({ doc: hashable, categoryId, year, limits, motion, siteBase: this.siteBase, ...(primary.host ? { primaryHost: primary.host } : {}) }));
+    const settingsHash = sha256(stableJson({ ...(vseo ? { vendorSeo: { home: vseo.vendorHome, page: vseo.vendorPage, crawlers: vseo.crawlers, brandSuffix } } : {}), ...(dfacts ? { dirFacts: { locality: dfacts.locality, city: dfacts.city, pincode: dfacts.pincode } } : {}), themeId: resolved.themeId, languages: langs.languages, motion, renderEnt, hostExtra, indexable: indexing.indexable, missing: indexing.missing.map((m) => m.code) }));
+    const newest = await this.repo.newestPublication(vendorId);
+    if (newest && newest.themeHash === theme.hash && newest.contentHash === contentHash && newest.settingsHash === settingsHash && newest.themeId === resolved.themeId) {
+      await this.snapshots?.record(vendorId, newest.id, newest.version, managed ?? null);
+      return { publication: newest, reused: true };
+    }
+
+    // render every page of every language
+    const pages: NewPage[] = [];
+    const warnings = new Set<string>(notes);
+    const templates = Object.keys(theme.theme.templates);
+    const sitemap: SitemapEntry[] = [];
+    const canon = new Map<string, string>();
+    const llmsPages: Array<{ title: string; description: string; url: string }> = [];   // the English pages, for llms.txt
+    const siteUrl = String(base.host.siteUrl);
+    for (const lang of langs.languages) {
+      const input = lang === 'en' ? base : toRendererInput(doc, { categoryId, lang, year, siteBase: this.siteBase, ...hostOpts, limits, motion, directions });
+      for (const p of planPages(input.content, templates)) {
+        const args = pageArgs(input.content, p);
+        const rendered = this.themes.render(resolved.themeId, { page: args.page, content: args.content, settings: input.settings, vendor: input.vendor, host: { ...input.host, ...hostExtra }, entitlements: renderEnt });
+        for (const w of rendered.warnings) warnings.add(w);
+        const seo = buildPageSeo({
+          rendered, path: p.path, template: p.template, lang, languages: langs.languages, indexable: indexing.indexable, siteUrl, categoryId, siteName, city: contact.city,
+          image: doc.cms?.banner ?? '', itemName: p.item ? String((p.item as { name: string }).name) : '', items: (input.content.items as Array<{ name: string; description: string; image: string }>) ?? [],
+          tagline: String(doc.cms?.tagline ?? ''), about: String(doc.cms?.about ?? ''),
+          ...(vseo ? { vendorTemplates: { vendorHome: vseo.vendorHome, vendorPage: vseo.vendorPage }, locality: dfacts?.locality ?? String((contact as { area?: string }).area ?? ''), ...(dfacts?.pincode ? { pincode: dfacts.pincode } : {}), brandSuffix,
+            services: doc.items.filter((i) => i.active && !i.sample).map((i) => i.name), logo: doc.cms?.logo ?? '', faqs: (input.content.faqs as Array<{ q: string; a: string }>) ?? [] } : {}),   // slice 6 and prompt 6a, 6b
+          ...(lang === 'en' ? { override: pageSeoOverride(doc.pageSeo, p) } : {}),   // slice B1: the vendor's own text for this page (English pages only)
+        });
+        const html = assembleDocument({ seo, bodyHtml: rendered.html, cssHref: '/assets/site.css', favicon: doc.cms?.favicon ?? undefined });
+        const bytes = Buffer.byteLength(html);
+        const path = lang === 'ta' ? `/ta${p.path === '/' ? '' : p.path}` : p.path;
+        if (bytes > this.budgets.page) throw new UnprocessableEntityException(siteError('SITE_BUDGET_EXCEEDED', `The page ${path} is ${Math.round(bytes / 1024)} KB, over the ${Math.round(this.budgets.page / 1024)} KB limit. Shorten its text or remove photos.`));
+        pages.push({ path, lang, html, seoJson: { title: seo.title, description: seo.description, canonical: seo.canonical, robots: seo.robots, template: p.template }, bytes, sha256: sha256(html) });
+        canon.set(`${lang}:${p.path}`, seo.canonical);
+        if (lang === 'en') llmsPages.push({ title: seo.title.replace(/ \| Get4Domain$/, ''), description: seo.description, url: seo.canonical });
+      }
+    }
+    for (const p of planPages(base.content, templates)) {
+      const en = canon.get(`en:${p.path}`); if (!en) continue;
+      const ta = canon.get(`ta:${p.path}`);
+      sitemap.push({ loc: en, ...(ta ? { alternates: [{ lang: 'en-IN', href: en }, { lang: 'ta-IN', href: ta }] } : {}) });
+    }
+    const css = [theme.theme.css.tokens, theme.theme.css.base, theme.theme.css.motion, theme.theme.css.print].filter(Boolean).join('\n');
+    if (Buffer.byteLength(css) > this.budgets.css) throw new UnprocessableEntityException(siteError('SITE_BUDGET_EXCEEDED', 'The theme stylesheet is over the allowed size.'));
+    const files: Array<[string, string]> = [['/assets/site.css', css], ['/sitemap.xml', buildSitemap(sitemap, indexing.indexable)], ['/robots.txt', buildRobotsTxt(indexing.indexable, `${siteUrl}/sitemap.xml`, vseo?.crawlers)]];
+    if (vseo && indexing.indexable) {
+      // prompt 6d: llms.txt from stored public facts only; a site that is not indexable gets none. Phone, email and hours only where the plan lets the site show them (Pro).
+      const c = base.content.contact as { address: string; city: string; phone?: string; email?: string };
+      files.push(['/llms.txt', buildLlmsTxt({
+        siteName, categoryLabel: cat.label, tagline: String(doc.cms?.tagline ?? ''), city: c.city, locality: dfacts?.locality ?? '', address: c.address,
+        contactVisible: renderEnt.callsToAction !== false, phone: c.phone, email: c.email, hours: String(doc.cms?.businessHours ?? ''),
+        services: doc.items.filter((i) => i.active && !i.sample).map((i) => ({ name: i.name, description: i.description ?? undefined })), pages: llmsPages, siteUrl, sitemapUrl: `${siteUrl}/sitemap.xml`,
+      })]);
+    }
+    for (const [path, text] of files) pages.push({ path, lang: 'en', html: text, seoJson: { contentType: contentTypeFor(path) }, bytes: Buffer.byteLength(text), sha256: sha256(text) });
+
+    const row = await this.repo.createPublication(
+      {
+        vendorId, themeId: resolved.themeId, themeHash: theme.hash, contentHash, settingsHash, indexable: indexing.indexable, indexHeader: pages.find((x) => x.path === '/')?.seoJson.robots as string ?? 'noindex, nofollow',
+        missingFieldsJson: indexing.missing, warningsJson: [...warnings], languages: langs.languages.join(','), totalBytes: pages.reduce((n, x) => n + x.bytes, 0), createdByType: opts.actor.type, createdById: opts.actor.id,
+      },
+      pages,
+      { type: 'BUILT', actorType: opts.actor.type, actorId: opts.actor.id, detail: { themeId: resolved.themeId, pages: pages.length, indexable: indexing.indexable } },
+      this.audit.hook(opts.actor, 'site.build', vendorId, { themeId: resolved.themeId, pages: pages.length, indexable: indexing.indexable }),
+    );
+    await this.snapshots?.record(vendorId, row.id, row.version, managed ?? null);
+    return { publication: row, reused: false };
+  }
+}
+
+/** The vendor's own SEO text for a planned page, by page key (home, about, page:<slug>, item:<id>), as the shape the SEO layer takes. */
+function pageSeoOverride(pageSeo: SourceDocument['pageSeo'], p: PlannedPage): { title?: string; description?: string; image?: string } | undefined {
+  if (!pageSeo) return undefined;
+  const key = p.template === 'page' ? `page:${p.slug}` : p.template === 'item' ? `item:${String((p.item as { id?: string } | undefined)?.id ?? '')}` : p.template;
+  const e = pageSeo[key];
+  return e ? { title: e.seoTitle, description: e.seoDescription, image: e.shareImageRef } : undefined;
+}

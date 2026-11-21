@@ -10,7 +10,8 @@
     "start": "next start",
     "lint": "next lint",
     "audit:vendor-dark": "node scripts/audit-vendor-dark.mjs",
-    "verify:admin-nav": "node scripts/verify-admin-nav.mjs"
+    "verify:admin-nav": "node scripts/verify-admin-nav.mjs",
+    "seo:check": "node scripts/seo-check.mjs"
   },
   "dependencies": {
     "fabric": "^6.9.1",

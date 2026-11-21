@@ -386,6 +386,31 @@ export class CmsService {
     });
   }
 
+  private readonly stateCache = new Map<string, { at: number; v: { exists: boolean; status: 'LIVE' | 'DRAFT' | 'NOT_FOUND' } }>();
+  stateClock: () => number = () => Date.now();
+
+  /**
+   * S1.6: the only thing the public site app needs to tell an unfinished address from an unknown one. Same rule as getSiteBySubdomain (an unknown or sandbox vendor does not exist; a CMS row that is not LIVE is
+   * DRAFT), but nothing else leaves: no name, e-mail, phone or id. Kept 30 seconds in process memory (at most 2000 names), so a flood of guesses costs one read per name per half minute.
+   */
+  async siteState(subdomain: string): Promise<{ exists: boolean; status: 'LIVE' | 'DRAFT' | 'NOT_FOUND' }> {
+    const key = String(subdomain ?? '').trim().toLowerCase();
+    const none = { exists: false, status: 'NOT_FOUND' as const };
+    if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(key)) return none;
+    const now = this.stateClock();
+    const hit = this.stateCache.get(key);
+    if (hit && now - hit.at < 30_000) return hit.v;
+    const vendor = await this.prisma.vendor.findUnique({ where: { subdomain: key }, select: { id: true, isSandbox: true } });
+    let v: { exists: boolean; status: 'LIVE' | 'DRAFT' | 'NOT_FOUND' } = none;
+    if (vendor && !vendor.isSandbox) {
+      const cms = await this.prisma.vendorCMS.findUnique({ where: { vendorId: vendor.id }, select: { siteStatus: true } });
+      v = { exists: true, status: !cms || cms.siteStatus === 'LIVE' ? 'LIVE' : 'DRAFT' };
+    }
+    if (this.stateCache.size >= 2000) this.stateCache.clear();
+    this.stateCache.set(key, { at: now, v });
+    return v;
+  }
+
   /** Public: resolve a live (non-sandbox) vendor's public site by subdomain. */
   async getSiteBySubdomain(subdomain: string, previewToken?: string, designPreview?: string): Promise<{
     vendor: { id: string; businessName: string; industry: string; subdomain: string | null };
@@ -407,6 +432,8 @@ export class CmsService {
     themeNotice: ThemeNotice | null;
     /** how many pages the plan allows (the home page counts as one) */
     pagesLimit: number;
+    /** S3.1: FREE when the vendor holds a Free plan, PRO on any other held plan; absent when no plan is held. Nothing else about the plan leaves. */
+    plan?: 'FREE' | 'PRO';
   }> {
     const vendor = await this.prisma.vendor.findUnique({ where: { subdomain } });
     if (!vendor || vendor.isSandbox) {
@@ -463,6 +490,8 @@ export class CmsService {
       cms = { ...cms, designKey: themeRef ? `${THEME_PREFIX}${themeRef.key}` : (want?.startsWith(THEME_PREFIX) ? packDefault : want) ?? null } as typeof cms;
     }
     const pagesLimit = flag?.enabled === true ? await this.pagesLimitFor(vendor.id) : 1;
+    const held = await this.prisma.v3PlanSubscription.findUnique({ where: { currentVendorId: vendor.id }, select: { plan: { select: { level: true } } } });   // S3.1: the CURRENT plan only (ACTIVE or GRACE)
+    const plan = held?.plan ? (held.plan.level === 'FREE' ? ('FREE' as const) : ('PRO' as const)) : undefined;
     const publicProducts = products.map((r) => toPublicProduct(r)).filter((p): p is PublicProduct => p !== null);
     const indexable = !preview && (!cmsRow || cmsRow.siteStatus === 'LIVE') && (flag?.enabled !== true || (!!cms && hasRealContent(cms as { about?: unknown; testimonials?: unknown; extras?: unknown }, publicProducts)));
     return {
@@ -478,6 +507,7 @@ export class CmsService {
       preview,
       indexable,
       themeRef, themeNotice, pagesLimit,
+      ...(plan ? { plan } : {}),
       products: publicProducts,
       theme: themeRow
         ? { id: themeRow.id, name: themeRow.name, industry: themeRow.industry, cssVars: themeRow.cssVars, layout: themeRow.layout, pages: themeRow.pages, css: themeRow.css, js: themeRow.js, fonts: themeRow.fonts }

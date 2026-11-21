@@ -1,0 +1,132 @@
+{
+  "category": "music-dance-school",
+  "palette": {
+    "light": {
+      "primary": "#76195a",
+      "accent": "#7e1b1e",
+      "background": "#fcf3f9"
+    },
+    "dark": {
+      "primary": "#e25ab9",
+      "accent": "#e48184",
+      "background": "#1a0f17"
+    }
+  },
+  "fonts": {
+    "heading": "Nunito",
+    "body": "Nunito"
+  },
+  "blocks": [
+    "courses",
+    "events",
+    "batches"
+  ],
+  "hero": {
+    "pattern": "rings"
+  },
+  "services": {
+    "en": [
+      {
+        "name": "Carnatic vocal",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Bharatanatyam",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Keyboard",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Violin",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Western dance",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Trial class",
+        "description": "Ask us for the details and a clear price."
+      }
+    ],
+    "ta": [
+      {
+        "name": "கர்நாடக சங்கீதம்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "பரதநாட்டியம்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "கீபோர்டு",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "வயலின்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "மேற்கத்திய நடனம்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "சோதனை வகுப்பு",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      }
+    ]
+  },
+  "faqs": {
+    "en": [
+      {
+        "q": "Can I try a class first?",
+        "a": "Yes. Ask us for a trial or demo session before you decide."
+      },
+      {
+        "q": "What are the batch and class timings?",
+        "a": "Timings are listed on this page. Call us if you need a different time."
+      },
+      {
+        "q": "How much are the fees?",
+        "a": "Fees depend on the course or plan. Ask us for the full list and we will explain what is included."
+      },
+      {
+        "q": "Who will teach or train me?",
+        "a": "You will meet your teacher or trainer during the trial."
+      },
+      {
+        "q": "How do I join?",
+        "a": "Send an enquiry, call us or message us on WhatsApp and we will help you choose the right batch."
+      }
+    ],
+    "ta": [
+      {
+        "q": "முதலில் ஒரு வகுப்பில் கலந்து பார்க்கலாமா?",
+        "a": "ஆம். முடிவு செய்யும் முன் சோதனை அல்லது டெமோ வகுப்பைக் கேளுங்கள்."
+      },
+      {
+        "q": "பிரிவு மற்றும் வகுப்பு நேரங்கள் என்ன?",
+        "a": "நேரங்கள் இந்தப் பக்கத்தில் உள்ளன. வேறு நேரம் வேண்டுமெனில் அழையுங்கள்."
+      },
+      {
+        "q": "கட்டணம் எவ்வளவு?",
+        "a": "கட்டணம் படிப்பு அல்லது திட்டத்தைப் பொறுத்தது. முழுப் பட்டியலைக் கேளுங்கள், என்னென்ன அடங்கும் என்று விளக்குவோம்."
+      },
+      {
+        "q": "யார் கற்பிப்பார் அல்லது பயிற்சி அளிப்பார்?",
+        "a": "சோதனை வகுப்பில் உங்கள் ஆசிரியர் அல்லது பயிற்சியாளரைச் சந்திப்பீர்கள்."
+      },
+      {
+        "q": "எப்படிச் சேருவது?",
+        "a": "விசாரணை அனுப்புங்கள், அழையுங்கள் அல்லது வாட்ஸ்அப்பில் செய்தி அனுப்புங்கள்; சரியான பிரிவைத் தேர்ந்தெடுக்க உதவுவோம்."
+      }
+    ]
+  },
+  "sections": {
+    "hidden": [
+      "stats"
+    ]
+  }
+}

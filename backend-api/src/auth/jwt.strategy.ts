@@ -4,8 +4,24 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { normalizeModules } from '../team/team-access';
+import { effectiveStaffRole, PARTNER_ROLE, staffLabelOf } from './guards/admin-role-matrix';
+
+/**
+ * S13: a password change or reset stamps `passwordChangedAt`; any access token issued before that moment is refused, so a stolen token
+ * does not outlive the password it was issued under. A token's `iat` has whole-second resolution, so a token from the SAME second as the change
+ * cannot be told apart from one issued a moment before it: it is refused too (strict `<=`). Password change and reset therefore return only
+ * after the clock has passed that second (PasswordService), so every session issued after them is accepted.
+ * Accounts that never changed their password (null) are unaffected.
+ */
+function assertIssuedAfterPasswordChange(issuedAt: number | undefined, changedAt: Date | null | undefined): void {
+  if (!changedAt) return;
+  if (typeof issuedAt !== 'number' || issuedAt <= Math.floor(changedAt.getTime() / 1000)) {
+    throw new UnauthorizedException('Your session has ended. Please sign in again.');
+  }
+}
 
 interface JwtPayload {
+  iat?: number;
   sub: string;
   email: string;
   role: string;
@@ -26,12 +42,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
     // Standalone internal-staff principal (invited Marketing/Operations members).
-    if (payload.kind === 'admin_member') {
+    if (payload.kind === 'admin_member' || payload.kind === 'referral_partner') {
       const member = await this.prisma.adminTeamMember.findUnique({ where: { id: payload.sub } });
       if (!member || member.status !== 'active') {
         throw new UnauthorizedException('Account not found or removed');
       }
-      return { sub: member.id, email: member.email, role: 'ADMIN', adminRole: member.role, kind: 'admin_member' };
+      assertIssuedAfterPasswordChange(payload.iat, member.passwordChangedAt);
+      // Wave 3 Part A: a referral partner is NOT staff: its principal has the role PARTNER, so no staff or vendor guard accepts it, and PartnerScopeGuard keeps it on /v3/partner/*.
+      if (member.role === PARTNER_ROLE) return { sub: member.id, email: member.email, role: 'PARTNER', kind: 'referral_partner' };
+      // A staff label (FIELD_EXECUTIVE, TELECALLER) is folded into SALES here, so it holds exactly the SALES rights everywhere.
+      const label = staffLabelOf(member.role);
+      return { sub: member.id, email: member.email, role: 'ADMIN', adminRole: effectiveStaffRole(member.role), kind: 'admin_member', ...(label ? { staffLabel: label } : {}) };
     }
 
     // A vendor's team member. `sub` is the PARENT vendorId (data scoping); the member
@@ -47,6 +68,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       if (!parent || parent.status === 'SUSPENDED') {
         throw new UnauthorizedException('Account not found or suspended');
       }
+      assertIssuedAfterPasswordChange(payload.iat, member.passwordChangedAt);
       return {
         sub: parent.id, email: member.email ?? payload.email, role: 'VENDOR',
         kind: 'team_member', memberId: member.id,
@@ -60,6 +82,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!vendor || vendor.status === 'SUSPENDED') {
       throw new UnauthorizedException('Account not found or suspended');
     }
+
+    assertIssuedAfterPasswordChange(payload.iat, vendor.passwordChangedAt);
 
     // Expired demo sandboxes can't be used even with an unexpired token.
     if (vendor.isSandbox && vendor.expiresAt && vendor.expiresAt < new Date()) {

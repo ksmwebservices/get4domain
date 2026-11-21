@@ -1,0 +1,43 @@
+{
+  "id": "free-hospitality",
+  "version": 1,
+  "name": "Hospitality and Property",
+  "description": "For restaurants and cafes, hotels and homestays, travel agencies and real estate agents: a large picture with the booking button on it, a menu, rooms, packages or listings block, amenities, the location up front, and a reservation or enquiry button. Warm and image-led.",
+  "author": "Get4Domain",
+  "tier": "Standard",
+  "tracks": [
+    "professional"
+  ],
+  "families": [
+    "hospitality-property"
+  ],
+  "categories": [
+    "restaurant-cafe",
+    "hotel-homestay",
+    "travel-agency",
+    "real-estate-agent"
+  ],
+  "layoutVariantRules": {
+    "hospitality-property": "fullbleed-booking"
+  },
+  "motion": {
+    "default": "Low",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "Playfair Display",
+    "Work Sans",
+    "Lora",
+    "Inter",
+    "Poppins",
+    "Noto Sans Tamil"
+  ]
+}

@@ -12,7 +12,7 @@ export class VendorOwnerGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const user = context.switchToHttp().getRequest().user as AuthenticatedUser | undefined;
     if (user?.kind === 'team_member') {
-      throw new ForbiddenException('Only the account owner can manage the team.');
+      throw new ForbiddenException('Only the account owner can do this.');
     }
     return true;
   }

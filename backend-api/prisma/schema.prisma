@@ -13,6 +13,7 @@ model Vendor {
   name                   String
   email                  String       @unique
   password               String
+  passwordChangedAt      DateTime? // S13: sessions issued before this are refused
   businessName           String
   phone                  String?
   industry               String?      @default("general")
@@ -36,10 +37,108 @@ model Vendor {
   // account at Phase 5 (buy-now). Filtered out of admin/real views.
   isSandbox              Boolean      @default(false)
   expiresAt              DateTime?
+  // V3 slice 5.1: where the account came from (provenance only; nullable, no behaviour depends on it)
+  source                 String?
+  registeredByStaffId    String?
+  /// D1 duplicate check: the last 10 digits of the phone, whatever way it was typed (nullable: older rows are filled by the migration, the application falls back to the raw phone while it is null)
+  phoneKey               String?
+  /// B2.1: set to FAILED when the trial site could not be made at signup (the vendor app then offers "Create my site"); cleared when a site exists. Holds a code, never an error text.
+  siteProvisionStatus    String?
+  siteProvisionCode      String?
+  siteProvisionFailedAt  DateTime?
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
 
   subscriptions Subscription[]
+  v3Subscriptions V3PlanSubscription[]
+  v3SubscriptionEvents V3SubscriptionEvent[]
+  v3EntitlementOverrides V3EntitlementOverride[]
+  v3Flags V3VendorFlag[]
+  v3PrivateThemes V3ThemeMarketPackage[] @relation("ThemePrivateVendor")
+  v3ClaimTokens V3ClaimToken[]
+  v3Invites V3Invite[]
+  v3ProvisioningJobs V3ProvisioningJob[]
+  v3SiteSettings V3SiteSettings?
+  v3SitePublications V3SitePublication[]
+  v3SitePublicationPages V3SitePublicationPage[]
+  v3SiteEvents V3SiteEvent[]
+  v3Domains V3Domain[]
+  v3DomainVerifications V3DomainVerification[]
+  v3Redirects V3Redirect[]
+  v3SiteRemoval V3SiteRemoval?
+  v3BusinessProofs V3BusinessProof[]
+  v3DeletionRequests V3AccountDeletionRequest[]
+  v3SeededSite V3SeededSite?
+  v3TermsAcceptances V3TermsAcceptance[]
+  v3Requests V3Request[]
+  v3Wallet V3Wallet?
+  v3WalletTopups V3WalletTopup[]
+  v3WalletReceipts V3WalletReceipt[]
+  v3PackPurchases V3PackPurchase[]
+  v3ServiceRequests V3ServiceRequest[]
+  v3ThemeSwitches V3ThemeSwitch[]
+  v3PaymentMethods V3VendorPaymentMethod[]
+  v3Orders V3Order[]
+  v3PaymentRequests V3PaymentRequest[]
+  v3Payments V3Payment[]
+  v3TaxProfile V3VendorTaxProfile?
+  v3InvoiceSeries V3InvoiceSeries[]
+  v3Documents V3VendorDocument[]
+  v3Invoices V3VendorInvoice[]
+  v3Offers V3Offer[]
+  v3Counters V3VendorCounter[]
+  v3SiteDrafts V3SiteDraft?
+  v3SiteSnapshots V3SiteSnapshot[]
+  v3SitePictures V3SitePicture[]
+  v3ContentSubmissions V3ContentSubmission[]
+  v3PageSeo V3PageSeo[]
+  v3SiteLocation V3SiteLocation?
+  v3ReviewLink V3ReviewLink?
+  v3Testimonials V3Testimonial[]
+  v3ActOnBehalfSessions V3ActOnBehalfSession[]
+  v3DomainConnections V3DomainConnection[]
+  v3RegistrarCustomer V3RegistrarCustomer?
+  v3Registrant V3Registrant?
+  v3IdentityOtps V3IdentityOtp[]
+  v3IdentityAccess V3IdentityAccess[]
+  v3RegisteredDomains V3RegisteredDomain[]
+  v3DomainOrders V3DomainOrder[]
+  v3Customers V3Customer[]
+  v3CustomerSources V3CustomerSource[]
+  v3SaleRecords V3SaleRecord[]
+  v3Expenses V3Expense[]
+  v3Items V3Item[]
+  v3Jobs V3Job[]
+  v3Quotes V3Quote[]
+  v3ApptServices V3ApptService[]
+  v3ApptProviders V3ApptProvider[]
+  v3ApptBookings V3ApptBooking[]
+  v3StoreProducts V3StoreProduct[]
+  v3InboxMessages V3InboxMessage[]
+  v3Tickets V3Ticket[]
+  v3BusinessNameHistory V3BusinessNameHistory[]
+  v3ScheduledPlanChanges V3ScheduledPlanChange[]
+  v3HostVisitDaily V3HostVisitDaily[]
+  v3StoreVariants V3StoreVariant[]
+  v3StoreStockMoves V3StoreStockMove[]
+  v3OrderReturns V3OrderReturn[]
+  v3VendorPack V3VendorPack?
+  v3VendorCapabilities V3VendorCapability[]
+  v3VendorPackAddons V3VendorPackAddon[]
+  v3PackRecords V3PackRecord[]
+  v3MigrationRequests V3MigrationRequest[]
+  v3PromoDrafts V3PromoDraft[]
+  v3MediaFiles V3Media[]
+  v3ProfileValues V3VendorProfileValue[]
+  v3PlanPauses V3PlanPause[]
+  v3DomainInvoices V3DomainInvoice[]
+  v3StockLevels V3StockLevel[]
+  v3DirectoryBusiness V3DirectoryBusiness?
+  v3AccountSetupGrants V3AccountSetupGrant[]
+  v3PlanOrders V3PlanOrder[]
+  v3PlanInvoices V3PlanInvoice[]
+  v3AiUsage V3AiUsage[]
+  v3AiCreditGrants V3AiCreditGrant[]
   invoices      Invoice[]
   tickets       SupportTicket[]
   cms           VendorCMS?
@@ -133,6 +232,8 @@ model Vendor {
   specialArrangements SpecialArrangement[]
   billingDeals       BillingDeal[]
   planChangeRequests PlanChangeRequest[]
+
+  @@index([phoneKey])
 }
 
 model Subscription {
@@ -600,6 +701,9 @@ model WalletTransaction {
   balanceAfter Int
   expiresAt    DateTime?
   razorpayId   String?   @unique
+  /// V3 Step 0 (S12): an optional caller-supplied key. A second debit/refund with the same key is a replay and returns the first result;
+  /// the same key with a different amount, vendor or service is refused (409). NULL for rows that do not use one.
+  idempotencyKey String? @unique
   createdAt    DateTime  @default(now())
 
   @@map("g4d_wallet_transactions")
@@ -708,6 +812,7 @@ model TeamMember {
   status      String    @default("active")
   inviteToken String?
   password    String?
+  passwordChangedAt DateTime? // S13: sessions issued before this are refused
   lastLogin   DateTime?
   createdAt   DateTime  @default(now())
 
@@ -1008,6 +1113,13 @@ enum AdminRole {
   SUPER_ADMIN
   MARKETING
   OPERATIONS
+  // Amendment 13 V9, added additively: ADMIN (manage vendors, teams and content; no system settings) and SUPPORT (tickets, calls, escalations). The document's SALES role is MARKETING; no value is renamed or removed.
+  SUPPORT
+  ADMIN
+  // Wave 3 Part A, added additively: two labels that hold exactly the SALES (MARKETING) rights, and the login role of a referral partner (partner routes only)
+  FIELD_EXECUTIVE
+  TELECALLER
+  REFERRAL_PARTNER
 }
 
 // Internal Get4Domain team members (marketing / operations staff). Mirrors the
@@ -1023,11 +1135,64 @@ model AdminTeamMember {
   status      String    @default("invited") // invited | active | removed
   inviteToken String?
   password    String?
+  passwordChangedAt DateTime? // S13: sessions issued before this are refused
   lastLogin   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@map("g4d_admin_team_members")
+}
+
+/// S13: a single-use, short-lived password-reset token. Only the SHA-256 of the token is stored. accountType = VENDOR | ADMIN_MEMBER | TEAM_MEMBER.
+/// Append-only security ledger (no updatedAt/deletedAt on purpose): rows are kept so a replayed token is still recognised as used.
+model AccountPasswordReset {
+  id          String    @id @default(cuid())
+  accountType String
+  accountId   String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  revokedAt   DateTime?
+  requestedIp String?
+  createdAt   DateTime  @default(now())
+
+  @@index([accountType, accountId, createdAt])
+  @@map("g4d_password_resets")
+}
+
+/// Wave 2 (public site gap G2): a one-time, short-lived code that hands a vendor owner who just signed in on the public site to the vendor app. Only the SHA-256 is stored; a use sets usedAt; rows are kept.
+model V3LoginHandoff {
+  id          String    @id @default(cuid())
+  tokenHash   String    @unique
+  accountType String
+  accountId   String
+  expiresAt   DateTime
+  usedAt      DateTime?
+  issuedIp    String?
+  createdAt   DateTime  @default(now())
+
+  @@index([accountType, accountId, createdAt])
+  @@map("g4d_login_handoffs")
+}
+
+/// S13: a rotating refresh token. Only the SHA-256 is stored. Every use marks the row used and issues the next one in the same family;
+/// presenting a used token again (theft/replay) revokes the whole family. Same append-only ledger rule as AccountPasswordReset.
+model AuthRefreshToken {
+  id           String    @id @default(cuid())
+  accountType  String
+  accountId    String
+  familyId     String
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  usedAt       DateTime?
+  revokedAt    DateTime?
+  replacedById String?
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+
+  @@index([accountType, accountId])
+  @@index([familyId])
+  @@map("g4d_refresh_tokens")
 }
 
 enum VendorStatus {
@@ -3754,4 +3919,4547 @@ model LeadspaceDailyStat {
   @@unique([profileId, day])
   @@index([vendorId, day])
   @@map("g4d_leadspace_daily_stats")
+}
+
+// ============================================================================================================================
+// V3 slice 5.1: plans, tracks and entitlements. ALL ADDITIVE. Model and enum names carry a V3 prefix because Plan, SubStatus and others already exist;
+// the table names (@@map) are the ones fixed by the slice spec. No relation to any legacy billing, BOS, commercial or menu-gating model (owner decision D1).
+// Every price, limit, state and rule is DATA edited by an admin; nothing is defined in code.
+// ============================================================================================================================
+enum V3PlanTrack {
+  HANDYMAN
+  PROFESSIONAL
+  ECOMMERCE
+}
+
+enum V3PlanLevel {
+  FREE
+  PRO
+}
+
+enum V3PlanStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum V3PriceStatus {
+  PROPOSED
+  APPROVED
+  /// B3.0: an approved price a SUPER_ADMIN took out of force, with a written reason in the audit log. The row, its amount and its start date are never edited; it simply stops counting.
+  WITHDRAWN
+}
+
+enum V3FeatureKind {
+  BOOLEAN
+  LIMIT
+  ENUM
+}
+
+enum V3FeatureState {
+  ACTIVE
+  LIMITED
+  LOCKED_PREVIEW
+  HIDDEN
+}
+
+enum V3DiscountType {
+  TERM
+  PROMO
+  MIGRATION
+}
+
+enum V3SubscriptionStatus {
+  ACTIVE
+  GRACE
+  EXPIRED
+  CANCELLED
+}
+
+enum V3SubscriptionSource {
+  REGISTRATION
+  SELF
+  STAFF
+  MIGRATION
+  PROMO
+}
+
+enum V3ActorType {
+  SYSTEM
+  STAFF
+  VENDOR
+}
+
+model V3Plan {
+  id          String       @id @default(cuid())
+  key         String       @unique // handyman_free, handyman_pro, professional_free, professional_pro, ecommerce_free, ecommerce_pro
+  track       V3PlanTrack
+  level       V3PlanLevel
+  name        String
+  description String?
+  status      V3PlanStatus @default(DRAFT)
+  isPublic    Boolean      @default(false)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  prices        V3PlanPrice[]
+  features      V3PlanFeature[]
+  subscriptions V3PlanSubscription[]
+  orders        V3PlanOrder[]
+  serviceAllowances V3PlanServiceAllowance[]
+
+  @@unique([track, level])
+  @@map("g4d_plans")
+}
+
+/// B3.3: how many of a service group a plan includes on one billing term (3, 6 or 12 months). NO row = not set = nothing included. Only a SUPER_ADMIN writes it; the owner has not set any quantity.
+model V3PlanServiceAllowance {
+  id               String   @id @default(cuid())
+  planId           String
+  termMonths       Int
+  groupKey         String // REELS, POSTERS, POSTS, BLOGS_CONTENT, SUBDOMAIN_SPOTLIGHT, SEO_KEYWORD_WORK
+  quantity         Int
+  updatedByStaffId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  plan V3Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, termMonths, groupKey])
+  @@map("g4d_plan_service_allowances")
+}
+
+model V3PlanPrice {
+  id            String        @id @default(cuid())
+  planId        String
+  termMonths    Int // 3, 6, 12 (1 only while the setting allowMonthly is true)
+  amountPaise   Int
+  currency      String        @default("INR")
+  taxInclusive  Boolean       @default(false)
+  status        V3PriceStatus @default(PROPOSED)
+  effectiveFrom DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  plan V3Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, termMonths, effectiveFrom])
+  @@index([planId])
+  @@map("g4d_plan_prices")
+}
+
+model V3Feature {
+  id          String        @id @default(cuid())
+  key         String        @unique // dotted, e.g. site.video
+  name        String
+  group       String
+  kind        V3FeatureKind @default(BOOLEAN)
+  unit        String?
+  description String?
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  planFeatures V3PlanFeature[]
+  overrides    V3EntitlementOverride[]
+
+  @@map("g4d_features")
+}
+
+model V3PlanFeature {
+  id          String         @id @default(cuid())
+  planId      String
+  featureKey  String
+  state       V3FeatureState @default(HIDDEN)
+  limitValue  Int?
+  enumValue   String?
+  upsellText  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  plan    V3Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature V3Feature @relation(fields: [featureKey], references: [key], onDelete: Restrict)
+
+  @@unique([planId, featureKey])
+  @@index([featureKey])
+  @@map("g4d_plan_features")
+}
+
+model V3TaxRate {
+  id          String   @id @default(cuid())
+  name        String
+  ratePercent Decimal  @db.Decimal(6, 3)
+  appliesTo   String   @default("ALL")
+  active      Boolean  @default(true)
+  validFrom   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("g4d_tax_rates")
+}
+
+model V3DiscountRule {
+  id             String         @id @default(cuid())
+  type           V3DiscountType
+  name           String
+  percentOff     Decimal?       @db.Decimal(6, 3)
+  amountOffPaise Int?
+  conditions     Json           @default("{}")
+  validFrom      DateTime       @default(now())
+  validTo        DateTime?
+  stackable      Boolean        @default(false)
+  active         Boolean        @default(true)
+  status         V3PriceStatus  @default(PROPOSED)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([type, active])
+  @@map("g4d_discount_rules")
+}
+
+model V3PlanSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  valueJson   Json
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("g4d_plan_settings")
+}
+
+model V3PlanSubscription {
+  id                String               @id @default(cuid())
+  vendorId          String
+  planId            String
+  status            V3SubscriptionStatus @default(ACTIVE)
+  termMonths        Int? // null for a FREE plan
+  startsAt          DateTime             @default(now())
+  endsAt            DateTime?
+  graceEndsAt       DateTime?
+  source            V3SubscriptionSource
+  priceSnapshotJson Json                 @default("{}")
+  createdByType     V3ActorType          @default(SYSTEM)
+  createdById       String?
+  // At most one CURRENT (ACTIVE or GRACE) subscription per vendor: equals vendorId while current, NULL otherwise; the unique index does the rest.
+  currentVendorId   String?              @unique
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  plan   V3Plan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  reminders V3ReminderLog[]
+
+  @@index([vendorId, status])
+  @@index([planId])
+  @@map("g4d_plan_subscriptions")
+}
+
+model V3SubscriptionEvent {
+  id             String      @id @default(cuid())
+  subscriptionId String?
+  vendorId       String
+  type           String // ASSIGNED, CHANGED, CANCELLED, FREE_PROVISIONED
+  fromPlanId     String?
+  toPlanId       String?
+  reason         String?
+  actorType      V3ActorType @default(SYSTEM)
+  actorId        String?
+  at             DateTime    @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, at])
+  @@index([subscriptionId])
+  @@map("g4d_subscription_events")
+}
+
+model V3EntitlementOverride {
+  id                String         @id @default(cuid())
+  vendorId          String
+  featureKey        String
+  state             V3FeatureState
+  limitValue        Int?
+  enumValue         String?
+  reason            String
+  expiresAt         DateTime?
+  createdByStaffId  String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  vendor  Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  feature V3Feature @relation(fields: [featureKey], references: [key], onDelete: Restrict)
+
+  @@index([vendorId, featureKey])
+  @@index([expiresAt])
+  @@map("g4d_entitlement_overrides")
+}
+
+model V3AuditLog {
+  id         String      @id @default(cuid())
+  actorType  V3ActorType @default(STAFF)
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  beforeJson Json?
+  afterJson  Json?
+  ip         String?
+  at         DateTime    @default(now())
+
+  @@index([entityType, entityId, at])
+  @@index([at])
+  @@map("g4d_audit_logs")
+}
+
+model V3VendorFlag {
+  id                 String   @id @default(cuid())
+  vendorId           String
+  key                String // v3_plans
+  enabled            Boolean  @default(false)
+  updatedByStaffId   String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, key])
+  @@map("g4d_vendor_flags")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// V3 slice 5.3: provisioning jobs and steps, claim tokens, invites. Additive. No relation to any legacy billing / BOS / commercial table.
+// Design: docs/v3/V3_S3_PROVISIONING.md
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+enum V3JobKind {
+  BUSINESS_FREE_SITE
+}
+
+enum V3JobStatus {
+  QUEUED
+  RUNNING
+  WAITING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum V3StepKey {
+  CREATE_VENDOR
+  ASSIGN_FREE_PLAN
+  CREATE_FREE_SITE_DRAFT
+  CREATE_CLAIM_LINK
+  SEND_INVITE
+  CREATE_DIRECTORY_PROFILE
+}
+
+enum V3StepStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+  SKIPPED
+}
+
+enum V3ClaimPurpose {
+  CLAIM
+}
+
+enum V3ClaimStatus {
+  ACTIVE
+  USED
+  REVOKED
+  EXPIRED
+}
+
+enum V3InviteChannel {
+  EMAIL
+}
+
+enum V3InviteMode {
+  SANDBOX
+  LIVE
+}
+
+enum V3InviteStatus {
+  QUEUED
+  SENT
+  FAILED
+  BOUNCED
+}
+
+model V3ProvisioningJob {
+  id             String      @id @default(cuid())
+  kind           V3JobKind   @default(BUSINESS_FREE_SITE)
+  status         V3JobStatus @default(QUEUED)
+  idempotencyKey String      @unique
+  // filled once the vendor step succeeds; a staff-only back-reference (no vendor route reads jobs)
+  vendorId       String?
+  input          Json // validated business details; never a secret or a token
+  currentStep    V3StepKey?
+  attempt        Int         @default(0)
+  maxAttempts    Int         @default(5)
+  nextRunAt      DateTime    @default(now())
+  lockedBy       String?
+  lockedUntil    DateTime?
+  lastErrorCode  String?
+  lastErrorMessage String? // sanitised sentence; never raw provider text
+  createdByType  V3ActorType @default(STAFF)
+  createdById    String?
+  finishedAt     DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  vendor Vendor?               @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  steps  V3ProvisioningStep[]
+
+  @@index([status, nextRunAt])
+  @@index([vendorId])
+  @@map("g4d_provisioning_jobs")
+}
+
+model V3ProvisioningStep {
+  id         String       @id @default(cuid())
+  jobId      String
+  stepKey    V3StepKey
+  status     V3StepStatus @default(PENDING)
+  attempts   Int          @default(0)
+  startedAt  DateTime?
+  finishedAt DateTime?
+  outputRef  Json? // ids only
+  errorCode  String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  job V3ProvisioningJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, stepKey])
+  @@map("g4d_provisioning_steps")
+}
+
+model V3ClaimToken {
+  id            String         @id @default(cuid())
+  vendorId      String
+  // SHA-256 (hex) of a 32-byte random token. The raw token exists only inside the invite message at send time.
+  tokenHash     String         @unique
+  purpose       V3ClaimPurpose @default(CLAIM)
+  status        V3ClaimStatus  @default(ACTIVE)
+  expiresAt     DateTime
+  usedAt        DateTime?
+  createdByType V3ActorType    @default(SYSTEM)
+  createdById   String?
+  // At most one ACTIVE token per vendor and purpose: "<vendorId>:<purpose>" while ACTIVE, NULL otherwise; the unique index does the rest.
+  activeKey     String?        @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  vendor  Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  invites V3Invite[]
+
+  @@index([vendorId, status])
+  @@map("g4d_claim_tokens")
+}
+
+model V3Invite {
+  id                String          @id @default(cuid())
+  vendorId          String
+  channel           V3InviteChannel @default(EMAIL)
+  toAddress         String // stored; masked in every list
+  claimTokenId      String
+  adapterMode       V3InviteMode    @default(SANDBOX)
+  status            V3InviteStatus  @default(QUEUED)
+  providerMessageId String?
+  subject           String
+  bodyPreview       String // the token is masked
+  // The full rendered message, ONLY in sandbox mode (staff and tests read it); never stored for a live send; cleared when the token is used or revoked.
+  sandboxBody       String?
+  sentAt            DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  vendor     Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  claimToken V3ClaimToken @relation(fields: [claimTokenId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@index([claimTokenId])
+  @@map("g4d_invites")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// V3 slice 5.4: site settings, versioned publications (rendered HTML snapshots), their pages, and site events. Additive. No relation to any legacy table
+// (the legacy VendorCMS document is READ through a port only). Design: docs/v3/V3_S4_RENDERER_PUBLISH.md
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+enum V3MotionIntensity {
+  OFF
+  LOW
+  MEDIUM
+  RICH
+}
+
+enum V3PublicationStatus {
+  DRAFT_PREVIEW
+  PUBLISHED
+  SUPERSEDED
+  ROLLED_BACK
+}
+
+model V3SiteSettings {
+  id              String            @id @default(cuid())
+  vendorId        String            @unique
+  themeId         String? // null = the category's default Standard theme
+  language        String            @default("en") // en, ta, or "en,ta"
+  variant         String? // the layout variant id: derived from the category, read-only for vendors
+  motionIntensity V3MotionIntensity @default(LOW)
+  forceNoindex    Boolean           @default(false) // staff switch: the site is noindex whatever the indexing rule says
+  canonicalHost   String? // slice 5.6b: the canonical host the published pages and sitemap were last built for; the controlled switch moves it (null = never switched)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_site_settings")
+}
+
+model V3SitePublication {
+  id                    String              @id @default(cuid())
+  vendorId              String
+  version               Int // monotonic per vendor
+  status                V3PublicationStatus @default(DRAFT_PREVIEW)
+  themeId               String
+  themeHash             String
+  contentHash           String
+  settingsHash          String              @default("")
+  indexable             Boolean             @default(false)
+  indexHeader           String              @default("noindex, nofollow") // the robots value stored with the snapshot (meta and header)
+  missingFieldsJson     Json                @default("[]")
+  warningsJson          Json                @default("[]")
+  languages             String              @default("en")
+  totalBytes            Int                 @default(0)
+  rolledBackFromVersion Int?
+  createdByType         V3ActorType         @default(SYSTEM)
+  createdById           String?
+  createdAt             DateTime            @default(now())
+  publishedAt           DateTime?
+  // At most one PUBLISHED publication per vendor: equals vendorId while PUBLISHED, NULL otherwise; the unique index does the rest.
+  currentVendorId       String?             @unique
+
+  vendor Vendor                   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  pages  V3SitePublicationPage[]
+  events V3SiteEvent[]
+
+  @@unique([vendorId, version])
+  @@index([vendorId, status])
+  @@map("g4d_site_publications")
+}
+
+model V3SitePublicationPage {
+  id            String   @id @default(cuid())
+  publicationId String
+  vendorId      String // denormalised so the tenant guard can scope this table too
+  path          String
+  lang          String
+  html          String // the stored document (or sitemap / robots / stylesheet text for the platform files)
+  seoJson       Json     @default("{}")
+  bytes         Int
+  sha256        String
+  createdAt     DateTime @default(now())
+
+  publication V3SitePublication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  vendor      Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([publicationId, path, lang])
+  @@index([vendorId])
+  @@map("g4d_site_publication_pages")
+}
+
+model V3SiteEvent {
+  id            String      @id @default(cuid())
+  vendorId      String
+  publicationId String?
+  type          String // BUILT, PUBLISHED, ROLLED_BACK, THEME_CHANGED, NOINDEX_CHANGED
+  actorType     V3ActorType @default(SYSTEM)
+  actorId       String?
+  detailJson    Json        @default("{}") // ids and codes only
+  createdAt     DateTime    @default(now())
+
+  vendor      Vendor             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  publication V3SitePublication? @relation(fields: [publicationId], references: [id], onDelete: SetNull)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_site_events")
+}
+
+// ─── V3 slice 5.6: subdomain rules and domain mapping (additive; no registrar, no real DNS or SSL change) ──────────────────────────────────────────────────
+
+enum V3DomainKind {
+  SUBDOMAIN
+  CUSTOM
+}
+
+enum V3DomainStatus {
+  PENDING
+  VERIFYING
+  ACTIVE
+  FAILED
+  REMOVED
+}
+
+enum V3SslStatus {
+  NONE
+  PENDING
+  ACTIVE
+  FAILED
+}
+
+model V3Domain {
+  id                String         @id @default(cuid())
+  vendorId          String
+  hostname          String         @unique // lowercase, punycode (ASCII) form
+  kind              V3DomainKind
+  status            V3DomainStatus @default(PENDING)
+  isPrimary         Boolean        @default(false)
+  primaryVendorId   String?        @unique // = vendorId while isPrimary: one primary per vendor, enforced by the database
+  subdomainVendorId String?        @unique // = vendorId while this is the vendor's ACTIVE free subdomain: one free subdomain per vendor
+  verifiedAt        DateTime?
+  sslStatus         V3SslStatus    @default(NONE) // recorded only; nothing in this slice issues a certificate
+  createdByType     String         @default("VENDOR") // VENDOR | STAFF | SYSTEM
+  createdById       String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  removedAt         DateTime?
+
+  vendor        Vendor                 @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  verifications V3DomainVerification[]
+
+  @@index([vendorId, status])
+  @@map("g4d_domains")
+}
+
+model V3DomainVerification {
+  id            String    @id @default(cuid())
+  domainId      String    @unique
+  vendorId      String
+  method        String    @default("TXT")
+  expectedValue String // public by design: it is what the owner puts in their DNS
+  lastCheckedAt DateTime?
+  attempts      Int       @default(0)
+  result        String    @default("PENDING") // PENDING | MATCHED | NOT_FOUND | MISMATCH | ERROR | DISABLED
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  domain V3Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  vendor Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_domain_verifications")
+}
+
+model V3Redirect {
+  id        String   @id @default(cuid())
+  vendorId  String
+  fromHost  String
+  fromPath  String   @default("/")
+  toHost    String
+  toPath    String   @default("/")
+  status    Int      @default(301) // 301 | 302
+  source    String   @default("SYSTEM") // SYSTEM | STAFF
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([fromHost, fromPath])
+  @@index([vendorId])
+  @@map("g4d_redirects")
+}
+
+// ─── V3 slice 5.7: public directory, claim by phone OTP, removal links (additive). Directory objects carry the Directory prefix; nothing here is called a listing. ─────────────
+
+enum V3DirectoryLocationKind {
+  STATE
+  DISTRICT
+  CITY
+  LOCALITY // SEO block: a neighbourhood under a city (additive)
+}
+
+enum V3DirectoryBusinessStatus {
+  DRAFT
+  UNCLAIMED
+  CLAIMED
+  SUSPENDED
+  REMOVED
+}
+
+enum V3DirectoryPlacementKind {
+  SPONSORED
+}
+
+enum V3OtpChannel {
+  SMS
+  // Part B (B7): the claim code can also go by email on the system mail lane. phoneHash then holds the keyed hash of the email address (same column, same rate limits).
+  EMAIL
+}
+
+enum V3OtpStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+  LOCKED
+  REVOKED
+}
+
+enum V3DirectoryRemovalStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  EXECUTED
+}
+
+enum V3GrantStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  REVOKED
+}
+
+model V3DirectoryLocation {
+  id        String                  @id @default(cuid())
+  parentId  String?
+  parentKey String // = parentId, or "ROOT" for a state: lets the database keep slugs unique per parent (NULLs would not)
+  kind      V3DirectoryLocationKind
+  name      String
+  slug      String
+  sortOrder Int                     @default(0)
+  proposed  Boolean                 @default(false) // seed rows wait for the owner's review
+  active    Boolean                 @default(true)
+  createdAt DateTime                @default(now())
+  updatedAt DateTime                @updatedAt
+
+  parent     V3DirectoryLocation?     @relation("DirectoryLocationTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children   V3DirectoryLocation[]    @relation("DirectoryLocationTree")
+  businesses V3DirectoryBusiness[]
+
+  @@unique([parentKey, slug])
+  @@index([parentId])
+  @@map("g4d_directory_locations")
+}
+
+model V3DirectoryCategory {
+  id              String   @id @default(cuid())
+  parentId        String?
+  parentKey       String // = parentId, or "ROOT"
+  name            String
+  slug            String
+  themeCategoryId String? // the theme kit category this maps to (for example "plumber")
+  family          String? // the kit's family, for grouping
+  sortOrder       Int      @default(0)
+  proposed        Boolean  @default(false)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  parent     V3DirectoryCategory?  @relation("DirectoryCategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children   V3DirectoryCategory[] @relation("DirectoryCategoryTree")
+  businesses V3DirectoryBusiness[]
+
+  @@unique([parentKey, slug])
+  @@index([parentId])
+  @@index([themeCategoryId])
+  @@map("g4d_directory_categories")
+}
+
+model V3DirectoryBusiness {
+  id              String                    @id @default(cuid())
+  vendorId        String?                   @unique // set when the business is claimed (or created by provisioning)
+  slug            String                    @unique
+  name            String
+  categoryId      String
+  locationId      String?
+  pincode         String? // SEO block: six digit postal code for pincode pages (additive); null when unknown
+  addressJson     Json                      @default("{}")
+  phoneE164       String?
+  emailMasked     String? // only a masked form is ever stored here; the clear address lives on the vendor
+  hoursJson       Json                      @default("{}")
+  geoJson         Json?
+  descriptionText String                    @default("")
+  status          V3DirectoryBusinessStatus @default(DRAFT)
+  indexable       Boolean                   @default(false)
+  source          String                    @default("STAFF") // STAFF | PROVISIONING | VENDOR | IMPORT
+  claimedAt       DateTime?
+  removedAt       DateTime?
+  searchVector    Unsupported("tsvector")? // generated by the database from name and description (see the migration); never written by the application
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  vendor     Vendor?                         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  category   V3DirectoryCategory             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  location   V3DirectoryLocation?            @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  services   V3DirectoryBusinessService[]
+  media      V3DirectoryBusinessMedia[]
+  placements V3DirectoryPlacement[]
+  removals   V3DirectoryRemovalRequest[]
+  visitDays  V3DirectoryVisitDaily[]
+  visitRefs  V3DirectoryVisitRef[]
+  seededSite V3SeededSite?
+  overrides  V3DirectoryClaimOverride[]
+
+  @@index([status, indexable])
+  @@index([categoryId])
+  @@index([locationId])
+  @@index([pincode])
+  @@index([searchVector], type: Gin)
+  @@map("g4d_directory_businesses")
+}
+
+model V3DirectoryBusinessService {
+  id          String   @id @default(cuid())
+  businessId  String
+  name        String
+  description String   @default("")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business V3DirectoryBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("g4d_directory_business_services")
+}
+
+model V3DirectoryBusinessMedia {
+  id         String   @id @default(cuid())
+  businessId String
+  url        String
+  kind       String   @default("IMAGE")
+  altText    String   @default("")
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business V3DirectoryBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("g4d_directory_business_media")
+}
+
+model V3DirectoryPlacement {
+  id               String                   @id @default(cuid())
+  businessId       String
+  kind             V3DirectoryPlacementKind @default(SPONSORED)
+  startsAt         DateTime
+  endsAt           DateTime
+  label            String // required: a sponsored placement is always labelled
+  createdByStaffId String?
+  revokedAt        DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  business V3DirectoryBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([startsAt, endsAt])
+  @@map("g4d_directory_placements")
+}
+
+model V3OtpChallenge {
+  id            String       @id @default(cuid())
+  subjectType   String // CLAIM
+  subjectId     String // the claim token id
+  channel       V3OtpChannel @default(SMS)
+  phoneHash     String // HMAC of the E.164 number: the number itself is not stored here
+  codeHash      String // HMAC of the code with the per-row salt
+  salt          String
+  attempts      Int          @default(0)
+  maxAttempts   Int          @default(5)
+  expiresAt     DateTime
+  usedAt        DateTime?
+  requestIpHash String?
+  status        V3OtpStatus  @default(PENDING)
+  sandboxBody   String? // SANDBOX adapter only: the message is kept here instead of being sent. Always null in live mode.
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([phoneHash, createdAt])
+  @@index([subjectType, subjectId, createdAt])
+  @@index([requestIpHash, createdAt])
+  @@map("g4d_otp_challenges")
+}
+
+model V3DirectoryRemovalRequest {
+  id                      String                   @id @default(cuid())
+  businessId              String
+  tokenHash               String                   @unique
+  status                  V3DirectoryRemovalStatus @default(REQUESTED)
+  reason                  String?
+  requesterContactMasked  String?
+  confirmedAt             DateTime? // set when the link sent to the business contact on file is followed: proves the requester controls it
+  handledByStaffId        String?
+  handledAt               DateTime?
+  executedAt              DateTime?
+  expiresAt               DateTime
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  business V3DirectoryBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, status])
+  @@map("g4d_directory_removal_requests")
+}
+
+model V3DirectoryClaimOverride {
+  id                String    @id @default(cuid())
+  businessId        String
+  phoneE164         String
+  phoneHash         String
+  reason            String
+  approvedByStaffId String
+  revokedAt         DateTime?
+  createdAt         DateTime  @default(now())
+
+  business V3DirectoryBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("g4d_directory_claim_overrides")
+}
+
+model V3AccountSetupGrant {
+  id        String        @id @default(cuid())
+  vendorId  String
+  tokenHash String        @unique
+  status    V3GrantStatus @default(ACTIVE)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime      @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@map("g4d_account_setup_grants")
+}
+
+// ─── V3 slice 5.1b: plan purchase and renewal (Razorpay TEST mode only; additive). Integer paise end to end; nothing here stores a card, bank or PAN detail. ─────────────────
+
+enum V3PlanOrderStatus {
+  CREATED
+  PENDING_PAYMENT
+  PAID
+  FAILED
+  EXPIRED
+  CANCELLED
+  REVIEW // money and order disagree (amount or currency), or a payment arrived for an expired order: staff decide; never activates by itself
+}
+
+enum V3PlanOrderKind {
+  NEW
+  RENEWAL
+  UPGRADE
+}
+
+model V3PlanOrder {
+  id                  String            @id @default(cuid())
+  vendorId            String
+  planId              String
+  termMonths          Int
+  kind                V3PlanOrderKind   @default(NEW)
+  quoteJson           Json // the priceQuote snapshot (tax and discounts) the amount came from; later price edits never change it
+  amountPaise         Int
+  currency            String            @default("INR")
+  status              V3PlanOrderStatus @default(CREATED)
+  providerOrderId     String?           @unique
+  idempotencyKey      String
+  expiresAt           DateTime
+  createdByType       String            @default("VENDOR") // VENDOR | STAFF
+  createdById         String?
+  paymentId           String? // the provider's payment id once paid
+  paidAmountPaise     Int?
+  paidAt              DateTime?
+  source              String? // SELF (the provider paid it) | STAFF (marked paid offline)
+  reason              String? // staff: why it was marked paid
+  subscriptionId      String? // the subscription this payment created or extended
+  refundRecordedPaise Int? // a RECORD only: no provider refund call is made in this slice
+  refundNote          String?
+  refundRecordedBy    String?
+  refundRecordedAt    DateTime?
+  /// Wave 2 C6: what staff recorded when they marked the order paid offline: the bank or cash reference, the day the money was received, the amount received and who recorded it
+  settledReference    String?
+  settledOn           DateTime?         @db.Date
+  settledAmountPaise  Int?
+  settledByName       String?
+  /// Wave 3 Part C: the gateway the order was started on (razorpay or cashfree) and the browser checkout's session token where the gateway has one
+  gateway             String            @default("razorpay")
+  gatewayClientToken  String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  vendor  Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  plan    V3Plan          @relation(fields: [planId], references: [id], onDelete: Restrict)
+  invoice V3PlanInvoice?
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, createdAt])
+  @@index([status, expiresAt])
+  @@map("g4d_plan_orders")
+}
+
+model V3PaymentEvent {
+  id                  String   @id @default(cuid())
+  provider            String   @default("razorpay")
+  providerEventId     String   @unique // replay protection: the same event id is only ever processed once
+  type                String
+  payloadRedactedJson Json // contact, email and card-like fields are removed before storing
+  signatureValid      Boolean
+  orderId             String? // our order, when the event could be matched to one (no foreign key: events outlive anything)
+  processedAt         DateTime?
+  result              String? // PAID | DUPLICATE | IGNORED | REVIEW | NO_ORDER | BAD_SIGNATURE
+  createdAt           DateTime @default(now())
+
+  @@index([orderId])
+  @@map("g4d_payment_events")
+}
+
+model V3PlanInvoice {
+  id               String   @id @default(cuid())
+  vendorId         String
+  orderId          String   @unique
+  invoiceNumber    String   @unique // gap-free per financial year, from g4d_invoice_counters under a lock
+  financialYear    String // for example 2026-27
+  issuedAt         DateTime
+  snapshotJson     Json // seller and buyer details, plan, term, the money
+  taxBreakdownJson Json
+  createdAt        DateTime @default(now())
+
+  vendor Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  order  V3PlanOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, issuedAt])
+  @@map("g4d_plan_invoices")
+}
+
+model V3InvoiceCounter {
+  financialYear String   @id
+  lastNumber    Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  @@map("g4d_invoice_counters")
+}
+
+model V3ReminderLog {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  daysBefore     Int
+  endsAt         DateTime
+  kind           String   @default("SENT") // SENT | SKIPPED (a larger offset passed while the cron was down; only the nearest one is sent)
+  sentAt         DateTime @default(now())
+
+  subscription V3PlanSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, daysBefore, endsAt])
+  @@map("g4d_reminder_log")
+}
+
+// ─── V3 slice 5.11: AI Studio providers, usage and credits, prompts (additive). No model is called by any test; secrets are encrypted with the existing crypto helper. ─────────────
+
+enum V3AiProviderKind {
+  TEXT_LLM
+}
+
+enum V3AiProviderStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum V3AiUsageStatus {
+  RESERVED
+  DONE
+  FAILED
+  REFUNDED
+}
+
+enum V3AiPromptStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+model V3AiProvider {
+  id                String             @id @default(cuid())
+  key               String             @unique // openai | anthropic: the providers the platform already uses
+  kind              V3AiProviderKind   @default(TEXT_LLM)
+  displayName       String
+  status            V3AiProviderStatus @default(DISABLED)
+  secretCipher      String? // AES-256-GCM, written by the platform settings crypto helper (PLATFORM_SETTINGS_KEY); write-only through the API
+  secretIv          String?
+  secretTag         String?
+  secretLast4       String? // the only part of the secret that is ever shown
+  model             String // the model name the staff member chose (nothing is assumed)
+  settingsJson      Json               @default("{}")
+  createdByStaffId  String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@map("g4d_ai_providers")
+}
+
+model V3AiUsage {
+  id             String          @id @default(cuid())
+  vendorId       String
+  featureKey     String // site_copy | seo_suggestion | directory_description | review_reply
+  providerKey    String // the provider key, or "mock"
+  credits        Int
+  inputTokens    Int             @default(0)
+  outputTokens   Int             @default(0)
+  idempotencyKey String
+  status         V3AiUsageStatus @default(RESERVED)
+  period         String // the calendar month (India time) the credits count in: 2026-11
+  resultText     String? // the scanned suggestion, kept so a repeated request with the same key returns it instead of charging again
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, period, status])
+  @@map("g4d_ai_usage")
+}
+
+model V3AiPrompt {
+  id               String           @id @default(cuid())
+  key              String // the feature key
+  version          Int
+  template         String // the fixed instruction text; only the placeholders {{feature}}, {{maxChars}}, {{language}} are allowed
+  status           V3AiPromptStatus @default(DRAFT)
+  activeKey        String?          @unique // = key while ACTIVE: the database allows one ACTIVE version per key
+  createdByStaffId String?
+  createdAt        DateTime         @default(now())
+
+  @@unique([key, version])
+  @@map("g4d_ai_prompts")
+}
+
+model V3AiCreditGrant {
+  id               String   @id @default(cuid())
+  vendorId         String
+  credits          Int
+  reason           String
+  grantedByStaffId String
+  period           String // the month the extra credits count in
+  createdAt        DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, period])
+  @@map("g4d_ai_credit_grants")
+}
+
+// ─── V3 batch 3 (B3.0b / slice 5.1d): a business whose site and listing were permanently removed (additive). The ONLY hide state: owner rule 9. ─────────────
+
+enum V3SiteRemovalKind {
+  VENDOR_REQUEST
+  STAFF_EMPTY_LISTING
+  SEEDED_REMOVAL
+}
+
+model V3SiteRemoval {
+  vendorId    String            @id
+  kind        V3SiteRemovalKind
+  reason      String?
+  phoneHash   String? // keyed hash of the phone on file; never the number
+  requestedBy String? // vendor id, staff id or null for a public removal request
+  removedAt   DateTime          @default(now())
+  createdAt   DateTime          @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([removedAt])
+  @@map("g4d_site_removals")
+}
+
+// ─── V3 batch 3 slice 5.1d: vendor-requested account deletion queue and the do-not-contact / removal register (additive) ───────────────────────────────────
+
+enum V3DeletionRequestStatus {
+  PENDING
+  EXECUTED
+  CANCELLED
+}
+
+model V3AccountDeletionRequest {
+  id              String                  @id @default(cuid())
+  vendorId        String
+  status          V3DeletionRequestStatus @default(PENDING)
+  pendingVendorId String?                 @unique // = vendorId while PENDING, null after: the database allows one open request per vendor
+  requestedById   String? // the signed-in owner
+  verifiedAt      DateTime // the fresh one-time code was entered at this time
+  executedAt      DateTime?
+  executedById    String?
+  note            String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([vendorId])
+  @@map("g4d_account_deletion_requests")
+}
+
+/// Phone hashes of businesses that asked not to be contacted or listed. Rows are never deleted by any code path. Used by removals (5.1d) and seeded sites (5.13a).
+model V3DncRegister {
+  id        String   @id @default(cuid())
+  phoneHash String   @unique // keyed hash of the E.164 number; never the number
+  reason    String
+  source    String   @default("REMOVAL") // REMOVAL | DO_NOT_CONTACT | STAFF
+  addedBy   String?
+  addedAt   DateTime @default(now())
+
+  @@map("g4d_dnc_register")
+}
+
+// ─── V3 batch 3 slice 5.7b: directory visits (counts only, no personal data) and the short-lived attribution reference (additive) ──────────────────────────────────
+
+/// One row per business per day. `count` = every Visit site click, `searchCount` = the ones that came from a search result. No visitor data of any kind.
+model V3DirectoryVisitDaily {
+  id          String   @id @default(cuid())
+  businessId  String
+  day         String // YYYY-MM-DD, UTC
+  count       Int      @default(0)
+  searchCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business V3DirectoryBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, day])
+  @@index([day])
+  @@map("g4d_directory_visit_daily")
+}
+
+/// The opaque reference the Visit link appends (?src=dir&ref=...). Only a hash of it is stored. It expires and can attribute ONE later request.
+model V3DirectoryVisitRef {
+  id         String    @id @default(cuid())
+  refHash    String    @unique
+  businessId String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  business V3DirectoryBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("g4d_directory_visit_refs")
+}
+
+// ─── V3 batch 3 slice 5.13a: seeded sites (promotion pages made from public facts for businesses that have not signed up) (additive) ───────────────────────────
+
+enum V3SeededLifecycle {
+  SEEDED
+  INVITED
+  CLAIMED_FREE
+  PRO
+  REMOVED
+}
+
+enum V3SeededSourceKind {
+  PUBLIC_LISTING
+  FIELD_VISIT
+  PHONE_CALL
+  REFERRAL
+}
+
+enum V3OutreachStatus {
+  NOT_CONTACTED
+  CALLED
+  INTERESTED
+  CLAIM_LINK_SENT
+  CLAIMED
+  DECLINED
+  DO_NOT_CONTACT
+}
+
+enum V3OutreachKind {
+  CALL
+  NOTE
+  CLAIM_LINK
+  REMOVAL
+}
+
+enum V3SeededBatchMode {
+  DRY_RUN
+  APPLIED
+}
+
+/// One row per seeded business. The vendor is a shell with a placeholder login nobody can use until the owner claims the page; the directory profile is UNCLAIMED.
+model V3SeededSite {
+  id                    String             @id @default(cuid())
+  vendorId              String             @unique
+  directoryBusinessId   String?            @unique
+  lifecycle             V3SeededLifecycle  @default(SEEDED)
+  sourceKind            V3SeededSourceKind
+  sourceNote            String?
+  publicFactsConfirmed  Boolean // the staff checkbox: only public facts, no invented reviews, no copied photos or text. Required on every create.
+  phoneHash             String // keyed hash of the E.164 number
+  emailHash             String? // keyed hash of the public email, for duplicate detection only
+  nameKey               String // normalised name plus city, for duplicate detection
+  outreachStatus        V3OutreachStatus   @default(NOT_CONTACTED)
+  outreachOwnerStaffId  String?
+  lastContactAt         DateTime?
+  nextFollowUpAt        DateTime?
+  ownerAgreedToContact  Boolean            @default(false)
+  ownerAgreedAt         DateTime?
+  ownerAgreedBy         String?
+  createdByStaffId      String?
+  batchId               String?
+  removedAt             DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  vendor   Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  business V3DirectoryBusiness?  @relation(fields: [directoryBusinessId], references: [id], onDelete: SetNull)
+  outreach V3SeededOutreachLog[]
+  batch    V3SeededBatch?        @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  @@index([lifecycle])
+  @@index([phoneHash])
+  @@index([emailHash])
+  @@index([nameKey])
+  @@index([batchId])
+  @@map("g4d_seeded_sites")
+}
+
+model V3SeededBatch {
+  id           String            @id @default(cuid())
+  createdBy    String?
+  fileName     String
+  rowsTotal    Int
+  rowsCreated  Int               @default(0)
+  rowsRejected Int               @default(0)
+  mode         V3SeededBatchMode
+  reportJson   Json              @default("{}")
+  createdAt    DateTime          @default(now())
+
+  sites V3SeededSite[]
+
+  @@index([createdAt])
+  @@map("g4d_seeded_batches")
+}
+
+model V3SeededOutreachLog {
+  id           String         @id @default(cuid())
+  seededSiteId String
+  kind         V3OutreachKind
+  at           DateTime       @default(now())
+  staffId      String?
+  outcome      String?
+  note         String?
+
+  site V3SeededSite @relation(fields: [seededSiteId], references: [id], onDelete: Cascade)
+
+  @@index([seededSiteId, at])
+  @@map("g4d_seeded_outreach_log")
+}
+
+// ─── V3 batch 3 slice 5.14: requests and orders bridge (additive). Get4Domain passes requests to the vendor; it never receives or holds a customer's money. ──────────
+
+enum V3RequestKind {
+  ENQUIRY
+  APPOINTMENT
+  QUOTE
+  PRODUCT_ENQUIRY
+  ORDER_REQUEST
+  ORDER
+}
+
+enum V3RequestStatus {
+  RECEIVED
+  DELIVERED
+  SEEN
+  RESPONDED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CLOSED
+  EXPIRED
+  SPAM
+}
+
+enum V3RequestSource {
+  DIRECTORY
+  SITE
+  WHATSAPP
+  MANUAL
+}
+
+enum V3RequestActor {
+  CUSTOMER
+  VENDOR
+  STAFF
+  SYSTEM
+}
+
+enum V3PaymentMethodKind {
+  OWN_GATEWAY
+  UPI
+  PAY_ON_DELIVERY
+  PAY_AT_VISIT
+  BANK_TRANSFER
+}
+
+enum V3PaymentMethodStatus {
+  UNVERIFIED
+  ACTIVE
+  DISABLED
+}
+
+enum V3OrderStatus {
+  PLACED
+  AWAITING_PAYMENT
+  PAID
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+  REFUNDED_RECORDED
+}
+
+enum V3OrderPaymentMode {
+  ONLINE
+  COD
+  AT_VISIT
+  MANUAL
+}
+
+enum V3VendorInvoiceStatus {
+  ISSUED
+  VOID
+}
+
+enum V3OfferKind {
+  BANNER
+  COUPON
+}
+
+enum V3OfferStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum V3MessageChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+}
+
+enum V3MessageStatus {
+  QUEUED
+  SENT_SANDBOX
+  FAILED
+  DELIVERED
+}
+
+enum V3ReportStatus {
+  OPEN
+  REVIEWED
+  ACTIONED
+  REJECTED
+}
+
+enum V3BlockKind {
+  PHONE_HASH
+  IP_HASH
+  EMAIL_HASH
+}
+
+enum V3CounterKind {
+  ORDER
+  INVOICE
+}
+
+model V3Request {
+  id                String          @id @default(cuid())
+  vendorId          String
+  siteHost          String
+  kind              V3RequestKind
+  status            V3RequestStatus @default(RECEIVED)
+  customerName      String
+  customerPhoneE164 String
+  customerEmail     String?
+  payloadJson       Json            @default("{}")
+  sourceKind        V3RequestSource @default(SITE)
+  directoryRefHash  String? // set only when a live Visit reference was consumed for this vendor's business
+  utmSource         String?
+  utmMedium         String?
+  utmCampaign       String?
+  idempotencyKey    String
+  spamScore         Int             @default(0)
+  firstSeenAt       DateTime?
+  firstResponseAt   DateTime?
+  expiresAt         DateTime
+  convertedCustomerId String? // the CRM and booking modules arrive later: this slice only records the link
+  convertedBookingId  String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  vendor   Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  events   V3RequestEvent[]
+  consent  V3RequestConsent?
+  tracking V3RequestTracking?
+  termsAcceptances V3TermsAcceptance[]
+  order    V3Order?
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, status, createdAt])
+  @@index([vendorId, createdAt])
+  @@index([customerPhoneE164])
+  @@map("g4d_requests")
+}
+
+/// Append-only: nothing in the code updates or deletes a row.
+model V3RequestEvent {
+  id             String         @id @default(cuid())
+  requestId      String
+  type           String
+  actorType      V3RequestActor
+  channel        String?
+  deliveryResult String?
+  at             DateTime       @default(now())
+  metaJson       Json           @default("{}")
+
+  request V3Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, at])
+  @@map("g4d_request_events")
+}
+
+model V3RequestConsent {
+  id                 String   @id @default(cuid())
+  requestId          String   @unique
+  textVersion        Int
+  textHash           String
+  ipHash             String?
+  at                 DateTime @default(now())
+  contactByBusiness  Boolean
+  contactByPlatform  Boolean
+  marketing          Boolean
+
+  request V3Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_request_consents")
+}
+
+model V3RequestTracking {
+  id        String   @id @default(cuid())
+  requestId String   @unique
+  tokenHash String   @unique
+  expiresAt DateTime
+
+  request V3Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_request_tracking")
+}
+
+model V3VendorPaymentMethod {
+  id                 String                @id @default(cuid())
+  vendorId           String
+  kind               V3PaymentMethodKind
+  label              String
+  configCipher       String? // sealed with the platform key; write-only, never returned
+  configIv           String?
+  configTag          String?
+  last4              String?
+  upiId              String? // the vendor's own UPI id, lower case; shown to the owner, masked to staff
+  payeeName          String? // the name the customer sees in their UPI app
+  isDefault          Boolean               @default(false) // one per vendor (partial unique index in the 5.17a migration)
+  showToCustomers    Boolean               @default(false) // bank details only
+  webhookSecretCipher String?
+  webhookSecretIv    String?
+  webhookSecretTag   String?
+  status             V3PaymentMethodStatus @default(UNVERIFIED)
+  verifiedAt         DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  payRequests V3PaymentRequest[]
+
+  @@index([vendorId, status])
+  @@map("g4d_vendor_payment_methods")
+}
+
+model V3Order {
+  id            String             @id @default(cuid())
+  vendorId      String
+  requestId     String             @unique
+  orderNo       Int
+  status        V3OrderStatus      @default(PLACED)
+  paymentMode   V3OrderPaymentMode
+  methodId      String?
+  amountPaise   Int
+  currency      String             @default("INR")
+  reviewFlag    Boolean            @default(false) // a vendor gateway event whose amount did not match: never marked PAID
+  shippingJson  Json               @default("{}")
+  trackingJson  Json               @default("{}")
+  refundedPaise Int                @default(0) // a recorded fact only; no provider call
+  paidAt        DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  vendor  Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  request V3Request     @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  items   V3OrderItem[]
+
+  @@unique([vendorId, orderNo])
+  @@index([vendorId, status, createdAt])
+  @@map("g4d_orders")
+}
+
+model V3OrderItem {
+  id         String @id @default(cuid())
+  orderId    String
+  productRef String
+  name       String
+  qty        Int
+  unitPaise  Int
+  taxJson    Json   @default("{}")
+
+  order V3Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("g4d_order_items")
+}
+
+/// The webhook inbox of a vendor's own gateway. Append-only.
+model V3VendorPaymentEvent {
+  id              String   @id @default(cuid())
+  vendorId        String
+  methodId        String
+  providerEventId String
+  signatureValid  Boolean
+  payloadJson     Json     @default("{}") // redacted
+  result          String
+  at              DateTime @default(now())
+
+  @@unique([vendorId, providerEventId])
+  @@index([vendorId, at])
+  @@map("g4d_vendor_payment_events")
+}
+
+model V3VendorInvoice {
+  id            String                @id @default(cuid())
+  vendorId      String
+  orderId       String?
+  requestId     String?
+  seq           Int
+  invoiceNumber String
+  issuedAt      DateTime              @default(now())
+  snapshotJson  Json                  @default("{}")
+  status        V3VendorInvoiceStatus @default(ISSUED)
+  voidedAt      DateTime?
+  voidReason    String?
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, seq])
+  @@unique([vendorId, invoiceNumber])
+  @@index([vendorId, orderId])
+  @@map("g4d_vendor_invoices")
+}
+
+/// Gap-free per-vendor counters: the next number is taken with one atomic statement, so two parallel requests can never get the same number or leave a gap.
+model V3VendorCounter {
+  id       String        @id @default(cuid())
+  vendorId String
+  kind     V3CounterKind
+  value    Int           @default(0)
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, kind])
+  @@map("g4d_vendor_counters")
+}
+
+model V3StockLevel {
+  id         String   @id @default(cuid())
+  vendorId   String
+  productRef String
+  onHand     Int
+  reserved   Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, productRef])
+  @@map("g4d_stock_levels")
+}
+
+model V3StockReservation {
+  id         String    @id @default(cuid())
+  vendorId   String
+  orderId    String
+  productRef String
+  qty        Int
+  expiresAt  DateTime
+  releasedAt DateTime?
+  committedAt DateTime?
+
+  @@index([orderId])
+  @@index([expiresAt])
+  @@map("g4d_stock_reservations")
+}
+
+model V3Offer {
+  id             String        @id @default(cuid())
+  vendorId       String
+  kind           V3OfferKind
+  title          String
+  code           String?
+  percentOff     Int?
+  flatPaise      Int?
+  minOrderPaise  Int           @default(0)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  usageLimit     Int?
+  usedCount      Int           @default(0)
+  status         V3OfferStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, code])
+  @@index([vendorId, status])
+  @@map("g4d_offers")
+}
+
+model V3MessageOutbox {
+  id                  String           @id @default(cuid())
+  vendorId            String?
+  channel             V3MessageChannel
+  templateKey         String
+  toHash              String
+  toMasked            String
+  payloadRedactedJson Json             @default("{}")
+  senderRoute         String
+  status              V3MessageStatus  @default(QUEUED)
+  attempts            Int              @default(0)
+  relatedRequestId    String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([vendorId, createdAt])
+  @@index([relatedRequestId])
+  @@map("g4d_message_outbox")
+}
+
+/// A recipient who said STOP. Honoured by the message router. Append-only.
+model V3MessageSuppression {
+  id      String           @id @default(cuid())
+  hash    String
+  channel V3MessageChannel
+  at      DateTime         @default(now())
+
+  @@unique([hash, channel])
+  @@map("g4d_message_suppressions")
+}
+
+model V3Report {
+  id                   String         @id @default(cuid())
+  reportedHost         String
+  reasonKind           String
+  text                 String
+  reporterContactMasked String?
+  status               V3ReportStatus @default(OPEN)
+  handledBy            String?
+  handledAt            DateTime?
+  createdAt            DateTime       @default(now())
+
+  @@index([status, createdAt])
+  @@map("g4d_reports")
+}
+
+model V3Blocklist {
+  id      String      @id @default(cuid())
+  kind    V3BlockKind
+  hash    String
+  reason  String
+  addedBy String?
+  at      DateTime    @default(now())
+
+  @@unique([kind, hash])
+  @@map("g4d_blocklist")
+}
+
+enum V3TermsKind {
+  VENDOR_TERMS
+  ACCEPTABLE_USE
+  DATA_PROCESSING
+  REFUND_POLICY_TEMPLATE
+  GRIEVANCE
+  PRIVACY
+  COOKIE
+  CUSTOMER_TERMS
+  TERMS_OF_SERVICE
+  REFUND_WALLET
+  DOMAIN_TERMS
+  ENQUIRY_CONSENT
+  IDENTITY_NOTICE
+  MESSAGING
+  TESTIMONIAL
+  DIRECTORY
+}
+
+enum V3TermsStatus {
+  DRAFT
+  PUBLISHED
+  RETIRED
+}
+
+/// A legal document, one row per kind and version. Only staff publish; a body that is still the placeholder can never be published.
+model V3TermsDocument {
+  id           String        @id @default(cuid())
+  kind         V3TermsKind
+  version      Int
+  title        String        @default("")
+  status       V3TermsStatus @default(DRAFT)
+  bodyMarkdown String
+  changeNote   String?
+  publishedAt  DateTime?
+  publishedBy  String?
+  createdBy    String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  acceptances V3TermsAcceptance[]
+
+  @@unique([kind, version])
+  @@index([kind, status])
+  @@map("g4d_terms_documents")
+}
+
+/// IMMUTABLE: a database trigger refuses every update and every delete (a delete is allowed only as the cascade of a tenant row that is already gone). One of vendorId and customerRequestId is set.
+model V3TermsAcceptance {
+  id                String      @id @default(cuid())
+  vendorId          String?
+  customerRequestId String?
+  userId            String?
+  documentId        String
+  kind              V3TermsKind
+  version           Int
+  acceptedAt        DateTime    @default(now())
+  ipHash            String?
+  userAgentHash     String?
+
+  vendor          Vendor?         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  customerRequest V3Request?      @relation(fields: [customerRequestId], references: [id], onDelete: Cascade)
+  document        V3TermsDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@unique([vendorId, documentId])
+  @@unique([customerRequestId, documentId])
+  @@index([vendorId, kind])
+  @@index([documentId])
+  @@map("g4d_terms_acceptances")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────── V3 wallet (slice 5.16a, 5.16a-2): Get4Domain's own wallet and ledger, integer paise, never legacy
+enum V3WalletStatus {
+  INACTIVE
+  ACTIVE
+  FROZEN
+}
+
+enum V3WalletLedgerKind {
+  TOPUP
+  HOLD
+  RELEASE
+  CHARGE
+  REVERSAL
+  EXPIRY
+  ADJUSTMENT
+  PACK_PURCHASE
+  PLAN_RENEWAL
+}
+
+enum V3WalletTopupStatus {
+  CREATED
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+}
+
+enum V3WalletLotStatus {
+  OPEN
+  SPENT
+  EXPIRED
+}
+
+enum V3WalletLotSource {
+  TOPUP
+  ADJUSTMENT
+}
+
+/// One wallet per vendor. The balance and held numbers are a CACHE of the ledger (reconcile checks them); the database refuses a negative balance, a negative held amount and held above balance.
+model V3Wallet {
+  id                 String         @id @default(cuid())
+  vendorId           String         @unique
+  status             V3WalletStatus @default(INACTIVE)
+  balancePaise       Int            @default(0)
+  heldPaise          Int            @default(0)
+  entryCount         Int            @default(0)
+  version            Int            @default(0)
+  activatedAt        DateTime?
+  activatedByEventId String?
+  frozenReason       String?
+  billingStateCode   String? // the vendor's GST state code, used by the tax rule when a service is charged
+  billingGstin       String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  vendor Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  ledger V3WalletLedger[]
+  lots   V3WalletLot[]
+
+  @@map("g4d_v3_wallets")
+}
+
+/// APPEND-ONLY: a database trigger refuses every update and every delete (a delete is allowed only as the cascade of a wallet that is already gone).
+model V3WalletLedger {
+  id                String             @id @default(cuid())
+  walletId          String
+  vendorId          String
+  entryNo           Int
+  kind              V3WalletLedgerKind
+  amountPaise       Int // the effect on the vendor's AVAILABLE money (see wallet-core.ts)
+  balanceDeltaPaise Int
+  heldDeltaPaise    Int
+  balanceAfterPaise Int
+  heldAfterPaise    Int
+  refType           String?
+  refId             String?
+  idempotencyKey    String
+  holdId            String? // set on the RELEASE or CHARGE that settles a HOLD; unique, so a hold is settled once
+  reversesId        String? // set on a REVERSAL; unique, so a charge is reversed once
+  reason            String?
+  actorType         String
+  actorId           String?
+  lotUsesJson       Json               @default("[]")
+  at                DateTime           @default(now())
+
+  wallet V3Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@unique([walletId, idempotencyKey])
+  @@unique([walletId, entryNo])
+  @@unique([holdId])
+  @@unique([reversesId])
+  @@index([vendorId, at])
+  @@index([refType, refId])
+  @@map("g4d_wallet_ledger")
+}
+
+model V3WalletTopup {
+  id              String              @id @default(cuid())
+  vendorId        String
+  amountPaise     Int
+  currency        String              @default("INR")
+  status          V3WalletTopupStatus @default(CREATED)
+  providerOrderId String?             @unique
+  idempotencyKey  String
+  paymentId       String?
+  paidAmountPaise Int?
+  /// what the vendor pays: the credit (amountPaise) plus GST. null on a refill made before GST was added on top.
+  payablePaise    Int?
+  /// Wave 3 Part J: the gateway the refill was started on (razorpay or cashfree) and the browser checkout's session token where the gateway has one
+  gateway             String              @default("razorpay")
+  gatewayClientToken  String?
+  /// the tax worked out when the refill was made; the tax invoice is issued from this
+  taxSnapshotJson Json                @default("{}")
+  paidAt          DateTime?
+  ledgerId        String?
+  receiptId       String?
+  createdByType   String              @default("VENDOR")
+  createdById     String?
+  expiresAt       DateTime
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  vendor  Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  receipt V3WalletReceipt?
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, createdAt])
+  @@index([status, expiresAt])
+  @@map("g4d_wallet_topups")
+}
+
+/// The numbered document of a refill. Since 5 November 2026 it is a TAX_INVOICE from the shared invoice series (GST on top of the credit); a RECEIPT is a refill made before that. The wording and the treatment of an advance are for the accountant.
+model V3WalletReceipt {
+  id            String   @id @default(cuid())
+  vendorId      String
+  topupId       String   @unique
+  receiptNumber String   @unique
+  financialYear String
+  documentType  String   @default("RECEIPT")
+  issuedAt      DateTime
+  snapshotJson  Json
+  createdAt     DateTime @default(now())
+
+  vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  topup  V3WalletTopup @relation(fields: [topupId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, issuedAt])
+  @@map("g4d_wallet_receipts")
+}
+
+/// One lot per top-up (or positive staff adjustment). Spending takes the lot that expires first; the lots always add up to the balance.
+model V3WalletLot {
+  id             String            @id @default(cuid())
+  walletId       String
+  vendorId       String
+  topupId        String?           @unique
+  source         V3WalletLotSource @default(TOPUP)
+  amountPaise    Int
+  remainingPaise Int
+  expiresAt      DateTime
+  status         V3WalletLotStatus @default(OPEN)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  wallet V3Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, status, expiresAt])
+  @@index([status, expiresAt])
+  @@map("g4d_wallet_lots")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────── V3 services and the price book (slice 5.16b)
+enum V3ServiceDoneBy {
+  VENDOR
+  TEAM
+  EITHER
+}
+
+enum V3ServiceDelivery {
+  INSTANT
+  TEAM_REQUEST
+}
+
+/// When a service can be bought. PRO_ACTIVE_OR_GRACE (default): only while the vendor's Pro plan is ACTIVE or in grace. ANY: in any plan state. Editable by staff per service.
+enum V3ServicePlanRule {
+  PRO_ACTIVE_OR_GRACE
+  ANY
+}
+
+enum V3CatalogStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum V3ServicePriceStatus {
+  PROPOSED
+  APPROVED
+  RETIRED
+}
+
+model V3Service {
+  id               String            @id @default(cuid())
+  key              String            @unique
+  name             String
+  shortDescription String
+  includesText     String // what the service includes, in plain words (shown before the vendor confirms)
+  approvalText     String // how approval works
+  kind             String            @default("GENERAL")
+  doneBy           V3ServiceDoneBy   @default(TEAM)
+  deliveryKind     V3ServiceDelivery @default(TEAM_REQUEST)
+  planStateRule    V3ServicePlanRule @default(PRO_ACTIVE_OR_GRACE)
+  trackScope       String[] // empty = every track
+  publicVisible    Boolean           @default(false)
+  sortOrder        Int               @default(0)
+  status           V3CatalogStatus   @default(ACTIVE)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  prices   V3ServicePrice[]
+  requests V3ServiceRequest[]
+
+  @@map("g4d_services")
+}
+
+/// A price is never set by code: PROPOSED by staff (or the one seeded row), APPROVED by SUPER_ADMIN with an effective date. The row in force is the APPROVED row with the latest effectiveFrom that has started.
+model V3ServicePrice {
+  id           String        @id @default(cuid())
+  serviceId    String
+  amountPaise  Int
+  currency     String        @default("INR")
+  taxCategory  String        @default("ALL")
+  taxInclusive Boolean       @default(false)
+  effectiveFrom DateTime? // required to approve; an undated PROPOSED row is a proposal only
+  status       V3ServicePriceStatus @default(PROPOSED)
+  note         String?
+  createdBy    String?
+  approvedBy   String?
+  approvedAt   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  service V3Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([serviceId, effectiveFrom])
+  @@index([serviceId, status])
+  @@map("g4d_service_prices")
+}
+
+model V3AddonPack {
+  id           String          @id @default(cuid())
+  key          String          @unique
+  name         String
+  description  String
+  itemsJson    Json // [{ "serviceKey": "POSTER_DESIGN", "count": 3 }]
+  validityDays Int? // null = the pack does not expire; a number is set by staff, never by code
+  status       V3CatalogStatus @default(DRAFT)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  prices    V3AddonPackPrice[]
+  purchases V3PackPurchase[]
+
+  @@map("g4d_addon_packs")
+}
+
+model V3AddonPackPrice {
+  id            String        @id @default(cuid())
+  packId        String
+  amountPaise   Int
+  currency      String        @default("INR")
+  taxCategory   String        @default("ALL")
+  taxInclusive  Boolean       @default(false)
+  effectiveFrom DateTime?
+  status        V3ServicePriceStatus @default(PROPOSED)
+  note          String?
+  createdBy     String?
+  approvedBy    String?
+  approvedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  pack V3AddonPack @relation(fields: [packId], references: [id], onDelete: Restrict)
+
+  @@unique([packId, effectiveFrom])
+  @@index([packId, status])
+  @@map("g4d_addon_pack_prices")
+}
+
+/// A pack a vendor bought with wallet credit. `remainingJson` counts down as services use it. The price and tax are copied here so later price edits never change what was bought.
+model V3PackPurchase {
+  id                 String    @id @default(cuid())
+  vendorId           String
+  packId             String
+  idempotencyKey     String
+  remainingJson      Json // { "POSTER_DESIGN": 3 }
+  priceSnapshotPaise Int
+  taxSnapshotJson    Json      @default("{}")
+  purchasedAt        DateTime  @default(now())
+  expiresAt          DateTime?
+  ledgerEntryId      String    @unique
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  vendor Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  pack   V3AddonPack @relation(fields: [packId], references: [id], onDelete: Restrict)
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, purchasedAt])
+  @@map("g4d_pack_purchases")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────── V3 service requests (slice 5.16c): team work paid by allowance, pack or wallet
+enum V3ServiceRequestStatus {
+  REQUESTED
+  ACCEPTED
+  IN_PRODUCTION
+  READY_FOR_REVIEW
+  REVISION_REQUESTED
+  APPROVED
+  REJECTED_BY_TEAM
+  CANCELLED
+}
+
+enum V3ServiceFunding {
+  INCLUDED_ALLOWANCE
+  PACK
+  WALLET
+}
+
+enum V3ServiceRequestCreator {
+  VENDOR
+  STAFF_ON_BEHALF
+}
+
+enum V3DeliverableKind {
+  TEXT
+  FILE_REF
+  LINK
+}
+
+/// A request for our team to do a service. The money rule: a WALLET request HOLDS the price plus tax when it is made, CHARGES it when the vendor approves the work, and RELEASES it when the vendor cancels or the team rejects. Nothing is charged for work the vendor has not approved.
+model V3ServiceRequest {
+  id                 String                  @id @default(cuid())
+  vendorId           String
+  serviceId          String
+  status             V3ServiceRequestStatus  @default(REQUESTED)
+  briefJson          Json
+  attachmentRefs     Json                    @default("[]")
+  priceSnapshotPaise Int? // price plus tax at the time of the request (null for an allowance or pack, which were paid for earlier)
+  taxSnapshotJson    Json                    @default("{}")
+  fundingKind        V3ServiceFunding
+  holdLedgerId       String?                 @unique
+  chargeLedgerId     String?                 @unique
+  packPurchaseId     String?
+  assignedStaffId    String?
+  slaDueAt           DateTime?
+  slaBreachedAt      DateTime?
+  readyAt            DateTime? // when the work last came to the vendor for review (the auto-approval timer starts here)
+  revisionsUsed      Int                     @default(0)
+  grantEndsAt        DateTime? // CUSTOM_DOMAIN_PROMOTION only: when the add-on ends, set by staff (never by code)
+  grantOverrideId    String? // the entitlement override created on approval (or "PENDING" while it is being made)
+  createdByType      V3ServiceRequestCreator @default(VENDOR)
+  createdById        String?
+  idempotencyKey     String
+  rejectReason       String?
+  approvedAt         DateTime?
+  cancelledAt        DateTime?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  vendor       Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  service      V3Service             @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  events       V3ServiceRequestEvent[]
+  deliverables V3ServiceDeliverable[]
+  invoice      V3ServiceInvoice?
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, status, createdAt])
+  @@index([status, slaDueAt])
+  @@index([serviceId, status])
+  @@map("g4d_service_requests")
+}
+
+/// APPEND-ONLY: a trigger refuses every update and delete (a delete is allowed only as the cascade of a request that is already gone).
+model V3ServiceRequestEvent {
+  id         String   @id @default(cuid())
+  requestId  String
+  vendorId   String
+  type       String
+  fromStatus String?
+  toStatus   String?
+  actorType  String
+  actorId    String?
+  note       String?
+  metaJson   Json     @default("{}")
+  at         DateTime @default(now())
+
+  request V3ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, at])
+  @@index([vendorId, at])
+  @@map("g4d_service_request_events")
+}
+
+model V3ServiceDeliverable {
+  id        String            @id @default(cuid())
+  requestId String
+  vendorId  String
+  kind      V3DeliverableKind
+  text      String?
+  fileRef   String?
+  createdBy String?
+  createdAt DateTime          @default(now())
+
+  request V3ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
+  @@map("g4d_service_deliverables")
+}
+
+/// A tax invoice for a charge, numbered from the SAME gap-free series as plan invoices. APPEND-ONLY (a trigger refuses update and delete). One per request.
+model V3ServiceInvoice {
+  id               String   @id @default(cuid())
+  vendorId         String
+  requestId        String   @unique
+  invoiceNumber    String   @unique
+  financialYear    String
+  issuedAt         DateTime
+  ledgerEntryId    String   @unique
+  snapshotJson     Json
+  taxBreakdownJson Json
+  createdAt        DateTime @default(now())
+
+  request V3ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, issuedAt])
+  @@map("g4d_service_invoices")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────── V3 theme switch service (slice 5.16d)
+enum V3ThemeSwitchKind {
+  FREE_INCLUDED
+  PAID
+  COMPLIMENTARY_STAFF
+  RESTORE
+}
+
+enum V3ThemeSwitchStatus {
+  PENDING
+  APPLIED
+  FAILED
+}
+
+/// One row per theme switch. FREE_INCLUDED is the one switch a Pro plan includes (the first); every later switch is PAID (the Theme Switch Service fee from the price book); COMPLIMENTARY_STAFF is a staff gift with a reason; RESTORE re-applies the stored theme after a lapse and a renewal (no charge, not counted as a switch).
+model V3ThemeSwitch {
+  id                 String              @id @default(cuid())
+  vendorId           String
+  siteId             String? // the vendor's site settings row at the time
+  fromThemeKey       String?
+  toThemeKey         String
+  kind               V3ThemeSwitchKind
+  performedByType    String // VENDOR | STAFF | SYSTEM
+  performedById      String?
+  serviceRequestId   String? // set when the vendor asked our team (slice 5.16c): that request carries the fee
+  ledgerEntryId      String?             @unique // the wallet CHARGE that paid for it
+  packPurchaseId     String? // the pack a unit of which paid for it
+  priceSnapshotPaise Int?
+  taxSnapshotJson    Json                @default("{}")
+  publicationId      String? // the publication snapshot the switch made (rollback to the previous one stays possible)
+  status             V3ThemeSwitchStatus @default(PENDING)
+  idempotencyKey     String
+  reason             String?
+  failureReason      String?
+  hiddenFieldsJson   Json                @default("[]") // content the new theme does not draw: kept, never removed, drawn again if the vendor switches back
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, createdAt])
+  @@index([status, updatedAt])
+  @@map("g4d_theme_switches")
+}
+
+// ── Batch 4B slice 5.20: activity log and alerts ─────────────────────────────────────────────────────────────────────
+
+enum V3ActivityActorType {
+  VENDOR_USER
+  STAFF
+  SYSTEM
+}
+
+enum V3AlertLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum V3AlertStatus {
+  NEW
+  LOOKING
+  RESOLVED
+  NOT_AN_ISSUE
+}
+
+/// Append-only record of what a vendor, a staff member or the system did. The summary has secrets removed and personal data masked before it is stored. The vendorId has no foreign key on purpose: the log outlives the row it describes. The database refuses every update, and refuses a delete while the vendor still exists.
+model V3ActivityLog {
+  id          String              @id @default(cuid())
+  vendorId    String?
+  actorType   V3ActivityActorType
+  actorId     String?
+  actionKey   String
+  entityType  String
+  entityId    String?
+  summaryJson Json                @default("{}")
+  ipHash      String?
+  at          DateTime            @default(now())
+
+  @@index([vendorId, at])
+  @@index([actionKey, at])
+  @@map("g4d_activity_log")
+}
+
+/// One row per alert rule. Seeded disabled with no thresholds; staff set the numbers and switch a rule on. The level and the key of a seeded rule are fixed by the owner's table.
+model V3AlertRule {
+  id                String       @id @default(cuid())
+  key               String       @unique
+  level             V3AlertLevel
+  thresholdJson     Json?
+  notifyRoles       String[]     @default([])
+  enabled           Boolean      @default(false)
+  updatedByStaffId  String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@map("g4d_alert_rules")
+}
+
+/// A notice to staff raised after an event. It never hides, deletes or freezes anything by itself.
+model V3Alert {
+  id           String        @id @default(cuid())
+  vendorId     String
+  ruleKey      String
+  level        V3AlertLevel
+  status       V3AlertStatus @default(NEW)
+  ownerStaffId String?
+  activityIds  String[]      @default([])
+  note         String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  resolvedAt   DateTime?
+
+  @@index([status, level, createdAt])
+  @@index([vendorId, createdAt])
+  @@index([ownerStaffId, status])
+  @@map("g4d_alerts")
+}
+
+/// (Table name g4d_v3_notifications: g4d_notifications is the legacy Notification table and is not touched.) In-app notification for one staff member (userId) or for every staff member of a role. In-app only: nothing is sent outside.
+model V3Notification {
+  id        String    @id @default(cuid())
+  userId    String?
+  role      String?
+  kind      String
+  refId     String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([role, readAt])
+  @@map("g4d_v3_notifications")
+}
+
+// ── Batch 4B slice 5.21: trust and safety ────────────────────────────────────────────────────────────────────────────
+
+enum V3ProofKind {
+  GST
+  UDYAM
+  SHOP_LICENCE
+  PROFESSIONAL_REGISTRATION
+  OTHER
+}
+
+enum V3ProofStatus {
+  SUBMITTED
+  CHECKED
+  MISMATCH
+}
+
+enum V3TrustBlockKind {
+  PHONE
+  EMAIL
+  DOMAIN
+  UPI
+  NAME
+}
+
+enum V3ReportSubject {
+  LISTING
+  SITE
+}
+
+enum V3BusinessReportStatus {
+  NEW
+  LOOKING
+  CLOSED
+}
+
+enum V3TakedownStatus {
+  ACTIVE
+  REVERSED
+}
+
+/// A document or registration number a vendor offers to show the business is real. Optional at Pro activation; staff mark it CHECKED or MISMATCH. One row per vendor and kind (a new submission replaces the old one and starts again at SUBMITTED).
+model V3BusinessProof {
+  id          String        @id @default(cuid())
+  vendorId    String
+  kind        V3ProofKind
+  number      String
+  documentRef String?
+  status      V3ProofStatus @default(SUBMITTED)
+  checkedBy   String?
+  checkedAt   DateTime?
+  note        String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, kind])
+  @@index([status, createdAt])
+  @@map("g4d_business_proofs")
+}
+
+/// (The older g4d_blocklist is the do-not-contact register and is not touched.) A value the trust team refuses to deal with, stored as a keyed hash of its normalised form (never the value itself).
+model V3TrustBlock {
+  id               String      @id @default(cuid())
+  kind             V3TrustBlockKind
+  valueHash        String
+  reason           String
+  createdByStaffId String?
+  at               DateTime    @default(now())
+
+  @@unique([kind, valueHash])
+  @@map("g4d_trust_blocklist")
+}
+
+/// A report from the public about a listing or a site. No personal data is required; a contact is optional.
+model V3BusinessReport {
+  id               String          @id @default(cuid())
+  subjectType      V3ReportSubject
+  subject          String
+  reporterContact  String?
+  reason           String
+  status           V3BusinessReportStatus  @default(NEW)
+  ipHash           String?
+  handledByStaffId String?
+  note             String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([status, createdAt])
+  @@map("g4d_business_reports")
+}
+
+/// A phrase the scan looks for in published and requested text. The table starts empty: staff (SUPER_ADMIN) add the phrases, the code invents none. Stored lower case with single spaces.
+model V3ProhibitedTerm {
+  id        String   @id @default(cuid())
+  term      String   @unique
+  category  String
+  enabled   Boolean  @default(true)
+  editedBy  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("g4d_prohibited_terms")
+}
+
+/// A Legal takedown (SUPER_ADMIN only, written reason required). While ACTIVE the site serves a plain notice page and the listing is out of the directory. No foreign key on purpose: the record outlives the vendor row. The database refuses any change to the reason, the decider, the time and the target, and refuses a delete.
+model V3Takedown {
+  id                 String           @id @default(cuid())
+  vendorId           String?
+  listingId          String?
+  reason             String
+  documentRef        String?
+  decidedBy          String
+  at                 DateTime         @default(now())
+  status             V3TakedownStatus @default(ACTIVE)
+  priorListingStatus String?
+  priorIndexable     Boolean?
+  reversedBy         String?
+  reversedAt         DateTime?
+  reverseReason      String?
+
+  @@index([vendorId, status])
+  @@index([listingId, status])
+  @@index([status, at])
+  @@map("g4d_takedowns")
+}
+
+// ── Slice 5.17b (Batch 5, amendment 06 UPI only): pay requests and the payments a vendor confirms ──
+enum V3PaySource {
+  MANUAL
+  REQUEST
+  ORDER
+}
+
+enum V3PayStatus {
+  AWAITING
+  CUSTOMER_SAYS_PAID
+  PAID
+  EXPIRED
+  CANCELLED
+}
+
+enum V3PaymentConfirmedBy {
+  VENDOR
+  GATEWAY // unused: no gateway is offered to vendors
+}
+
+model V3PaymentRequest {
+  id             String      @id @default(cuid())
+  vendorId       String
+  code           String      @unique // unguessable, in the public pay link
+  amountPaise    Int
+  note           String?
+  customerName   String
+  customerPhone  String?
+  source         V3PaySource @default(MANUAL)
+  requestId      String?
+  orderId        String?
+  methodId       String? // null for a payment the vendor recorded by hand (cash, bank transfer) with no UPI method
+  status         V3PayStatus @default(AWAITING)
+  expiresAt      DateTime
+  customerSaidAt DateTime?
+  customerUtr    String?
+  createdBy      String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  vendor  Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  method  V3VendorPaymentMethod? @relation(fields: [methodId], references: [id], onDelete: Restrict)
+  payment V3Payment?
+
+  @@index([vendorId, status, createdAt])
+  @@index([status, expiresAt])
+  @@index([vendorId, orderId])
+  @@map("g4d_payment_requests")
+}
+
+model V3Payment {
+  id                String               @id @default(cuid())
+  paymentRequestId  String               @unique
+  vendorId          String
+  amountPaise       Int
+  level             Int                  @default(1)
+  provider          String               @default("UPI_MANUAL")
+  providerPaymentId String
+  utr               String?
+  confirmedBy       V3PaymentConfirmedBy @default(VENDOR)
+  confirmedAt       DateTime
+  idempotencyKey    String?
+  method            String               @default("UPI") // UPI | CASH | BANK_TRANSFER: how the customer paid the business
+  vendorRecorded    Boolean              @default(true) // the business wrote this down; it is the business's money, never Get4Domain's
+  createdAt         DateTime             @default(now())
+
+  request V3PaymentRequest @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
+  vendor  Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  document V3VendorDocument?
+
+  @@unique([provider, providerPaymentId])
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, confirmedAt])
+  @@map("g4d_payments")
+}
+
+// ── Slice 5.17d (Batch 5): the vendor receipts and invoices ──
+enum V3DocKind {
+  TAX_INVOICE
+  BILL_OF_SUPPLY
+  BILL
+  FEE_RECEIPT
+}
+
+enum V3SendStatus {
+  NONE
+  PENDING
+  SENT_SANDBOX
+  FAILED
+  SKIPPED
+}
+
+model V3VendorTaxProfile {
+  id                String   @id @default(cuid())
+  vendorId          String   @unique
+  gstRegistered     Boolean  @default(false)
+  gstin             String?
+  stateCode         String?
+  legalName         String?
+  address           String?
+  compositionScheme Boolean  @default(false)
+  invoicePrefix     String   @default("INV")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_vendor_tax_profiles")
+}
+
+/// Gap-free numbering: one row per vendor and financial year; the next number is taken in the same transaction that writes the document, so a rollback gives the number back.
+model V3InvoiceSeries {
+  id         String   @id @default(cuid())
+  vendorId   String
+  periodKey  String
+  prefix     String
+  nextNumber Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, periodKey])
+  @@map("g4d_invoice_series")
+}
+
+model V3VendorDocument {
+  id               String       @id @default(cuid())
+  vendorId         String
+  kind             V3DocKind
+  number           String
+  seq              Int
+  periodKey        String
+  paymentId        String       @unique
+  customerSnapshot Json         @default("{}")
+  itemsJson        Json         @default("[]")
+  taxJson          Json         @default("{}")
+  totalPaise       Int
+  pdfRef           String?
+  publicCode       String       @unique
+  whatsappStatus   V3SendStatus @default(NONE)
+  emailStatus      V3SendStatus @default(NONE)
+  resendCount      Int          @default(0)
+  flagsJson        Json         @default("{}")
+  createdAt        DateTime     @default(now())
+
+  vendor  Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  payment V3Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@unique([vendorId, number])
+  @@unique([vendorId, periodKey, seq])
+  @@index([vendorId, createdAt])
+  @@map("g4d_vendor_documents")
+}
+
+/// The message outbox of the payment slices. Batch 6 replaces the consumer; here only the fake sender reads it.
+model V3Outbox {
+  id             String   @id @default(cuid())
+  vendorId       String?
+  channel        String
+  templateKey    String
+  toHash         String
+  toMasked       String
+  payloadJson    Json     @default("{}")
+  idempotencyKey String   @unique
+  status         String   @default("PENDING")
+  attempts       Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@map("g4d_outbox")
+}
+
+/// Slice 5.5a (Website manager): the vendor's working copy of the managed content document. One row per vendor; every autosave bumps `rev`.
+model V3SiteDraft {
+  vendorId    String   @id
+  docJson     Json     @default("{}")
+  rev         Int      @default(0)
+  baseVersion Int? // the publication version the draft was started from
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_site_drafts")
+}
+
+/// Slice 5.5a: the managed content document a publication was built from. The LIVE document is the snapshot of the current publication.
+model V3SiteSnapshot {
+  id            String   @id @default(cuid())
+  vendorId      String
+  publicationId String   @unique
+  version       Int
+  docJson       Json     @default("{}")
+  docHash       String
+  createdAt     DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, version])
+  @@index([vendorId, createdAt])
+  @@map("g4d_site_snapshots")
+}
+
+/// Slice 5.5b (Website manager): a picture a vendor (or staff on its behalf) uploaded. Re-encoded, sized, with alt text; the file lives under vendors/<vendorId>/ in storage.
+model V3SitePicture {
+  id             String      @id @default(cuid())
+  vendorId       String
+  storagePath    String
+  url            String
+  contentType    String
+  bytes          Int
+  width          Int
+  height         Int
+  altText        String
+  sha256         String
+  uploadedByType V3ActorType @default(SYSTEM)
+  uploadedById   String?
+  createdAt      DateTime    @default(now())
+  deletedAt      DateTime?
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, sha256])
+  @@index([vendorId, createdAt])
+  @@map("g4d_site_pictures")
+}
+
+/// Slice 5.5b: the Banner Library. Platform data (no vendor): reference banners per category, each with its source, author, licence and date obtained.
+model V3BannerImage {
+  id          String   @id @default(cuid())
+  categoryId  String
+  storagePath String
+  url         String
+  contentType String
+  bytes       Int
+  width       Int
+  height      Int
+  altText     String
+  hasPeople   Boolean  @default(false)
+  sourceUrl   String
+  author      String
+  licenceName String
+  obtainedOn  String
+  sha256      String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([categoryId, sha256])
+  @@index([categoryId, active])
+  @@map("g4d_banner_images")
+}
+
+enum V3SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+/// Slice 5.5c (amendment 06): a Free vendor's edit, waiting for staff. The payload is the whole managed content document as submitted. The live site keeps the last approved content until staff approve.
+model V3ContentSubmission {
+  id            String             @id @default(cuid())
+  vendorId      String
+  scope         String             @default("SITE_CONTENT")
+  payloadJson   Json
+  payloadHash   String
+  changedJson   Json               @default("{}")
+  status        V3SubmissionStatus @default(SUBMITTED)
+  submittedById String?
+  reviewerId    String?
+  reason        String?
+  submittedAt   DateTime           @default(now())
+  decidedAt     DateTime?
+  // At most one SUBMITTED submission per vendor: equals vendorId while SUBMITTED, NULL otherwise; the unique index does the rest (as for publications).
+  openVendorId  String?            @unique
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@index([status, submittedAt])
+  @@map("g4d_content_submissions")
+}
+
+/// Slice B1 (amendment 08): the effective SEO text of each page of a vendor's LIVE site (the vendor's own text, or the platform default), written when a version goes live. For staff reports only; the source of truth is the published content document.
+model V3PageSeo {
+  id                String   @id @default(cuid())
+  vendorId          String
+  pageKey           String
+  seoTitle          String
+  seoDescription    String
+  shareImageRef     String?
+  customTitle       Boolean  @default(false)
+  customDescription Boolean  @default(false)
+  version           Int
+  updatedAt         DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, pageKey])
+  @@index([vendorId, version])
+  @@map("g4d_page_seo")
+}
+
+/// Slice B2 (amendment 08): the location of a vendor's LIVE site (address lines, city, state, pincode, coordinates, the pasted map link and the directions link built from them). Written when a version goes live, for staff; the published content document is the source of truth.
+model V3SiteLocation {
+  vendorId       String   @id
+  addressLine1   String?
+  addressLine2   String?
+  city           String?
+  state          String?
+  pincode        String?
+  latitude       Float?
+  longitude      Float?
+  mapLinkInput   String?
+  directionsUrl  String?
+  version        Int
+  updatedAt      DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_site_locations")
+}
+
+/// Slice B3 (amendment 08): the Google review link of a vendor's LIVE site. Written when a version goes live, for staff; the published content document is the source of truth.
+model V3ReviewLink {
+  vendorId  String   @id
+  url       String
+  host      String
+  version   Int
+  updatedAt DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_review_links")
+}
+
+/// Slice B4 (amendment 08): the testimonials of a vendor's LIVE site, in order. Written when a version goes live, for staff; the published content document is the source of truth. No rating of any kind is stored.
+model V3Testimonial {
+  id        String   @id @default(cuid())
+  vendorId  String
+  position  Int
+  name      String
+  text      String
+  date      String?
+  version   Int
+  updatedAt DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, position])
+  @@index([vendorId])
+  @@map("g4d_testimonials")
+}
+
+/// Slice 5.13b: a staff member acting on behalf of a vendor, with a written reason. At most one live session per staff member (the nullable unique `activeStaffId`, equal to staffId while the session is live).
+model V3ActOnBehalfSession {
+  id               String    @id @default(cuid())
+  staffId          String
+  vendorId         String
+  reason           String
+  startedAt        DateTime  @default(now())
+  expiresAt        DateTime
+  endedAt          DateTime?
+  endedBy          String?
+  vendorNotifiedAt DateTime?
+  activeStaffId    String?   @unique
+  createdAt        DateTime  @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, startedAt])
+  @@index([staffId, endedAt])
+  @@map("g4d_act_on_behalf_sessions")
+}
+
+/// Slice 5.6c: the automatic connection of one custom domain (Cloudflare custom hostname, certificate, connect or forward mode). One row per domain.
+model V3DomainConnection {
+  id            String    @id @default(cuid())
+  vendorId      String
+  domainId      String    @unique
+  hostname      String
+  connectHost   String
+  bareDomain    Boolean   @default(false)
+  mode          String    @default("CONNECT")
+  status        String    @default("PENDING")
+  certStatus    String    @default("NONE")
+  cfHostnameId  String?
+  attempts      Int       @default(0)
+  failureReason String?
+  registrar     String?
+  lastCheckedAt DateTime?
+  activatedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([status, lastCheckedAt])
+  @@map("g4d_domain_connections")
+}
+
+// ─── Batch 11 slice 5.6d: domain sales through the registrar (additive). Money is whole paise. A vendor's rows are reached only through RegistrarStore, whose every query names the vendor. ───
+
+/// The price book of domain margins (and of the privacy protection sale price under tld "privacy"). PROPOSED by staff, APPROVED by SUPER_ADMIN with an effective date; the row in force is the APPROVED row with the latest start that has begun.
+model V3DomainMargin {
+  id            String    @id @default(cuid())
+  tld           String
+  kind          String // PERCENT_BP | FIXED_PAISE (for tld "privacy" the value is the yearly sale price in paise)
+  value         Int
+  status        String    @default("PROPOSED") // PROPOSED | APPROVED | REJECTED | RETIRED
+  effectiveFrom DateTime?
+  note          String?
+  createdBy     String?
+  approvedBy    String?
+  approvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([tld, effectiveFrom])
+  @@index([tld, status])
+  @@map("g4d_domain_margins")
+}
+
+/// The vendor as a registrar customer and contact (created at the first purchase, once).
+model V3RegistrarCustomer {
+  id           String   @id @default(cuid())
+  vendorId     String   @unique
+  rcCustomerId String
+  rcContactId  String
+  createdAt    DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_registrar_customers")
+}
+
+/// The registrant and the identity checks that come before the first purchase. The document is encrypted at rest (AES-256-GCM); a full Aadhaar number is never stored (only a masked copy and its last four digits).
+model V3Registrant {
+  id              String    @id @default(cuid())
+  vendorId        String    @unique
+  legalName       String
+  company         String
+  email           String
+  phoneCc         String
+  phone           String
+  addressLine1    String
+  city            String
+  state           String
+  country         String    @default("IN")
+  zipcode         String
+  emailVerifiedAt DateTime?
+  phoneVerifiedAt DateTime?
+  docKind         String?
+  docLast4        String?
+  docCipher       Bytes?
+  docIv           Bytes?
+  docTag          Bytes?
+  docMime         String?
+  docBytes        Int?
+  docUploadedAt   DateTime?
+  docPurgedAt     DateTime?
+  status          String    @default("INCOMPLETE") // INCOMPLETE | IN_REVIEW | APPROVED | REJECTED
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  reviewNote      String?
+  consentAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([status, updatedAt])
+  @@map("g4d_registrants")
+}
+
+model V3IdentityOtp {
+  id         String    @id @default(cuid())
+  vendorId   String
+  channel    String // EMAIL | PHONE
+  toHash     String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, channel, createdAt])
+  @@map("g4d_identity_otps")
+}
+
+/// Every time a staff member opens or decides on an identity document. Append only.
+model V3IdentityAccess {
+  id        String   @id @default(cuid())
+  vendorId  String
+  staffId   String?
+  action    String // DOCUMENT_UPLOADED | DOCUMENT_VIEWED | APPROVED | REJECTED | DOCUMENT_PURGED
+  reason    String?
+  at        DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, at])
+  @@map("g4d_identity_access")
+}
+
+/// A domain the vendor holds through us (registered here, or moved in by 5.6e). Renewals act on this row.
+model V3RegisteredDomain {
+  id           String    @id @default(cuid())
+  vendorId     String
+  domain       String    @unique
+  tld          String
+  rcOrderId    String?
+  status       String    @default("ACTIVE") // ACTIVE | EXPIRED
+  expiresAt    DateTime?
+  privacy      Boolean   @default(false)
+  nameServers  Json      @default("[]")
+  dnsStatus    String    @default("PENDING") // PENDING | CONNECTED
+  alertsSent   Json      @default("[]")
+  registeredAt DateTime  @default(now())
+  lastRenewedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([status, expiresAt])
+  @@map("g4d_registered_domains")
+}
+
+/// One purchase, renewal or transfer. The wallet hold and charge are ledger entries; the unique (vendorId, idempotencyKey) is what stops a double purchase.
+model V3DomainOrder {
+  id               String    @id @default(cuid())
+  vendorId         String
+  kind             String // REGISTER | RENEW | TRANSFER_IN
+  domain           String
+  tld              String
+  years            Int
+  status           String    @default("CREATED") // CREATED | HELD | SUBMITTED | COMPLETED | FAILED | UNKNOWN
+  registeredDomainId String?
+  amountPaise      Int // the exact amount held and charged, GST included
+  costPaise        Int
+  marginPaise      Int
+  privacyPaise     Int       @default(0)
+  taxSnapshotJson  Json      @default("{}")
+  holdLedgerId     String?
+  chargeLedgerId   String?
+  releaseLedgerId  String?
+  rcOrderId        String?
+  privacy          Boolean   @default(false)
+  fundedBy         String    @default("WALLET")
+  requestedByType  String    @default("VENDOR") // VENDOR | STAFF
+  requestedById    String?
+  reason           String?
+  idempotencyKey   String
+  /// = the domain name while a REGISTER order is live (CREATED, HELD, SUBMITTED, UNKNOWN or COMPLETED), null once it FAILED: one live purchase per name, enforced by the database
+  openKey          String?   @unique
+  failureCode      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  vendor  Vendor             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  invoice V3DomainInvoice?
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, createdAt])
+  @@index([status, updatedAt])
+  @@map("g4d_domain_orders")
+}
+
+/// The invoice Get4Domain issues for a completed domain order: gap-free numbering, issued in the same unit of work as the charge. Wording and the tax codes wait for the accountant.
+model V3DomainInvoice {
+  id            String   @id @default(cuid())
+  vendorId      String
+  orderId       String   @unique
+  number        String
+  financialYear String
+  snapshotJson  Json
+  totalPaise    Int
+  issuedAt      DateTime @default(now())
+
+  vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  order  V3DomainOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, number])
+  @@map("g4d_domain_invoices")
+}
+
+/// A reconciliation of local orders against the registrar (one row per run).
+model V3RegistrarRun {
+  id           String    @id @default(cuid())
+  kind         String    @default("RECONCILE")
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+  checked      Int       @default(0)
+  settled      Int       @default(0)
+  mismatches   Json      @default("[]")
+  balancePaise Int?
+  status       String    @default("RUNNING") // RUNNING | DONE | FAILED
+  note         String?
+
+  @@index([startedAt])
+  @@map("g4d_registrar_runs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// Batch 13, slice 5.23a: one customer list per business, with where each customer came from.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// One person of one business. Identity is the normalised phone, else the lower-cased e-mail (the database refuses a second row for the same person). Never hard deleted: archivedAt.
+model V3Customer {
+  id          String    @id @default(cuid())
+  vendorId    String
+  name        String
+  phone       String?
+  phoneKey    String?
+  email       String?
+  emailKey    String?
+  firstSource String
+  consent     String    @default("UNKNOWN")
+  consentAt   DateTime?
+  notes       String?
+  tags        Json      @default("[]")
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  vendor  Vendor               @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  sources V3CustomerSource[]
+
+  @@unique([vendorId, phoneKey])
+  @@unique([vendorId, emailKey])
+  @@index([vendorId, createdAt])
+  @@map("g4d_customers")
+}
+
+/// Where a customer came from: one row per (customer, source, reference), written idempotently.
+model V3CustomerSource {
+  id         String   @id @default(cuid())
+  vendorId   String
+  customerId String
+  source     String
+  refType    String   @default("")
+  refId      String   @default("")
+  at         DateTime @default(now())
+
+  vendor   Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  customer V3Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, source, refType, refId])
+  @@index([vendorId, source])
+  @@map("g4d_customer_sources")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// Batch 13, slice 5.23b: accounts. Sale records are posted from the vendor's own documents (slice 5.17d), one per document.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// One sale of the business, copied from a vendor document. The database refuses a second record for the same source, so posting is idempotent.
+model V3SaleRecord {
+  id           String   @id @default(cuid())
+  vendorId     String
+  sourceType   String
+  sourceId     String
+  number       String
+  kind         String
+  soldAt       DateTime
+  customerName String?
+  taxablePaise Int
+  taxPaise     Int
+  cgstPaise    Int
+  sgstPaise    Int
+  igstPaise    Int
+  totalPaise   Int
+  createdAt    DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, sourceType, sourceId])
+  @@index([vendorId, soldAt])
+  @@map("g4d_sale_records")
+}
+
+/// A cost of the business. Never hard deleted: archivedAt.
+model V3Expense {
+  id          String    @id @default(cuid())
+  vendorId    String
+  spentOn     String
+  category    String
+  description String
+  amountPaise Int
+  gstPaise    Int       @default(0)
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, spentOn])
+  @@map("g4d_acct_expenses")
+}
+
+/// An item or a service the business sells, with HSN or SAC code and a tax rate that must be in the rate table. Never hard deleted: archivedAt.
+model V3Item {
+  id             String    @id @default(cuid())
+  vendorId       String
+  kind           String
+  name           String
+  hsnSac         String?
+  unit           String?
+  pricePaise     Int?
+  taxRatePercent Decimal?  @db.Decimal(6, 3)
+  archivedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_items")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// Batch 13, slice 5.24a: jobs and quotes for the Handyman track.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// A piece of work for a customer: request, quote, booking, job, paid. Never hard deleted: archivedAt. PAID is written only by the payment path.
+model V3Job {
+  id           String    @id @default(cuid())
+  vendorId     String
+  number       Int
+  title        String
+  customerName String
+  customerPhone String?
+  customerId   String?
+  address      String?
+  notes        String?
+  status       String    @default("REQUESTED")
+  scheduledAt  DateTime?
+  assignedTo   String?
+  requestId    String?
+  quoteId      String?
+  totalPaise   Int?
+  payRequestId String?
+  paidAt       DateTime?
+  cancelReason String?
+  archivedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, number])
+  @@index([vendorId, status, createdAt])
+  @@index([vendorId, scheduledAt])
+  @@map("g4d_jobs")
+}
+
+/// A priced offer with lines. Lines are editable only while DRAFT. Never hard deleted.
+model V3Quote {
+  id           String    @id @default(cuid())
+  vendorId     String
+  number       Int
+  jobId        String?
+  title        String
+  customerName String
+  customerPhone String?
+  status       String    @default("DRAFT")
+  validUntil   String?
+  linesJson    Json      @default("[]")
+  taxablePaise Int       @default(0)
+  taxPaise     Int       @default(0)
+  totalPaise   Int       @default(0)
+  sentAt       DateTime?
+  decidedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, number])
+  @@index([vendorId, status, createdAt])
+  @@index([vendorId, jobId])
+  @@map("g4d_job_quotes")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// Batch 13, slice 5.24b: appointments for the Professional track (request and confirm).
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// Something the business offers by appointment, with its length. Never hard deleted: archivedAt.
+model V3ApptService {
+  id          String    @id @default(cuid())
+  vendorId    String
+  name        String
+  durationMin Int
+  pricePaise  Int?
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_appt_services")
+}
+
+/// A person who takes appointments, with weekly working hours in India time. Never hard deleted: archivedAt.
+model V3ApptProvider {
+  id         String    @id @default(cuid())
+  vendorId   String
+  name       String
+  hoursJson  Json      @default("[]")
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_appt_providers")
+}
+
+/// One request or booking. REQUESTED and CONFIRMED hold the time; only the business moves REQUESTED to CONFIRMED. Never hard deleted.
+model V3ApptBooking {
+  id            String    @id @default(cuid())
+  vendorId      String
+  serviceId     String
+  providerId    String
+  customerId    String?
+  customerName  String
+  customerPhone String?
+  notes         String?
+  startsAt      DateTime
+  endsAt        DateTime
+  status        String    @default("REQUESTED")
+  requestId     String?
+  cancelReason  String?
+  decidedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, startsAt])
+  @@index([vendorId, providerId, startsAt])
+  @@index([vendorId, status, createdAt])
+  @@map("g4d_appt_bookings")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// Batch 13, slice 5.24c: the store for the Ecommerce track (catalogue, variants, stock ledger, recorded returns).
+// Stock levels and reservations are the Stage 9 tables (g4d_stock_levels, g4d_stock_reservations); the productRef of a level is a product id, or a variant id when the product has variants.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// A product of the business with its price, HSN or SAC code and a tax rate that must be in the rate table. Never hard deleted: archivedAt.
+model V3StoreProduct {
+  id             String    @id @default(cuid())
+  vendorId       String
+  name           String
+  description    String?
+  sku            String?
+  hsnSac         String?
+  pricePaise     Int
+  taxRatePercent Decimal?  @db.Decimal(6, 3)
+  trackStock     Boolean   @default(true)
+  archivedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  vendor   Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  variants V3StoreVariant[]
+
+  @@unique([vendorId, sku])
+  @@index([vendorId, createdAt])
+  @@map("g4d_store_products")
+}
+
+/// A size, colour or pack of a product; a missing price means the product price. Never hard deleted: archivedAt.
+model V3StoreVariant {
+  id         String    @id @default(cuid())
+  vendorId   String
+  productId  String
+  label      String
+  sku        String?
+  pricePaise Int?
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  vendor  Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  product V3StoreProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, sku])
+  @@index([vendorId, productId])
+  @@map("g4d_store_variants")
+}
+
+/// The stock ledger: one row per change, with the balance after it. The key (unique per business) makes a change idempotent. Append only: nothing updates or deletes a row after it is written.
+model V3StoreStockMove {
+  id           String   @id @default(cuid())
+  vendorId     String
+  productRef   String
+  delta        Int
+  reason       String
+  key          String?
+  balanceAfter Int
+  note         String?
+  at           DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, key])
+  @@index([vendorId, productRef, at])
+  @@map("g4d_store_stock_moves")
+}
+
+/// A return the business recorded for an order. A recorded fact only: no refund is made and no provider is called.
+model V3OrderReturn {
+  id          String   @id @default(cuid())
+  vendorId    String
+  orderId     String
+  reason      String
+  amountPaise Int      @default(0)
+  note        String?
+  createdAt   DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, orderId])
+  @@map("g4d_order_returns")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// V3 pack engine (Amendment 13, Part A). Additive. A PACK is the main industry workflow of a vendor (16 of them), a CAPABILITY is an extra thing a vendor also does, the TIER is the plan track.
+// Everything here is DATA loaded by idempotent loaders and edited by staff; nothing names a price. Design: docs/v3/V3_PACK_ENGINE.md
+// The V2 model CategoryPack (site generation) is unrelated and untouched.
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// One record per pack. config holds entities, workflows, crmPipelines, telecrm, taskTemplates, reportSet, siteSections, fieldHints and flags (see pack-core.ts). Reference data: no vendorId.
+model V3Pack {
+  id             String   @id @default(cuid())
+  key            String   @unique
+  name           String
+  enabled        Boolean  @default(true)
+  /// the fixed notice a health, legal or finance pack must show (null for the others)
+  disclaimerKey  String?
+  /// DRAFT until the owner corrects and approves the first draft
+  reviewStatus   String   @default("DRAFT")
+  config         Json     @default("{}")
+  updatedByStaffId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  categories  V3PackCategory[]
+  addonEligibility V3AddonEligibility[]
+  vendorPacks V3VendorPack[]
+
+  @@map("g4d_packs")
+}
+
+/// A navigation tab. scope COMMON (every vendor, ownerKey COMMON), PACK (ownerKey = pack key) or CAPABILITY (ownerKey = capability key). freeTrial = ACTIVE even on a Free trial.
+model V3PackTab {
+  id            String   @id @default(cuid())
+  scope         String
+  ownerKey      String
+  key           String
+  label         String
+  route         String
+  /// the lowest tier (HANDYMAN, PROFESSIONAL, ECOMMERCE) that opens this tab, or null for any paid plan
+  minTier       String?
+  /// a capability the tier must allow for this tab to open
+  capabilityKey String?
+  freeTrial     Boolean  @default(false)
+  sortOrder     Int      @default(0)
+  active        Boolean  @default(true)
+  updatedByStaffId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([scope, ownerKey, key])
+  @@index([scope, ownerKey, sortOrder])
+  @@map("g4d_pack_tabs")
+}
+
+model V3Capability {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tiers   V3TierCapability[]
+  vendors V3VendorCapability[]
+
+  @@map("g4d_capabilities")
+}
+
+/// The tier to capability matrix (PROPOSED rules, Amendment 13 V3). Editable by SUPER_ADMIN; changing the matrix, not code, changes what a tier allows. basis says where a cell came from.
+model V3TierCapability {
+  id            String   @id @default(cuid())
+  tier          String
+  capabilityKey String
+  allowed       Boolean  @default(false)
+  basis         String   @default("AMENDMENT_13_V3")
+  updatedByStaffId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  capability V3Capability @relation(fields: [capabilityKey], references: [key], onDelete: Restrict)
+
+  @@unique([tier, capabilityKey])
+  @@map("g4d_tier_capabilities")
+}
+
+/// The category to pack map merged with the category master (minimum tier, optional capabilities, starter services). Reference data. A category with no starter services is needsBlueprint.
+model V3PackCategory {
+  id                   String   @id @default(cuid())
+  categoryKey          String   @unique
+  name                 String
+  family               String
+  packKey              String
+  minTier              String
+  optionalCapabilities Json     @default("[]")
+  starterServices      Json     @default("[]")
+  fieldHints           Json     @default("[]")
+  /// the add-on packs this category may buy ([{ key, bundleDiscount }]), from the owner sheet
+  addonPacks           Json     @default("[]")
+  onlineShopNote       String?
+  statusNote           String?
+  needsBlueprint       Boolean  @default(false)
+  ownerNotes           String?
+  active               Boolean  @default(true)
+  updatedByStaffId     String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  pack V3Pack @relation(fields: [packKey], references: [key], onDelete: Restrict)
+  /// lane E1: where this category sits in the 45-family master (back relation only, no column)
+  taxonomyMap V3TaxonomyLegacyMap?
+
+  @@index([packKey])
+  @@index([family])
+  @@map("g4d_pack_categories")
+}
+
+/// Lane E1 taxonomy. FAMILY = top level (the owner's 45). Reference data, not tenant data. plannedPackKey only records the pack lane E3 will build for the family: no foreign key, the pack does not exist yet.
+model V3TaxonomyFamily {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  sortOrder      Int      @unique
+  plannedPackKey String   @unique
+  /// which input file and version the row came from (for example REQ_CATEGORY_MASTER_45_FAMILIES@1)
+  sourceTag      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  categories V3TaxonomyFamilyCategory[]
+  relatedAsA V3TaxonomyRelatedFamily[]  @relation("RelatedA")
+  relatedAsB V3TaxonomyRelatedFamily[]  @relation("RelatedB")
+
+  @@map("g4d_taxonomy_families")
+}
+
+/// Lane E1 taxonomy. CATEGORY = second level (the 1,213 unique items). Stored ONCE and linked to every family it is listed in. Separate from g4d_pack_categories (the 196 vendor registration categories), which it never changes.
+model V3TaxonomyCategory {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  sourceTag String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  families V3TaxonomyFamilyCategory[]
+  legacy   V3TaxonomyLegacyMap[]
+
+  @@map("g4d_taxonomy_categories")
+}
+
+/// Many to many: one row per (family, category) as listed in the owner's file. sortOrder is the position inside the family's list.
+model V3TaxonomyFamilyCategory {
+  id         String   @id @default(cuid())
+  familyId   String
+  categoryId String
+  sortOrder  Int
+  createdAt  DateTime @default(now())
+
+  family   V3TaxonomyFamily   @relation(fields: [familyId], references: [id], onDelete: Restrict)
+  category V3TaxonomyCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@unique([familyId, categoryId])
+  @@index([categoryId])
+  @@map("g4d_taxonomy_family_categories")
+}
+
+/// Symmetric relation stored ONCE: familyAId sorts before familyBId (a CHECK in the migration), so (A,B) and (B,A) cannot both exist. A vendor may pick categories from its own family and from related families. needsOwnerReview stays true until the owner signs the map off.
+model V3TaxonomyRelatedFamily {
+  id               String   @id @default(cuid())
+  familyAId        String
+  familyBId        String
+  reason           String
+  needsOwnerReview Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  familyA V3TaxonomyFamily @relation("RelatedA", fields: [familyAId], references: [id], onDelete: Restrict)
+  familyB V3TaxonomyFamily @relation("RelatedB", fields: [familyBId], references: [id], onDelete: Restrict)
+
+  @@unique([familyAId, familyBId])
+  @@index([familyBId])
+  @@map("g4d_taxonomy_related_families")
+}
+
+/// Where an existing V3 registration category (g4d_pack_categories) sits in the new structure: its category of the master, by exact name or by the reviewed alias table. The legacy row is never changed; one legacy category has at most one row here.
+model V3TaxonomyLegacyMap {
+  id                 String   @id @default(cuid())
+  legacyCategoryKey  String   @unique
+  taxonomyCategoryId String
+  /// EXACT (same name) or ALIAS (reviewed alias table)
+  matchKind          String
+  sourceTag          String
+  createdAt          DateTime @default(now())
+
+  category V3TaxonomyCategory @relation(fields: [taxonomyCategoryId], references: [id], onDelete: Restrict)
+  legacy   V3PackCategory     @relation(fields: [legacyCategoryKey], references: [categoryKey], onDelete: Restrict)
+
+  @@index([taxonomyCategoryId])
+  @@map("g4d_taxonomy_legacy_map")
+}
+
+/// A vendor's ONE primary pack (set at registration from the category; it never changes with the tier) and the starter services the vendor picked. Tenant data.
+/// A pause of a vendor's paid plan (Amendment 13 B13). Staff pause and resume it; while a row is open the vendor sees the Free trial tabs (the rest locked, reason PLAN_PAUSED) and every record is kept. openVendorId equals vendorId while the pause is open and is NULL after, so the unique index allows one open pause per vendor and any number of past ones. Tenant data.
+model V3PlanPause {
+  id            String    @id @default(cuid())
+  vendorId      String
+  openVendorId  String?   @unique
+  reason        String
+  pausedAt      DateTime  @default(now())
+  resumedAt     DateTime?
+  pausedByType  String    @default("STAFF")
+  pausedById    String?
+  resumedByType String?
+  resumedById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, pausedAt])
+  @@map("g4d_plan_pauses")
+}
+
+model V3VendorPack {
+  id            String   @id @default(cuid())
+  vendorId      String   @unique
+  packKey       String
+  categoryKey   String
+  starterPicks  Json     @default("[]")
+  setByType     String   @default("VENDOR")
+  setById       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  pack   V3Pack @relation(fields: [packKey], references: [key], onDelete: Restrict)
+
+  @@index([packKey])
+  @@map("g4d_vendor_packs")
+}
+
+/// A capability a vendor also does. Switching one off, or a downgrade, hides the tab and keeps every record. Tenant data.
+model V3VendorCapability {
+  id            String   @id @default(cuid())
+  vendorId      String
+  capabilityKey String
+  enabled       Boolean  @default(true)
+  source        String   @default("VENDOR")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vendor     Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  capability V3Capability @relation(fields: [capabilityKey], references: [key], onDelete: Restrict)
+
+  @@unique([vendorId, capabilityKey])
+  @@index([vendorId])
+  @@map("g4d_vendor_capabilities")
+}
+
+/// An add-on pack: lets a vendor buy ONE capability or workflow above its tier at its own price, so nobody is forced to the next tier (Amendment 13 V3A). Prices are PENDING until the owner sets them
+/// in the price book; this row holds no amount. config carries the rules of the pack (for example the counter only dispenses to the clinic's own patients and sells nothing online).
+model V3PackAddon {
+  id                  String   @id @default(cuid())
+  key                 String   @unique
+  name                String
+  description         String?
+  /// capability keys the pack grants while active (for example SHOP grants STORE)
+  grantsCapabilities  Json     @default("[]")
+  /// PENDING until the owner sets the price; a pending pack cannot be bought, only staff can switch it on for a vendor
+  priceStatus         String   @default("PENDING")
+  bundleDiscountStatus String  @default("PENDING")
+  config              Json     @default("{}")
+  enabled             Boolean  @default(true)
+  updatedByStaffId    String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  vendors V3VendorPackAddon[]
+  eligibility V3AddonEligibility[]
+
+  @@map("g4d_pack_addons")
+}
+
+/// A vendor's add-on pack. ENDED hides what it gave and keeps every record. Tenant data.
+model V3VendorPackAddon {
+  id               String   @id @default(cuid())
+  vendorId         String
+  addonKey         String
+  status           String   @default("ACTIVE")
+  setByType        String   @default("STAFF")
+  setById          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  vendor Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  addon  V3PackAddon  @relation(fields: [addonKey], references: [key], onDelete: Restrict)
+
+  @@unique([vendorId, addonKey])
+  @@index([vendorId])
+  @@map("g4d_vendor_pack_addons")
+}
+
+/// Which add-on packs a pack may buy (Wave 2 Part H2). One row per (add-on, pack); active=false turns a pairing off and keeps the row. Seeded by the migration, edited by staff (audited). The owner's fixed
+/// rules (no SHOP or ONLINE_ORDERING_DELIVERY for PHARMACY, PHARMACY_COUNTER only for PHARMACY) are enforced in code on top of this data. Holds no price.
+model V3AddonEligibility {
+  id               String   @id @default(cuid())
+  addonKey         String
+  packKey          String
+  active           Boolean  @default(true)
+  updatedByStaffId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  addon V3PackAddon @relation(fields: [addonKey], references: [key], onDelete: Restrict)
+  pack  V3Pack      @relation(fields: [packKey], references: [key], onDelete: Restrict)
+
+  @@unique([addonKey, packKey])
+  @@index([packKey])
+  @@map("g4d_addon_eligibility")
+}
+
+/// The platform's own company details (Wave 2 Part H3): ONE row (id = 'platform'). Invoices, the proposal, the legal text and the public footer read it instead of typed text. GSTIN, PAN, email and phone are
+/// empty until the owner supplies them; nothing is invented. Edited only by SUPER_ADMIN, audited.
+model V3FirmProfile {
+  id                String   @id
+  legalName         String   @default("KSM QUANTUM TECHNOLOGIES")
+  registeredAddress String   @default("Tidel Park, D Block, Tharamani, Chennai 600113")
+  gstin             String?
+  pan               String?
+  registeredEmail   String?
+  registeredPhone   String?
+  updatedByStaffId  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("g4d_firm_profile")
+}
+
+/// Access log of the private object bucket (Amendment 12 Q2): who put, read, signed or deleted which object, and why. Append-only (trigger); no foreign key, like the activity log, so the log outlives a file.
+model V3StorageAccess {
+  id         String   @id @default(cuid())
+  vendorId   String?
+  bucket     String   @default("PRIVATE")
+  objectKey  String
+  action     String // PUT | GET | SIGN | DELETE | DENIED
+  actorType  String
+  actorId    String?
+  purpose    String?
+  createdAt  DateTime @default(now())
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_storage_access")
+}
+
+/// One message received at a business's Get4Domain address (the enquiry inbox, Block 4b). Text only (no HTML is kept). Never hard deleted: state ARCHIVED. HELD is used by the held-enquiries slice.
+model V3InboxMessage {
+  id            String    @id @default(cuid())
+  vendorId      String
+  toAddress     String
+  fromAddress   String
+  fromName      String?
+  subject       String
+  bodyText      String
+  messageIdHdr  String?
+  sizeBytes     Int
+  spamScore     Float?
+  spamVerdict   String    @default("CLEAN") // CLEAN | SPAM
+  state         String    @default("NEW") // NEW | READ | ARCHIVED | HELD
+  forwardStatus String    @default("PENDING") // PENDING | FORWARDED | SKIPPED_FLAG_OFF | SKIPPED_SPAM | SKIPPED_PLAN_ENDED | FAILED
+  forwardedAt   DateTime?
+  readAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, messageIdHdr])
+  @@index([vendorId, createdAt])
+  @@index([vendorId, state, createdAt])
+  @@map("g4d_inbox_messages")
+}
+
+/// A support ticket (Block 4b). Raised by a business (VENDOR) or by a visitor of a business's site (CUSTOMER, public form). Never hard deleted: status RESOLVED.
+model V3Ticket {
+  id                String    @id @default(cuid())
+  vendorId          String?
+  requesterType     String // VENDOR | CUSTOMER
+  requesterName     String?
+  requesterEmail    String?
+  subject           String
+  category          String    @default("GENERAL")
+  status            String    @default("OPEN") // OPEN | IN_PROGRESS | WAITING_VENDOR | RESOLVED
+  assignedToStaffId String?
+  resolvedAt        DateTime?
+  lastMessageAt     DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  vendor   Vendor?           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  messages V3TicketMessage[]
+
+  @@index([vendorId, createdAt])
+  @@index([status, lastMessageAt])
+  @@index([requesterEmail, createdAt])
+  @@map("g4d_v3_tickets")
+}
+
+/// One message of a ticket. Append-only (trigger).
+model V3TicketMessage {
+  id                  String   @id @default(cuid())
+  ticketId            String
+  authorType          String // VENDOR | STAFF | CUSTOMER
+  authorId            String?
+  body                String
+  attachmentPictureId String?
+  createdAt           DateTime @default(now())
+
+  ticket V3Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@map("g4d_v3_ticket_messages")
+}
+
+/// The old business name of a business, kept every time staff change it (Amendment 09 A2). Append-only in practice: nothing edits or deletes a row.
+model V3BusinessNameHistory {
+  id        String   @id @default(cuid())
+  vendorId  String
+  oldName   String
+  newName   String
+  reason    String
+  actorId   String?
+  createdAt DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_v3_business_name_history")
+}
+
+/// A plan change staff asked for with an effective date (Amendment 09 A1). PENDING until its time, then applied through the one plan assignment; never edited into another state except by the applier or a cancel.
+model V3ScheduledPlanChange {
+  id          String    @id @default(cuid())
+  vendorId    String
+  planKey     String
+  termMonths  Int?
+  effectiveAt DateTime
+  reason      String
+  requestedBy String?
+  status      String    @default("PENDING") // PENDING | APPLYING | APPLIED | CANCELLED | FAILED
+  appliedAt   DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@index([status, effectiveAt])
+  @@map("g4d_v3_scheduled_plan_changes")
+}
+
+/// A merge of two listings (Amendment 09 A4): which contacts moved from the merged listing to the kept one, so SUPER_ADMIN can undo it within the window. No foreign key: the record outlives either listing.
+model V3ListingMerge {
+  id              String    @id @default(cuid())
+  keepVendorId    String
+  mergedVendorId  String
+  reason          String
+  actorId         String?
+  status          String    @default("APPLIED") // APPLIED | REVERSED
+  movedJson       Json      @default("{}")
+  conflictsJson   Json      @default("[]")
+  reversibleUntil DateTime
+  reversedAt      DateTime?
+  reversedBy      String?
+  reverseReason   String?
+  createdAt       DateTime  @default(now())
+
+  @@index([keepVendorId, createdAt])
+  @@index([mergedVendorId, createdAt])
+  @@map("g4d_v3_listing_merges")
+}
+
+/// Page visits per host per day (Amendment 11 Q12): a count and nothing else, no visitor data of any kind.
+model V3HostVisitDaily {
+  id        String   @id @default(cuid())
+  vendorId  String
+  host      String
+  day       String // YYYY-MM-DD, UTC
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([host, day])
+  @@index([vendorId, day])
+  @@map("g4d_v3_host_visits_daily")
+}
+
+/// The three mail lanes as data (Amendment 12 Q3). Only the system lane may have sending on in this block (a database CHECK); only the promotions lane may allow promotion (a database CHECK).
+model V3MailLane {
+  key              String   @id // SYSTEM | VENDOR_OFFICIAL | PROMOTIONS
+  label            String
+  description      String
+  allowsPromotion  Boolean  @default(false)
+  sendingEnabled   Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("g4d_v3_mail_lanes")
+}
+
+/// A mailbox price (Amendment 12 Q4), per mailbox per month in paise, excluding GST. PENDING until the owner confirms the real cost; only a confirmed (ACTIVE) price may ever be used.
+model V3MailboxPrice {
+  id            String    @id @default(cuid())
+  key           String    @unique
+  kind          String // FORWARDING | INCLUDED | ADD_ON | EXTRA
+  scope         String // ANY | PROFESSIONAL | ECOMMERCE | HANDYMAN
+  label         String
+  pricePaise    Int?
+  includedCount Int?
+  status        String    @default("PENDING") // PENDING | ACTIVE
+  confirmedAt   DateTime?
+  confirmedBy   String?
+  confirmNote   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("g4d_v3_mailbox_prices")
+}
+
+// ─── SEO block slice 1: keyword set per category (platform-level, staff only) (additive) ──────────────────────────────────────────────────────────────
+/// The words a category is known by, used in directory page titles and H1. PLATFORM-LEVEL: one row per category slug (the catalog sheet id), no tenant column, staff only (RLS on, no policy).
+/// Keyed by slug and not by a directory category id because the catalog sheet has 196 categories and the directory tree is smaller; a row matches a directory category by slug.
+model V3SeoCategoryKeyword {
+  id                String   @id @default(cuid())
+  categorySlug      String   @unique
+  name              String
+  singular          String
+  plural            String
+  synonyms          Json     @default("[]") // staff-entered; the loader never invents any
+  specialisations   Json     @default("[]") // from the catalog sheet column services_seed_from_specialisations
+  source            String   @default("DERIVED") // DERIVED (loader) | STAFF (edited by staff: the loader never overwrites it)
+  updatedByStaffId  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("g4d_seo_category_keywords")
+}
+
+// ─── SEO block slice 3: daily click-out aggregate (platform-level, staff only) (additive) ───────────────────────────────────────────────────────────
+/// One row per day and page context: how many Visit-site click-outs happened. No IP, no user agent, no business id, no visitor data of any kind. PLATFORM-LEVEL: no tenant column, staff only
+/// (RLS on, no policy). The key columns are never NULL (an empty string means "none") so the unique index can arbitrate the atomic increment.
+model V3SeoClickDaily {
+  id           String   @id @default(cuid())
+  day          String // YYYY-MM-DD, UTC
+  pageType     String
+  categoryKey  String   @default("")
+  locationKey  String   @default("")
+  keywordKey   String   @default("") // the keyword target id, when the link carried one (no foreign key: the target may be deleted)
+  count        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([day, pageType, categoryKey, locationKey, keywordKey], map: "g4d_seo_click_daily_key")
+  @@index([day])
+  @@index([keywordKey])
+  @@map("g4d_seo_click_daily")
+}
+
+// ─── SEO block slice 5: keyword targets and the daily UTM aggregate (platform-level, staff only) (additive) ────────────────────────────────────────
+/// A keyword staff want a directory page to rank for. One row per keyword and page path. An ACTIVE row may carry its own title, description and H1 for that page (still capped and checked); the
+/// lowest priority number wins when several ACTIVE rows name the same path. PLATFORM-LEVEL: no tenant column, staff only (RLS on, no policy). The path is a directory path at page 1.
+model V3SeoKeywordTarget {
+  id                  String   @id @default(cuid())
+  keyword             String
+  path                String
+  pageType            String
+  status              String   @default("PLANNED") // PLANNED | ACTIVE | PAUSED
+  priority            Int      @default(2) // 1 = most important, 3 = least
+  titleOverride       String?
+  descriptionOverride String?
+  h1Override          String?
+  notes               String?
+  source              String   @default("STAFF") // STAFF (typed or CSV) | PLAN (the generated keyword plan, imported)
+  volume              Int? // average monthly searches, from an imported Keyword Planner CSV only; null = unknown
+  competition         String? // LOW | MEDIUM | HIGH, from the same CSV only
+  createdByStaffId    String?
+  updatedByStaffId    String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([keyword, path], map: "g4d_seo_keyword_targets_key")
+  @@index([path, status])
+  @@index([status])
+  @@index([volume])
+  @@map("g4d_seo_keyword_targets")
+}
+
+/// One row per day and campaign context: how many directory page visits arrived with UTM parameters. No IP, no user agent, no referrer URL, no visitor id, no business id. PLATFORM-LEVEL, staff only
+/// (RLS on, no policy). The key columns are never NULL (an empty string means "none") so the unique index can arbitrate the atomic increment.
+model V3SeoUtmDaily {
+  id          String   @id @default(cuid())
+  day         String // YYYY-MM-DD, UTC
+  pageType    String
+  source      String   @default("")
+  medium      String   @default("")
+  campaign    String   @default("")
+  keywordKey  String   @default("") // the keyword target id from the link, when it carried one (no foreign key: the target may be deleted)
+  count       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([day, pageType, source, medium, campaign, keywordKey], map: "g4d_seo_utm_daily_key")
+  @@index([day])
+  @@index([keywordKey])
+  @@map("g4d_seo_utm_daily")
+}
+
+// ── Wave 2 Part A: pack records (a generic, schema-driven record store per vendor per pack tab) ───────────────────────────────────────────────────────
+
+/// Platform data (staff-editable, no vendor id): one row per field of a pack tab's record form. ownerKey is the tab's owner (a pack, capability or add-on key), tabKey the tab. type is one of
+/// text, longtext, number, money, date, datetime, select, multiselect, bool, phone, email, url, image, status. money is stored in minor units and never GST-inclusive.
+model V3PackTabField {
+  id               String   @id @default(cuid())
+  ownerKey         String
+  tabKey           String
+  fieldKey         String
+  label            String
+  type             String
+  required         Boolean  @default(false)
+  options          Json     @default("[]")
+  sortOrder        Int      @default(0)
+  listColumn       Boolean  @default(false)
+  searchable       Boolean  @default(false)
+  active           Boolean  @default(true)
+  updatedByStaffId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([ownerKey, tabKey, fieldKey])
+  @@index([ownerKey, tabKey, sortOrder])
+  @@map("g4d_pack_tab_fields")
+}
+
+/// Tenant data: one record of a vendor's pack tab. data is validated against the tab's fields before every write. Soft delete only (deletedAt); status is a fixed set (OPEN, IN_PROGRESS, DONE, CANCELLED).
+model V3PackRecord {
+  id            String    @id @default(cuid())
+  vendorId      String
+  packKey       String
+  tabKey        String
+  data          Json      @default("{}")
+  /// the searchable fields joined and lower-cased, so a search is one indexed column
+  searchText    String    @default("")
+  status        String    @default("OPEN")
+  createdByType String
+  createdById   String?
+  updatedById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, packKey, tabKey, deletedAt, createdAt])
+  @@index([vendorId, packKey, tabKey, status])
+  @@map("g4d_pack_records")
+}
+
+// ── Wave 2 Part B: vendor gap tables ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// Tenant data: a vendor's request to have an existing site moved to Get4Domain. RECORD ONLY: nothing is cut over by this row; staff pick it up. openVendorId equals vendorId while the request is open (RECEIVED or IN_PROGRESS) and is NULL after, so the database allows one open request per vendor.
+model V3MigrationRequest {
+  id            String   @id @default(cuid())
+  vendorId      String
+  openVendorId  String?  @unique
+  siteUrl       String
+  status        String   @default("RECEIVED")
+  staffNote     String?
+  createdByType String
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_migration_requests")
+}
+
+/// Tenant data: a promotion or social post a vendor has written. DRAFTS ONLY: nothing is ever posted, scheduled or sent from this table. kind PROMOTION or SOCIAL; archive is the only removal.
+model V3PromoDraft {
+  id            String    @id @default(cuid())
+  vendorId      String
+  kind          String
+  channel       String
+  title         String
+  body          String
+  status        String    @default("DRAFT")
+  createdByType String
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  archivedAt    DateTime?
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, kind, status, createdAt])
+  @@map("g4d_promo_drafts")
+}
+
+// ── Wave 2 Part C: staff notes on a vendor ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// Staff only (no vendor route reads it): a note a Get4Domain team member leaves on a vendor. Append only: a note is never edited or deleted. No foreign key, like the activity log: the trigger lets a note go only once its vendor is gone. byName is kept as written so the note still reads right if the staff member is removed.
+model V3VendorNote {
+  id         String   @id @default(cuid())
+  vendorId   String
+  body       String
+  byStaffId  String?
+  byName     String
+  createdAt  DateTime @default(now())
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_vendor_notes")
+}
+
+// ── Wave 2 Part D: uploaded files (pictures and documents) ──────────────────────────────────────────────────────────────────────────────────────────
+
+/// A file a vendor or a staff member uploaded: a picture (jpeg, png, webp, or an svg that carries nothing active) or a pdf. vendorId is NULL for a staff DRAFT upload made before the listing or its vendor account exists; scopeKey is
+/// vendor:<id> or draft:<staffId> and, with the content hash, makes the same file one row. The key is built by the server from ids and the hash, never from a name the user sent. Soft removal only.
+model V3Media {
+  id             String    @id @default(cuid())
+  vendorId       String?
+  scopeKey       String
+  ownerKind      String
+  kind           String
+  contentType    String
+  bytes          Int
+  sha256         String
+  width          Int?
+  height         Int?
+  key            String    @unique
+  url            String
+  altText        String?
+  status         String    @default("ACTIVE")
+  uploadedByType String
+  uploadedById   String?
+  createdAt      DateTime  @default(now())
+  removedAt      DateTime?
+  /// Wave 2 Part G: the upload group a staff draft upload was made under; when the listing is made with the same token the drafts of that staff member move to it (the token alone never moves anything)
+  groupToken     String?
+
+  vendor Vendor? @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([scopeKey, sha256])
+  @@index([uploadedById, groupToken])
+  @@index([vendorId, status, createdAt])
+  @@index([scopeKey, status, createdAt])
+  @@map("g4d_media")
+}
+
+// ── Wave 2 Part E: industry profile fields ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// Platform data (staff edit it; ADMIN and SUPER_ADMIN, audited): one field of the profile a business fills in. packKey is one of the 16 packs; categorySlug is EMPTY for a field that every category of the pack inherits and a
+/// category key for an override or an addition only that category has. type is a record field type or one of textlist, servicelist, imagelist. siteSection names the part of the site the value feeds.
+model V3CategoryProfileField {
+  id               String   @id @default(cuid())
+  packKey          String
+  categorySlug     String   @default("")
+  fieldKey         String
+  label            String
+  type             String
+  required         Boolean  @default(false)
+  options          Json     @default("[]")
+  sortOrder        Int      @default(0)
+  siteSection      String   @default("details")
+  active           Boolean  @default(true)
+  updatedByStaffId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([packKey, categorySlug, fieldKey])
+  @@index([packKey, categorySlug, sortOrder])
+  @@map("g4d_category_profile_fields")
+}
+
+/// Platform data: where a profile value goes in the vendor site content (the managed document). The most specific row wins (category, then pack, then every pack: both scope columns EMPTY). targetKind FIELD writes one field
+/// (targetKey is a site field such as about.text, itemMap.compose joins several profile fields into it); LIST adds an item to a list (targetKey is the list, itemMap says which item field gets the label and which the value);
+/// NONE keeps the value on the profile only. Nothing about an industry is written in code: a new field needs a row here, not a branch.
+model V3ProfileSiteMap {
+  id               String   @id @default(cuid())
+  packKey          String   @default("")
+  categorySlug     String   @default("")
+  fieldKey         String
+  targetKind       String
+  targetKey        String   @default("")
+  itemMap          Json     @default("{}")
+  active           Boolean  @default(true)
+  updatedByStaffId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([packKey, categorySlug, fieldKey])
+  @@map("g4d_profile_site_map")
+}
+
+/// Tenant data: the checked values a business gave for its profile fields, kept as given beside the site content they were mapped into. One row per business and field.
+model V3VendorProfileValue {
+  id            String   @id @default(cuid())
+  vendorId      String
+  fieldKey      String
+  valueJson     Json
+  updatedByType String
+  updatedById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, fieldKey])
+  @@map("g4d_vendor_profile_values")
+}
+
+/// Wave 3 Part A: a source of referred businesses (a freelancer, a sales team, an admin team). Platform data, staff-only (RLS on, no policy). The login of a partner is an admin-team member whose role is REFERRAL_PARTNER, linked here by staffUserId.
+model ReferralPartner {
+  id          String   @id @default(cuid())
+  type        String   // FREELANCER | SALES_TEAM | ADMIN_TEAM
+  name        String
+  email       String   @unique
+  phone       String?
+  status      String   @default("ACTIVE") // ACTIVE | DISABLED
+  staffUserId String?  @unique
+  /// Wave 4 W8: the partner's PAN, optional, written by staff only; the partner sees only a masked form of their own
+  pan         String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  links        ReferralLink[]
+  attributions ReferralAttribution[]
+  ledger       CommissionLedger[]
+  payouts      CommissionPayout[]
+
+  @@index([status])
+  @@map("g4d_referral_partners")
+}
+
+/// Wave 3 Part I: a code a partner shares. Platform data, staff-only (RLS on, no policy). Disabling keeps the row: a disabled code resolves as invalid and attributions already made stay.
+model ReferralLink {
+  id          String    @id @default(cuid())
+  partnerId   String
+  code        String    @unique
+  active      Boolean   @default(true)
+  createdById String?
+  disabledAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  partner ReferralPartner @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+
+  @@index([partnerId, active])
+  @@map("g4d_referral_links")
+}
+
+/// Wave 3 Part I: who referred a vendor. ONE row per vendor: the first touch wins. Only SUPER_ADMIN changes it, with an audit row. vendorId has no foreign key on purpose (the history of a commission outlives a vendor row).
+model ReferralAttribution {
+  id        String   @id @default(cuid())
+  vendorId  String   @unique
+  partnerId String
+  linkId    String?
+  source    String // REGISTER | ON_BEHALF | ADMIN_CHANGE
+  setById   String?
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  partner ReferralPartner @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+
+  @@index([partnerId])
+  @@map("g4d_referral_attributions")
+}
+
+/// Wave 3 Part I: the commission slab rows an ADMIN enters. The system ships with NONE. amountPerVendorMinor is in paise. maxVendors null means "and above".
+model CommissionSlab {
+  id                   String   @id @default(cuid())
+  minVendors           Int
+  maxVendors           Int?
+  amountPerVendorMinor Int
+  effectiveFrom        DateTime
+  createdById          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([effectiveFrom])
+  @@map("g4d_commission_slabs")
+}
+
+/// Wave 3 Part I: one line per vendor, made on the vendor's FIRST successful paid plan payment (a vendor counts once, so vendorId is unique). The amount stays null until the month is closed.
+model CommissionLedger {
+  id          String    @id @default(cuid())
+  partnerId   String
+  vendorId    String
+  month       String // YYYY-MM, in India time, of the qualifying payment
+  orderId     String
+  qualifiedAt DateTime
+  amountMinor Int?
+  status      String    @default("ACCRUED") // ACCRUED | APPROVED | PAID | REVERSED
+  flagged     Boolean   @default(false)
+  flagReason  String?
+  approvedAt  DateTime?
+  payoutId    String?
+  /// Wave 4 W4: COMMISSION (the vendor's first-payment line) or ADJUSTMENT (a negative line made when a PAID line is reversed; netted on the partner's next month close, carried forward if the net would be negative)
+  kind        String    @default("COMMISSION")
+  /// Wave 4 W4: for an ADJUSTMENT, the PAID commission line it takes back
+  adjustsLineId String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  partner ReferralPartner  @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+  payout  CommissionPayout? @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+
+  @@unique([vendorId, kind])
+  @@index([partnerId, month, status])
+  @@index([month, status])
+  @@map("g4d_commission_ledger")
+}
+
+/// Wave 3 Part I: a payout an ADMIN recorded after paying by bank or UPI. No money moves from here and no tax is computed. One per partner and month.
+model CommissionPayout {
+  id          String   @id @default(cuid())
+  partnerId   String
+  month       String
+  /// the gross amount (what the approved lines add up to); kept equal to grossMinor
+  totalMinor  Int
+  /// Wave 4 W8: gross, the TDS held back and the net paid. net = gross - tds. The app applies the percent the owner sets and computes no tax law.
+  grossMinor  Int      @default(0)
+  tdsMinor    Int      @default(0)
+  netMinor    Int      @default(0)
+  /// the percent that was set when the payout was recorded, in basis points (1000 = 10 percent); null when none was set
+  tdsPercentBp Int?
+  /// true when an ADMIN or SUPER_ADMIN changed the pre-filled TDS amount; the reason is then required
+  tdsEdited   Boolean  @default(false)
+  tdsReason   String?
+  status      String   @default("PAID")
+  reference   String
+  paidById    String?
+  paidAt      DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  partner ReferralPartner  @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+  lines   CommissionLedger[]
+
+  @@unique([partnerId, month])
+  @@map("g4d_commission_payouts")
+}
+
+/// TM1 M2: a theme package of the theme marketplace (the kit's zip, stored whole). The bytes are in the row because object storage is unset and a local disk does not survive a redeploy.
+/// One row per (key, version). Never deleted: ARCHIVED hides it from new choices while vendors already using it keep it. RLS on, no policy (service role only).
+model V3ThemeMarketPackage {
+  id                  String    @id @default(cuid())
+  /// the manifest id (the theme key); several versions share a key
+  key                 String
+  version             Int
+  name                String
+  description         String?
+  /// Standard or Premium: a price class of the theme, never a plan
+  tier                String    @default("Standard")
+  /// DRAFT, REVIEW, PUBLISHED or ARCHIVED
+  status              String    @default("DRAFT")
+  /// PUBLIC (the marketplace) or PRIVATE (one business only, privateVendorId)
+  visibility          String    @default("PUBLIC")
+  /// set exactly while visibility is PRIVATE: the only business that may see and use the theme
+  privateVendorId     String?
+  /// the business a custom theme was first made for (kept after it is published to the marketplace); provenance only
+  sourceVendorId      String?
+  /// true for a starter theme built by the Get4Domain team (said honestly in the listing)
+  starter             Boolean   @default(false)
+  licence             String
+  tracks              String[]
+  packs               String[]
+  addons              String[]
+  capabilities        String[]
+  tags                String[]
+  catalogueCategories String[]
+  kitCategories       String[]
+  /// theme.json as uploaded (no secrets, no customer data)
+  manifestJson        Json
+  contentHash         String
+  sizeBytes           Int
+  fileCount           Int
+  /// the zip, exactly as validated
+  bytes               Bytes
+  /// M4: the admin recorded that the customer agreed to the theme being published; a note, never legal wording
+  consentObtained     Boolean?
+  consentNote         String?
+  consentAt           DateTime?
+  consentById         String?
+  /// why a reviewer sent it back to DRAFT
+  reviewNote          String?
+  createdByType       String    @default("STAFF")
+  createdById         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  submittedAt         DateTime?
+  publishedAt         DateTime?
+  publishedById       String?
+  archivedAt          DateTime?
+
+  privateVendor Vendor? @relation("ThemePrivateVendor", fields: [privateVendorId], references: [id], onDelete: Cascade)
+
+  @@unique([key, version])
+  @@index([status, visibility])
+  @@index([privateVendorId])
+  @@index([packs], type: Gin)
+  @@index([tags], type: Gin)
+  @@map("g4d_theme_market_packages")
+}
+
+/// D1 duplicate check: a staff override of a duplicate refusal. Who, why, which record it matched, when. Plain ids (no foreign keys) so the record outlives either business.
+model V3DuplicateOverride {
+  id             String   @id @default(cuid())
+  path           String // REGISTER | REFERRAL | ADMIN_VENDOR | PROVISIONING | SEEDED | DEAL | STARTER_SITE
+  staffId        String
+  staffRole      String
+  reason         String
+  outcome        String // BLOCKED | POSSIBLE: what was overridden
+  matchedVendorId String?
+  matchedBusinessId String?
+  matchedSignals String[]
+  newVendorId    String?
+  createdAt      DateTime @default(now())
+
+  @@index([newVendorId])
+  @@index([matchedVendorId])
+  @@map("g4d_duplicate_overrides")
+}
+
+/// D1 duplicate check: a possible duplicate (medium match) that was let through only on the owner's word. The site is held (not published) until staff clear or reject it.
+model V3DuplicateReview {
+  id             String    @id @default(cuid())
+  path           String
+  vendorId       String    @unique
+  status         String    @default("PENDING") // PENDING | CLEARED | REJECTED
+  matchedVendorId String?
+  matchedBusinessId String?
+  matchedSignals String[]
+  score          Float?
+  decidedByStaffId String?
+  decisionReason String?
+  decidedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@map("g4d_duplicate_reviews")
 }

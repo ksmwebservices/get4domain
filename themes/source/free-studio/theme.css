@@ -1,0 +1,34 @@
+/* Studio: energetic, friendly, rounded. Big radii, pill buttons, coloured cards. */
+.g4d-theme .site-header { border-bottom: 0; box-shadow: 0 2px 0 var(--g4d-border); }
+.g4d-theme .brand { font-weight: 800; font-size: 1.1rem; }
+.g4d-theme .btn, .g4d-theme .g4d-btn, .g4d-theme .head-phone, .g4d-theme .head-wa { border-radius: 999px; padding-inline: 1.4rem; }
+.g4d-theme .head-phone, .g4d-theme .head-wa { padding-inline: 1rem; }
+.g4d-theme .hero { border-radius: 0 0 var(--g4d-radius) var(--g4d-radius); padding-bottom: clamp(2rem, 1rem + 4vw, 4rem); }
+.g4d-theme .hero h1 { font-weight: 800; }
+.g4d-theme .hero-badge, .g4d-theme .eyebrow { font-weight: 700; }
+.g4d-theme .hero-art img { border-radius: var(--g4d-radius); }
+.g4d-theme .sec-title { font-weight: 800; }
+.g4d-theme .sec-title::after { content: ''; display: block; width: 3rem; height: 6px; margin-top: 0.4rem; border-radius: 999px; background: var(--g4d-accent); }
+.g4d-theme .strip { border: 0; border-radius: var(--g4d-radius); margin-inline: 0.75rem; }
+
+/* courses and services: coloured, rounded cards with the price as a pill */
+.g4d-theme .services .cards { gap: 1.1rem; }
+.g4d-theme .services .card { border: 0; background: var(--g4d-surface); border-top: 6px solid var(--g4d-primary); }
+.g4d-theme .services .card:nth-child(3n+2) { border-top-color: var(--g4d-accent); }
+.g4d-theme .services .card:nth-child(3n) { border-top-color: var(--g4d-muted); }
+.g4d-theme .services .card-link { padding-top: 1rem; }
+.g4d-theme .services .price { align-self: flex-start; background: var(--g4d-primary); color: var(--g4d-primary-contrast); border-radius: 999px; padding: 0.1rem 0.9rem; margin-inline: 1rem; font-size: 0.95rem; }
+
+/* batches, timetable, packages, results, trainers */
+.g4d-theme .highlights { background: transparent; }
+.g4d-theme .block { border-radius: var(--g4d-radius); border-width: 0; background: var(--g4d-surface); }
+.g4d-theme .blocks .block:first-child { border: 3px solid var(--g4d-primary); background: var(--g4d-bg); }
+.g4d-theme [data-block='classTimetable'] li, .g4d-theme [data-block='batches'] li { border-bottom: 2px dashed var(--g4d-border); }
+.g4d-theme [data-block='packages'] li, .g4d-theme [data-block='memberships'] li, .g4d-theme [data-block='fees'] li { background: var(--g4d-bg); border-radius: calc(var(--g4d-radius) / 2); padding: 0.6rem 0.8rem; margin-bottom: 0.4rem; border: 0; }
+.g4d-theme [data-block='results'] li { border-bottom: 0; padding-inline-start: 1.4rem; position: relative; }
+.g4d-theme [data-block='results'] li::before { content: '\2605'; position: absolute; inset-inline-start: 0; color: var(--g4d-accent); }
+.g4d-theme .team-card { background: var(--g4d-surface); border-radius: var(--g4d-radius); border: 0; padding: 1.2rem; }
+.g4d-theme .team-card .avatar { width: 7rem; height: 7rem; border: 4px solid var(--g4d-accent); }
+.g4d-theme .why li { border-radius: 999px; border: 0; background: var(--g4d-surface); padding-inline: 1.1rem; }
+.g4d-theme .g4d-review, .g4d-theme .faq details { border-radius: var(--g4d-radius); }
+.g4d-theme .g4d-slot--enquiry-form { border-radius: var(--g4d-radius); }

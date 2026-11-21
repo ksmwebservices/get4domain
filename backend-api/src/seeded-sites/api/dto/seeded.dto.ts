@@ -1,0 +1,68 @@
+import { Type } from 'class-transformer';
+import { IsBoolean, IsIn, IsInt, IsISO8601, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { OUTREACH_STATUSES, SOURCE_KINDS } from '../../core/seeded';
+
+export class CreateSeededDto {
+  @IsString() @MinLength(2) @MaxLength(120) businessName!: string;
+  @IsString() @MinLength(2) @MaxLength(60) category!: string;
+  @IsString() @MinLength(2) @MaxLength(80) city!: string;
+  @IsString() @MinLength(2) @MaxLength(80) area!: string;
+  @IsString() @MaxLength(30) phone!: string;
+  @IsOptional() @IsString() @MaxLength(254) email?: string;
+  @IsOptional() @IsString() @MaxLength(300) address?: string;
+  @IsOptional() @IsString() @MaxLength(600) description?: string;
+  @IsIn(SOURCE_KINDS as unknown as string[]) sourceKind!: string;
+  @IsOptional() @IsString() @MaxLength(300) sourceNote?: string;
+  /** the staff checkbox: only public facts, no invented reviews, no copied photos or text. Required on every create. */
+  @IsBoolean() publicFactsOnly!: boolean;
+  /** SUPER_ADMIN only: create again a business that was removed before */
+  @IsOptional() @IsString() @MaxLength(300) overrideReason?: string;
+  /** D1: a written reason to create this business although it looks like an existing one (ADMIN or SUPER_ADMIN; logged) */
+  @IsOptional() @IsString() @MaxLength(300) duplicateOverrideReason?: string;
+  /** Wave 2 C9: the profile details of the category (state, pincode, services, hours, social links and the industry fields), keyed by the field keys of GET /v3/admin/categories/:slug/profile-schema. Checked BEFORE anything is created. */
+  @IsOptional() @IsObject() profile?: Record<string, unknown>;
+  /** Wave 2 Part G: the upload group the create form used for its draft uploads (POST /v3/admin/media/drafts with the same `group`); they are attached to the new listing, idempotently, and only the caller's own drafts move */
+  @IsOptional() @IsString() @Matches(/^[A-Za-z0-9_-]{16,64}$/, { message: 'uploadGroup must be 16 to 64 letters, digits, dashes or underscores' }) uploadGroup?: string;
+}
+export class BatchDto {
+  @IsString() @MaxLength(1_000_000) csv!: string;
+  @IsOptional() @IsString() @MaxLength(200) fileName?: string;
+  @IsOptional() @IsString() @MaxLength(300) overrideReason?: string;
+}
+export class SeededListDto {
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize?: number;
+  @IsOptional() @IsIn(['SEEDED', 'INVITED', 'CLAIMED_FREE', 'PRO', 'REMOVED']) lifecycle?: 'SEEDED' | 'INVITED' | 'CLAIMED_FREE' | 'PRO' | 'REMOVED';
+  @IsOptional() @IsIn(OUTREACH_STATUSES as unknown as string[]) outreachStatus?: (typeof OUTREACH_STATUSES)[number];
+  @IsOptional() @IsString() @MaxLength(64) batchId?: string;
+  @IsOptional() @IsString() @MaxLength(100) @Matches(/^[\p{L}\p{N} .&'-]*$/u) q?: string;
+}
+export class OutreachDto {
+  @IsOptional() @IsIn(OUTREACH_STATUSES as unknown as string[]) status?: (typeof OUTREACH_STATUSES)[number];
+  @IsOptional() @IsString() @MaxLength(64) ownerStaffId?: string;
+  @IsOptional() @IsISO8601() nextFollowUpAt?: string;
+  @IsOptional() @IsString() @MaxLength(500) note?: string;
+}
+export class CallDto {
+  @IsString() @MinLength(2) @MaxLength(80) outcome!: string;
+  @IsOptional() @IsString() @MaxLength(500) note?: string;
+  @IsOptional() @IsISO8601() nextFollowUpAt?: string;
+}
+export class ConsentDto {
+  @IsBoolean() agreed!: boolean;
+}
+export class ReasonDto {
+  @IsString() @MinLength(5) @MaxLength(300) reason!: string;
+}
+export class RegisterAddDto {
+  @IsString() @MaxLength(30) phone!: string;
+  @IsString() @MinLength(5) @MaxLength(300) reason!: string;
+}
+export class RegisterListDto {
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize?: number;
+}
+export class IndexingModeDto {
+  @IsIn(['OFF', 'QUALITY']) mode!: 'OFF' | 'QUALITY';
+  @IsString() @MinLength(5) @MaxLength(300) reason!: string;
+}

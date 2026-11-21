@@ -1,17 +1,19 @@
 import { Invoice, Vendor } from '@prisma/client';
+import { FIRM_DEFAULTS, joinPresent } from '../../v3-firm/core/firm-core';
 
 const formatCurrency = (paise: number): string => `Rs. ${(paise / 100).toFixed(2)}`;
 
 const formatDate = (date: Date | null): string =>
   date ? new Date(date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
 
+/** The seller block. The tax number, PAN, phone and email are OPTIONAL: when one is empty its line (or its part of a line) is simply not printed. Callers pass the firm profile (v3-firm). */
 export interface InvoiceCompany {
   name: string;
-  gstin: string;
-  pan: string;
+  gstin?: string | null;
+  pan?: string | null;
   address: string;
-  phone: string;
-  email: string;
+  phone?: string | null;
+  email?: string | null;
   logoUrl?: string | null;
 }
 
@@ -35,12 +37,13 @@ export interface InvoiceRenderOpts {
 
 function resolveCompany(c?: Partial<InvoiceCompany>): InvoiceCompany {
   return {
-    name: c?.name ?? process.env.COMPANY_NAME ?? 'KSM Quantum Technologies',
-    gstin: c?.gstin ?? process.env.COMPANY_GST ?? 'GSTIN pending',
-    pan: c?.pan ?? process.env.COMPANY_PAN ?? 'PAN pending',
-    address: c?.address ?? process.env.COMPANY_ADDRESS ?? 'Tidel Park, D Block, Tharamani, Chennai 600113',
-    phone: c?.phone ?? process.env.COMPANY_PHONE ?? '',
-    email: c?.email ?? process.env.COMPANY_EMAIL ?? 'admin@get4domain.com',
+    // the firm profile is the source; the defaults are the profile's own first state, and an empty tax number, PAN, phone or email stays empty (no "pending" text, no typed address book)
+    name: c?.name || FIRM_DEFAULTS.legalName,
+    gstin: c?.gstin || null,
+    pan: c?.pan || null,
+    address: c?.address || FIRM_DEFAULTS.registeredAddress,
+    phone: c?.phone || null,
+    email: c?.email || null,
     // Default to the canonical brand logo so invoices stay consistent with the site
     // header/favicon when no explicit Company Logo is uploaded in Admin.
     logoUrl: c?.logoUrl ?? process.env.COMPANY_LOGO_URL ?? 'https://get4domain.com/logo.png',
@@ -49,6 +52,8 @@ function resolveCompany(c?: Partial<InvoiceCompany>): InvoiceCompany {
 
 export function renderInvoiceHtml(invoice: Invoice, vendor: Vendor, opts: InvoiceRenderOpts = {}): string {
   const co = resolveCompany(opts.company);
+  const taxLine = joinPresent([co.gstin ? `GSTIN: ${co.gstin}` : '', co.pan ? `PAN: ${co.pan}` : ''], ' · ');
+  const contactLine = joinPresent([co.phone, co.email], ' · ');
 
   // Stored invoice totals are authoritative (amount = taxable, gstAmount, totalAmount).
   const items: InvoiceLineItem[] = opts.lineItems?.length
@@ -122,8 +127,8 @@ export function renderInvoiceHtml(invoice: Invoice, vendor: Vendor, opts: Invoic
             <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">From</div>
             <div style="font-weight:700;">${co.name}</div>
             <div style="font-size:13px;color:#475569;">${co.address}</div>
-            <div style="font-size:13px;color:#475569;">GSTIN: ${co.gstin} · PAN: ${co.pan}</div>
-            <div style="font-size:13px;color:#475569;">${co.phone} · ${co.email}</div>
+            ${taxLine ? `<div style="font-size:13px;color:#475569;">${taxLine}</div>` : ''}
+            ${contactLine ? `<div style="font-size:13px;color:#475569;">${contactLine}</div>` : ''}
           </td>
           <td style="vertical-align:top;width:50%;" align="right">
             <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Billed To</div>
@@ -181,7 +186,7 @@ export function renderInvoiceHtml(invoice: Invoice, vendor: Vendor, opts: Invoic
     </div>
 
     <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:14px 28px;font-size:11px;color:#94a3b8;text-align:center;">
-      ${co.name} &middot; ${co.address} &middot; ${co.phone} &middot; ${co.email}<br/>
+      ${joinPresent([co.name, co.address, co.phone, co.email], ' &middot; ')}<br/>
       This is a computer-generated invoice and does not require a signature.
     </div>
   </div>

@@ -1,0 +1,1376 @@
+{
+  "note": "Starter theme recipes (TM1 M6). DATA: each entry is turned into a real theme package by themes/lib/starter-build.mjs (base theme + palette + fonts + radius + layout flavours + a home-page layout). Starter themes are built by the Get4Domain team and say so in their manifest.",
+  "recipes": [
+    {
+      "id": "starter-practice-clear",
+      "name": "Practice Clear",
+      "base": "free-practice",
+      "tagline": "Calm teal, serif headings and ruled section titles.",
+      "packs": [
+        "CLINIC",
+        "LAB",
+        "PRACTICE_LEGAL_FINANCE",
+        "AGENCY_CONSULTING",
+        "B2B_DEALER"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "doctor-clinic",
+        "diagnostics-lab",
+        "ca-tax-consultant",
+        "it-consultant"
+      ],
+      "palette": {
+        "h": 188,
+        "s": 0.55,
+        "accentShift": 25
+      },
+      "fonts": {
+        "heading": "Lora",
+        "body": "Inter"
+      },
+      "radius": "10px",
+      "flavours": [
+        "ruled-titles",
+        "header-rule"
+      ],
+      "home": {}
+    },
+    {
+      "id": "starter-practice-slate",
+      "name": "Practice Slate",
+      "base": "free-practice",
+      "tagline": "Cool slate, square corners and outlined cards.",
+      "packs": [
+        "CLINIC",
+        "LAB",
+        "PRACTICE_LEGAL_FINANCE",
+        "AGENCY_CONSULTING",
+        "B2B_DEALER"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "doctor-clinic",
+        "diagnostics-lab",
+        "ca-tax-consultant",
+        "it-consultant"
+      ],
+      "palette": {
+        "h": 215,
+        "s": 0.3,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Merriweather",
+        "body": "Work Sans"
+      },
+      "radius": "4px",
+      "flavours": [
+        "outlined-cards",
+        "spaced-eyebrow",
+        "tight-measure"
+      ],
+      "home": {
+        "move": [
+          {
+            "partial": "reviews",
+            "after": "about"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-clinic-teal",
+      "name": "Clinic Care Teal",
+      "base": "free-practice",
+      "tagline": "Soft teal with pill buttons, raised cards and a medicine and sample-collection section.",
+      "packs": [
+        "CLINIC",
+        "LAB"
+      ],
+      "addons": [
+        "PHARMACY_COUNTER",
+        "HOME_SAMPLE_COLLECTION"
+      ],
+      "capabilities": [
+        "LAB"
+      ],
+      "tags": [
+        "clinic-plus-pharmacy",
+        "clinic-plus-lab",
+        "clinic-pharmacy-lab-home-sample",
+        "lab-plus-home-sample"
+      ],
+      "categories": [
+        "doctor-clinic",
+        "dentist",
+        "physiotherapy",
+        "diagnostics-lab"
+      ],
+      "palette": {
+        "h": 172,
+        "s": 0.6,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Poppins",
+        "body": "Inter"
+      },
+      "radius": "18px",
+      "flavours": [
+        "pill",
+        "raised-cards",
+        "airy",
+        "banded-hero"
+      ],
+      "home": {
+        "insert": [
+          {
+            "partial": "products",
+            "after": "services"
+          }
+        ],
+        "drop": [
+          "stats"
+        ]
+      }
+    },
+    {
+      "id": "starter-clinic-blue",
+      "name": "Clinic Calm Blue",
+      "base": "free-practice",
+      "tagline": "Clear blue, centred hero and flat cards, with the team near the start of the page.",
+      "packs": [
+        "CLINIC",
+        "LAB"
+      ],
+      "addons": [
+        "PHARMACY_COUNTER"
+      ],
+      "capabilities": [
+        "LAB"
+      ],
+      "tags": [
+        "clinic-plus-pharmacy",
+        "clinic-plus-lab"
+      ],
+      "categories": [
+        "doctor-clinic",
+        "dentist",
+        "physiotherapy",
+        "diagnostics-lab"
+      ],
+      "palette": {
+        "h": 205,
+        "s": 0.6,
+        "accentShift": 28
+      },
+      "fonts": {
+        "heading": "DM Sans",
+        "body": "DM Sans"
+      },
+      "radius": "8px",
+      "flavours": [
+        "flat-cards",
+        "centered-hero",
+        "compact"
+      ],
+      "home": {
+        "insert": [
+          {
+            "partial": "products",
+            "after": "highlights"
+          }
+        ],
+        "move": [
+          {
+            "partial": "team",
+            "after": "hero"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-counsel-navy",
+      "name": "Counsel Navy",
+      "base": "free-practice",
+      "tagline": "Deep navy, classic serif and a wide page for law and tax practices.",
+      "packs": [
+        "PRACTICE_LEGAL_FINANCE"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "ca-tax-consultant",
+        "lawyer",
+        "insurance-advisor"
+      ],
+      "palette": {
+        "h": 222,
+        "s": 0.55,
+        "accentShift": 20
+      },
+      "fonts": {
+        "heading": "Playfair Display",
+        "body": "Inter"
+      },
+      "radius": "2px",
+      "flavours": [
+        "outlined-cards",
+        "spaced-eyebrow",
+        "wide-measure",
+        "header-rule"
+      ],
+      "home": {
+        "drop": [
+          "videos"
+        ]
+      }
+    },
+    {
+      "id": "starter-ledger-green",
+      "name": "Ledger Green",
+      "base": "free-practice",
+      "tagline": "Quiet green, airy spacing and flat cards for accountants and advisers.",
+      "packs": [
+        "PRACTICE_LEGAL_FINANCE"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "ca-tax-consultant",
+        "lawyer",
+        "insurance-advisor"
+      ],
+      "palette": {
+        "h": 150,
+        "s": 0.5,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Lora",
+        "body": "Work Sans"
+      },
+      "radius": "6px",
+      "flavours": [
+        "flat-cards",
+        "ruled-titles",
+        "airy"
+      ],
+      "home": {
+        "move": [
+          {
+            "partial": "why",
+            "after": "hero"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-agency-studio",
+      "name": "Agency Studio",
+      "base": "free-practice",
+      "tagline": "Violet, rounded and raised, with the work gallery up front.",
+      "packs": [
+        "AGENCY_CONSULTING",
+        "B2B_DEALER"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "it-consultant",
+        "interior-designer-architect",
+        "photographer",
+        "event-planner"
+      ],
+      "palette": {
+        "h": 275,
+        "s": 0.5,
+        "accentShift": 40
+      },
+      "fonts": {
+        "heading": "Montserrat",
+        "body": "Inter"
+      },
+      "radius": "14px",
+      "flavours": [
+        "raised-cards",
+        "centered-hero",
+        "banded-hero"
+      ],
+      "home": {
+        "move": [
+          {
+            "partial": "gallery",
+            "after": "about"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-consult-bold",
+      "name": "Consult Bold",
+      "base": "free-practice",
+      "tagline": "Bold red-orange, square and compact, with a catalogue section for consultants who also sell.",
+      "packs": [
+        "AGENCY_CONSULTING",
+        "B2B_DEALER"
+      ],
+      "addons": [
+        "SHOP"
+      ],
+      "capabilities": [],
+      "tags": [
+        "service-plus-shop"
+      ],
+      "categories": [
+        "it-consultant",
+        "interior-designer-architect"
+      ],
+      "palette": {
+        "h": 12,
+        "s": 0.65,
+        "accentShift": 35
+      },
+      "fonts": {
+        "heading": "Manrope",
+        "body": "Manrope"
+      },
+      "radius": "0px",
+      "flavours": [
+        "outlined-cards",
+        "header-rule",
+        "compact",
+        "spaced-eyebrow"
+      ],
+      "home": {
+        "insert": [
+          {
+            "partial": "products",
+            "after": "services"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-studio-bright",
+      "name": "Studio Bright",
+      "base": "free-studio",
+      "tagline": "Bright pink, round pill buttons and raised cards.",
+      "packs": [
+        "MEMBERSHIP_WELLNESS",
+        "EDUCATION"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "coaching-centre",
+        "salon-spa",
+        "gym-yoga",
+        "tutor"
+      ],
+      "palette": {
+        "h": 330,
+        "s": 0.6,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Nunito",
+        "body": "Nunito"
+      },
+      "radius": "20px",
+      "flavours": [
+        "pill",
+        "raised-cards",
+        "airy"
+      ],
+      "home": {}
+    },
+    {
+      "id": "starter-studio-plum",
+      "name": "Studio Plum",
+      "base": "free-studio",
+      "tagline": "Plum, flat cards and a banded hero.",
+      "packs": [
+        "MEMBERSHIP_WELLNESS",
+        "EDUCATION"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "coaching-centre",
+        "salon-spa",
+        "gym-yoga",
+        "tutor"
+      ],
+      "palette": {
+        "h": 290,
+        "s": 0.45,
+        "accentShift": 35
+      },
+      "fonts": {
+        "heading": "Poppins",
+        "body": "DM Sans"
+      },
+      "radius": "12px",
+      "flavours": [
+        "flat-cards",
+        "ruled-titles",
+        "banded-hero"
+      ],
+      "home": {
+        "move": [
+          {
+            "partial": "reviews",
+            "after": "about"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-wellness-sage",
+      "name": "Wellness Sage",
+      "base": "free-studio",
+      "tagline": "Sage green, airy and centred, with a shop section for salons and studios.",
+      "packs": [
+        "MEMBERSHIP_WELLNESS"
+      ],
+      "addons": [
+        "SHOP"
+      ],
+      "capabilities": [],
+      "tags": [
+        "wellness-plus-shop"
+      ],
+      "categories": [
+        "salon-spa",
+        "gym-yoga"
+      ],
+      "palette": {
+        "h": 135,
+        "s": 0.35,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Lora",
+        "body": "Nunito"
+      },
+      "radius": "16px",
+      "flavours": [
+        "airy",
+        "centered-hero",
+        "pill"
+      ],
+      "home": {
+        "insert": [
+          {
+            "partial": "products",
+            "after": "services"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-wellness-rose",
+      "name": "Wellness Rose",
+      "base": "free-studio",
+      "tagline": "Rose, very round, with capital eyebrow lines and a products section.",
+      "packs": [
+        "MEMBERSHIP_WELLNESS"
+      ],
+      "addons": [
+        "SHOP"
+      ],
+      "capabilities": [],
+      "tags": [
+        "wellness-plus-shop",
+        "service-plus-shop"
+      ],
+      "categories": [
+        "salon-spa",
+        "gym-yoga"
+      ],
+      "palette": {
+        "h": 350,
+        "s": 0.5,
+        "accentShift": 25
+      },
+      "fonts": {
+        "heading": "Playfair Display",
+        "body": "Work Sans"
+      },
+      "radius": "24px",
+      "flavours": [
+        "raised-cards",
+        "spaced-eyebrow"
+      ],
+      "home": {
+        "insert": [
+          {
+            "partial": "products",
+            "after": "highlights"
+          }
+        ],
+        "drop": [
+          "stats"
+        ]
+      }
+    },
+    {
+      "id": "starter-learn-amber",
+      "name": "Learn Amber",
+      "base": "free-studio",
+      "tagline": "Warm amber, outlined cards and a compact page, with a books and materials section.",
+      "packs": [
+        "EDUCATION"
+      ],
+      "addons": [
+        "SHOP"
+      ],
+      "capabilities": [],
+      "tags": [
+        "education-plus-shop"
+      ],
+      "categories": [
+        "coaching-centre",
+        "tutor",
+        "music-dance-school"
+      ],
+      "palette": {
+        "h": 38,
+        "s": 0.7,
+        "accentShift": 20
+      },
+      "fonts": {
+        "heading": "Merriweather",
+        "body": "Inter"
+      },
+      "radius": "8px",
+      "flavours": [
+        "outlined-cards",
+        "header-rule",
+        "compact"
+      ],
+      "home": {
+        "insert": [
+          {
+            "partial": "products",
+            "after": "services"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-learn-indigo",
+      "name": "Learn Indigo",
+      "base": "free-studio",
+      "tagline": "Indigo, a wide page, flat cards and the faculty near the start of the page.",
+      "packs": [
+        "EDUCATION"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "coaching-centre",
+        "tutor",
+        "music-dance-school"
+      ],
+      "palette": {
+        "h": 240,
+        "s": 0.55,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Poppins",
+        "body": "Poppins"
+      },
+      "radius": "10px",
+      "flavours": [
+        "flat-cards",
+        "wide-measure",
+        "ruled-titles"
+      ],
+      "home": {
+        "drop": [
+          "videos"
+        ],
+        "move": [
+          {
+            "partial": "team",
+            "after": "hero"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-hospitality-warm",
+      "name": "Hospitality Warm",
+      "base": "free-hospitality",
+      "tagline": "Warm terracotta, serif headings and a banded hero.",
+      "packs": [
+        "FOOD_SERVICE",
+        "HOSPITALITY_EVENTS",
+        "PROPERTY",
+        "RENTAL_FLEET"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "restaurant-cafe",
+        "hotel-homestay",
+        "real-estate-agent",
+        "travel-agency"
+      ],
+      "palette": {
+        "h": 22,
+        "s": 0.6,
+        "accentShift": 25
+      },
+      "fonts": {
+        "heading": "Playfair Display",
+        "body": "DM Sans"
+      },
+      "radius": "12px",
+      "flavours": [
+        "airy",
+        "banded-hero",
+        "ruled-titles"
+      ],
+      "home": {}
+    },
+    {
+      "id": "starter-hospitality-ocean",
+      "name": "Hospitality Ocean",
+      "base": "free-hospitality",
+      "tagline": "Ocean blue, a wide page and raised cards, with the gallery first and a shop section.",
+      "packs": [
+        "FOOD_SERVICE",
+        "HOSPITALITY_EVENTS",
+        "PROPERTY",
+        "RENTAL_FLEET"
+      ],
+      "addons": [
+        "SHOP"
+      ],
+      "capabilities": [],
+      "tags": [
+        "hospitality-plus-shop"
+      ],
+      "categories": [
+        "restaurant-cafe",
+        "hotel-homestay",
+        "real-estate-agent",
+        "travel-agency"
+      ],
+      "palette": {
+        "h": 195,
+        "s": 0.65,
+        "accentShift": 25
+      },
+      "fonts": {
+        "heading": "Montserrat",
+        "body": "Work Sans"
+      },
+      "radius": "6px",
+      "flavours": [
+        "raised-cards",
+        "centered-hero",
+        "wide-measure"
+      ],
+      "home": {
+        "move": [
+          {
+            "partial": "gallery",
+            "after": "hero"
+          }
+        ],
+        "insert": [
+          {
+            "partial": "products",
+            "after": "about"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-kitchen-spice",
+      "name": "Kitchen Spice",
+      "base": "free-hospitality",
+      "tagline": "Spicy red, pill buttons and compact spacing, with an ordering section for cloud kitchens.",
+      "packs": [
+        "FOOD_SERVICE",
+        "HOSPITALITY_EVENTS"
+      ],
+      "addons": [
+        "ONLINE_ORDERING_DELIVERY"
+      ],
+      "capabilities": [],
+      "tags": [
+        "cloud-kitchen-plus-delivery",
+        "restaurant-plus-delivery"
+      ],
+      "categories": [
+        "restaurant-cafe",
+        "hotel-homestay"
+      ],
+      "palette": {
+        "h": 8,
+        "s": 0.7,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Poppins",
+        "body": "Nunito"
+      },
+      "radius": "18px",
+      "flavours": [
+        "pill",
+        "raised-cards",
+        "compact"
+      ],
+      "home": {
+        "insert": [
+          {
+            "partial": "products",
+            "after": "about"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-kitchen-fresh",
+      "name": "Kitchen Fresh",
+      "base": "free-hospitality",
+      "tagline": "Fresh green, flat cards and capital eyebrow lines, with a menu-ordering section.",
+      "packs": [
+        "FOOD_SERVICE",
+        "HOSPITALITY_EVENTS"
+      ],
+      "addons": [
+        "ONLINE_ORDERING_DELIVERY"
+      ],
+      "capabilities": [],
+      "tags": [
+        "restaurant-plus-delivery"
+      ],
+      "categories": [
+        "restaurant-cafe",
+        "hotel-homestay"
+      ],
+      "palette": {
+        "h": 95,
+        "s": 0.5,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Nunito",
+        "body": "DM Sans"
+      },
+      "radius": "14px",
+      "flavours": [
+        "flat-cards",
+        "spaced-eyebrow",
+        "airy"
+      ],
+      "home": {
+        "insert": [
+          {
+            "partial": "products",
+            "after": "services"
+          }
+        ],
+        "drop": [
+          "stats"
+        ]
+      }
+    },
+    {
+      "id": "starter-estate-slate",
+      "name": "Estate Slate",
+      "base": "free-hospitality",
+      "tagline": "Slate grey, small corners and a narrow page for property and rental listings.",
+      "packs": [
+        "PROPERTY",
+        "RENTAL_FLEET"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "real-estate-agent",
+        "travel-agency"
+      ],
+      "palette": {
+        "h": 210,
+        "s": 0.25,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Lora",
+        "body": "Inter"
+      },
+      "radius": "4px",
+      "flavours": [
+        "outlined-cards",
+        "header-rule",
+        "tight-measure"
+      ],
+      "home": {}
+    },
+    {
+      "id": "starter-estate-gold",
+      "name": "Estate Gold",
+      "base": "free-hospitality",
+      "tagline": "Gold, square and airy with flat cards.",
+      "packs": [
+        "PROPERTY",
+        "RENTAL_FLEET"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "real-estate-agent",
+        "travel-agency"
+      ],
+      "palette": {
+        "h": 45,
+        "s": 0.6,
+        "accentShift": 25
+      },
+      "fonts": {
+        "heading": "Playfair Display",
+        "body": "Inter"
+      },
+      "radius": "2px",
+      "flavours": [
+        "flat-cards",
+        "ruled-titles",
+        "airy"
+      ],
+      "home": {
+        "move": [
+          {
+            "partial": "reviews",
+            "after": "about"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-service-strong",
+      "name": "Service Strong",
+      "base": "free-service-pro",
+      "tagline": "Strong blue, outlined cards and a header rule.",
+      "packs": [
+        "FIELD_SERVICE",
+        "VEHICLE_SERVICE",
+        "LOGISTICS"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "plumber",
+        "electrician",
+        "auto-mechanic",
+        "packers-movers"
+      ],
+      "palette": {
+        "h": 215,
+        "s": 0.6,
+        "accentShift": 25
+      },
+      "fonts": {
+        "heading": "Montserrat",
+        "body": "Inter"
+      },
+      "radius": "6px",
+      "flavours": [
+        "outlined-cards",
+        "header-rule",
+        "spaced-eyebrow"
+      ],
+      "home": {}
+    },
+    {
+      "id": "starter-service-sunrise",
+      "name": "Service Sunrise",
+      "base": "free-service-pro",
+      "tagline": "Sunrise orange, pill buttons, raised cards and airy spacing.",
+      "packs": [
+        "FIELD_SERVICE",
+        "VEHICLE_SERVICE",
+        "LOGISTICS"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "plumber",
+        "electrician",
+        "auto-mechanic",
+        "packers-movers"
+      ],
+      "palette": {
+        "h": 30,
+        "s": 0.8,
+        "accentShift": 20
+      },
+      "fonts": {
+        "heading": "Poppins",
+        "body": "Work Sans"
+      },
+      "radius": "14px",
+      "flavours": [
+        "raised-cards",
+        "pill",
+        "airy"
+      ],
+      "home": {
+        "move": [
+          {
+            "partial": "reviews",
+            "after": "about"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-handyman-orange",
+      "name": "Handyman Orange",
+      "base": "free-service-pro",
+      "tagline": "Work orange, compact and flat, with a shop section for handymen who sell parts.",
+      "packs": [
+        "FIELD_SERVICE"
+      ],
+      "addons": [
+        "SHOP"
+      ],
+      "capabilities": [],
+      "tags": [
+        "handyman-plus-shop",
+        "service-plus-shop"
+      ],
+      "categories": [
+        "plumber",
+        "electrician",
+        "carpenter",
+        "painter"
+      ],
+      "palette": {
+        "h": 24,
+        "s": 0.75,
+        "accentShift": 20
+      },
+      "fonts": {
+        "heading": "Work Sans",
+        "body": "Work Sans"
+      },
+      "radius": "8px",
+      "flavours": [
+        "compact",
+        "flat-cards",
+        "banded-hero"
+      ],
+      "home": {
+        "insert": [
+          {
+            "partial": "products",
+            "after": "services"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-handyman-teal",
+      "name": "Handyman Teal",
+      "base": "free-service-pro",
+      "tagline": "Teal with pill buttons and a wide page, with a parts and products section.",
+      "packs": [
+        "FIELD_SERVICE"
+      ],
+      "addons": [
+        "SHOP"
+      ],
+      "capabilities": [],
+      "tags": [
+        "handyman-plus-shop"
+      ],
+      "categories": [
+        "plumber",
+        "electrician",
+        "carpenter",
+        "painter"
+      ],
+      "palette": {
+        "h": 178,
+        "s": 0.6,
+        "accentShift": 25
+      },
+      "fonts": {
+        "heading": "DM Sans",
+        "body": "Inter"
+      },
+      "radius": "12px",
+      "flavours": [
+        "pill",
+        "ruled-titles",
+        "wide-measure"
+      ],
+      "home": {
+        "insert": [
+          {
+            "partial": "products",
+            "after": "highlights"
+          }
+        ],
+        "drop": [
+          "stats"
+        ]
+      }
+    },
+    {
+      "id": "starter-garage-red",
+      "name": "Garage Red",
+      "base": "free-service-pro",
+      "tagline": "Garage red, square and centred, with a spare-parts section.",
+      "packs": [
+        "VEHICLE_SERVICE",
+        "LOGISTICS"
+      ],
+      "addons": [
+        "SHOP"
+      ],
+      "capabilities": [],
+      "tags": [
+        "vehicle-service-plus-shop",
+        "service-plus-shop"
+      ],
+      "categories": [
+        "auto-mechanic",
+        "car-wash-detailing",
+        "packers-movers"
+      ],
+      "palette": {
+        "h": 0,
+        "s": 0.65,
+        "accentShift": 25
+      },
+      "fonts": {
+        "heading": "Manrope",
+        "body": "Inter"
+      },
+      "radius": "4px",
+      "flavours": [
+        "outlined-cards",
+        "centered-hero",
+        "header-rule"
+      ],
+      "home": {
+        "insert": [
+          {
+            "partial": "products",
+            "after": "services"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-garage-steel",
+      "name": "Garage Steel",
+      "base": "free-service-pro",
+      "tagline": "Steel grey, sharp corners and compact spacing, with a parts section.",
+      "packs": [
+        "VEHICLE_SERVICE",
+        "LOGISTICS"
+      ],
+      "addons": [
+        "SHOP"
+      ],
+      "capabilities": [],
+      "tags": [
+        "vehicle-service-plus-shop"
+      ],
+      "categories": [
+        "auto-mechanic",
+        "car-wash-detailing",
+        "packers-movers"
+      ],
+      "palette": {
+        "h": 220,
+        "s": 0.2,
+        "accentShift": 25
+      },
+      "fonts": {
+        "heading": "Montserrat",
+        "body": "DM Sans"
+      },
+      "radius": "0px",
+      "flavours": [
+        "flat-cards",
+        "spaced-eyebrow",
+        "compact"
+      ],
+      "home": {
+        "insert": [
+          {
+            "partial": "products",
+            "after": "about"
+          }
+        ],
+        "drop": [
+          "videos"
+        ]
+      }
+    },
+    {
+      "id": "starter-shop-fresh",
+      "name": "Shop Fresh",
+      "base": "free-shop-lite",
+      "tagline": "Fresh green, raised cards and ruled titles.",
+      "packs": [
+        "RETAIL",
+        "PHARMACY"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "electronics-mobile",
+        "grocery-kirana",
+        "gifts-handicrafts"
+      ],
+      "palette": {
+        "h": 150,
+        "s": 0.55,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Nunito",
+        "body": "Inter"
+      },
+      "radius": "12px",
+      "flavours": [
+        "raised-cards",
+        "airy",
+        "ruled-titles"
+      ],
+      "home": {}
+    },
+    {
+      "id": "starter-shop-coral",
+      "name": "Shop Coral",
+      "base": "free-shop-lite",
+      "tagline": "Coral, pill buttons and flat cards.",
+      "packs": [
+        "RETAIL",
+        "PHARMACY"
+      ],
+      "addons": [],
+      "capabilities": [],
+      "tags": [],
+      "categories": [
+        "electronics-mobile",
+        "grocery-kirana",
+        "gifts-handicrafts"
+      ],
+      "palette": {
+        "h": 10,
+        "s": 0.6,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Poppins",
+        "body": "DM Sans"
+      },
+      "radius": "20px",
+      "flavours": [
+        "pill",
+        "flat-cards",
+        "banded-hero"
+      ],
+      "home": {
+        "move": [
+          {
+            "partial": "reviews",
+            "after": "about"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-retail-bold",
+      "name": "Retail Bold",
+      "base": "free-shop-lite",
+      "tagline": "Bold violet, outlined and compact, for shops that also deliver.",
+      "packs": [
+        "RETAIL"
+      ],
+      "addons": [
+        "ONLINE_ORDERING_DELIVERY"
+      ],
+      "capabilities": [],
+      "tags": [
+        "shop-plus-delivery"
+      ],
+      "categories": [
+        "electronics-mobile",
+        "fashion-apparel",
+        "home-furniture",
+        "gifts-handicrafts"
+      ],
+      "palette": {
+        "h": 265,
+        "s": 0.6,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Montserrat",
+        "body": "Inter"
+      },
+      "radius": "8px",
+      "flavours": [
+        "outlined-cards",
+        "compact",
+        "header-rule"
+      ],
+      "home": {}
+    },
+    {
+      "id": "starter-retail-soft",
+      "name": "Retail Soft",
+      "base": "free-shop-lite",
+      "tagline": "Soft blue, airy and centred, for shops that also deliver.",
+      "packs": [
+        "RETAIL"
+      ],
+      "addons": [
+        "ONLINE_ORDERING_DELIVERY"
+      ],
+      "capabilities": [],
+      "tags": [
+        "shop-plus-delivery"
+      ],
+      "categories": [
+        "electronics-mobile",
+        "fashion-apparel",
+        "home-furniture",
+        "gifts-handicrafts"
+      ],
+      "palette": {
+        "h": 200,
+        "s": 0.4,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Lora",
+        "body": "Nunito"
+      },
+      "radius": "16px",
+      "flavours": [
+        "flat-cards",
+        "airy",
+        "centered-hero"
+      ],
+      "home": {
+        "drop": [
+          "stats"
+        ]
+      }
+    },
+    {
+      "id": "starter-chemist-clean",
+      "name": "Chemist Clean",
+      "base": "free-shop-lite",
+      "tagline": "Clean mint, raised cards and a narrow page for chemists who deliver.",
+      "packs": [
+        "PHARMACY"
+      ],
+      "addons": [
+        "ONLINE_ORDERING_DELIVERY"
+      ],
+      "capabilities": [
+        "PHARMACY"
+      ],
+      "tags": [
+        "pharmacy-plus-delivery"
+      ],
+      "categories": [
+        "grocery-kirana"
+      ],
+      "palette": {
+        "h": 165,
+        "s": 0.5,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "DM Sans",
+        "body": "Inter"
+      },
+      "radius": "10px",
+      "flavours": [
+        "raised-cards",
+        "tight-measure",
+        "ruled-titles"
+      ],
+      "home": {}
+    },
+    {
+      "id": "starter-chemist-calm",
+      "name": "Chemist Calm",
+      "base": "free-shop-lite",
+      "tagline": "Calm blue-green, flat cards and a header rule for chemists who deliver.",
+      "packs": [
+        "PHARMACY"
+      ],
+      "addons": [
+        "ONLINE_ORDERING_DELIVERY"
+      ],
+      "capabilities": [
+        "PHARMACY"
+      ],
+      "tags": [
+        "pharmacy-plus-delivery"
+      ],
+      "categories": [
+        "grocery-kirana",
+        "bakery-sweets"
+      ],
+      "palette": {
+        "h": 190,
+        "s": 0.35,
+        "accentShift": 30
+      },
+      "fonts": {
+        "heading": "Work Sans",
+        "body": "Work Sans"
+      },
+      "radius": "6px",
+      "flavours": [
+        "flat-cards",
+        "airy",
+        "header-rule"
+      ],
+      "home": {
+        "move": [
+          {
+            "partial": "reviews",
+            "after": "hero"
+          }
+        ]
+      }
+    }
+  ]
+}

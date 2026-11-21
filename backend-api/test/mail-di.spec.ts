@@ -1,0 +1,46 @@
+import { Test } from '@nestjs/testing';
+import { PrismaService } from '../src/prisma/prisma.service';
+import { ActivityBus } from '../src/common/activity-bus';
+import { EntitlementsService } from '../src/plans/entitlements/entitlements.service';
+import { EmailPort, GuardedEmailPort } from '../src/v3-mail/email.port';
+import { GuardedSmsPort, SmsPhoneCodeSender, SmsPort, SmsTransport, UnboundSmsTransport } from '../src/v3-mail/sms.port';
+import { SmsSettingsService } from '../src/v3-mail/settings/sms-settings';
+import { ChannelIdentityOtpSender, PhoneCodeSender } from '../src/v3-mail/identity-otp.sender';
+import { ConsentGate, NoConsentYet } from '../src/v3-mail/consent.port';
+import { InboxService } from '../src/v3-mail/inbox.service';
+import { InboxStore } from '../src/v3-mail/inbox.store';
+import { PrismaInboxStore } from '../src/v3-mail/prisma-inbox.store';
+import { EmailTransport, ResendTransport } from '../src/v3-mail/email.port';
+import { MailSettingsService } from '../src/v3-mail/settings/mail-settings';
+import { IdentityOtpSender } from '../src/v3-registrar/identity.service';
+import { PrivateFilesService } from '../src/v3-storage/private-files.service';
+import { PrismaStorageAccessStore } from '../src/v3-storage/prisma-storage.store';
+import { S3PrivateStorage, S3PublicStorage } from '../src/v3-storage/s3.adapters';
+import { StorageSettingsService } from '../src/v3-storage/settings/storage-settings';
+import { ContentScanPort, NoScanner, PrivateObjectStore, StorageAccessStore } from '../src/v3-storage/storage.ports';
+import { ImagePort, SharpImagePort } from '../src/v3-website/media/media.ports';
+
+import { SupportStore } from '../src/v3-support/support.store';
+import { PrismaSupportStore } from '../src/v3-support/prisma-support.store';
+import { SupportSettingsService } from '../src/v3-support/settings/support-settings';
+import { EmailTicketNotifier, SupportService, TicketNotifier } from '../src/v3-support/support.service';
+
+/**
+ * A real Nest dependency resolution of the Block 4b providers, with only PrismaService, the entitlements and the bus stubbed. A constructor parameter Nest cannot resolve (for example a default
+ * function parameter without @Optional()) fails here instead of at boot.
+ */
+describe('dependency injection of the Block 4b providers', () => {
+  const external = [PrismaService, EntitlementsService, ActivityBus].map((provide) => ({ provide, useValue: {} }));
+  it('storage resolves', async () => {
+    const m = await Test.createTestingModule({ providers: [...external, StorageSettingsService, S3PrivateStorage, S3PublicStorage, { provide: PrivateObjectStore, useExisting: S3PrivateStorage }, { provide: StorageAccessStore, useClass: PrismaStorageAccessStore }, { provide: ContentScanPort, useClass: NoScanner }, { provide: ImagePort, useClass: SharpImagePort }, PrivateFilesService] }).compile();
+    expect(m.get(PrivateFilesService)).toBeInstanceOf(PrivateFilesService);
+  });
+  it('support resolves', async () => {
+    const m = await Test.createTestingModule({ providers: [...external, { provide: EmailPort, useValue: {} }, { provide: SupportStore, useClass: PrismaSupportStore }, SupportSettingsService, { provide: TicketNotifier, useClass: EmailTicketNotifier }, SupportService] }).compile();
+    expect(m.get(SupportService)).toBeInstanceOf(SupportService);
+  });
+  it('mail and the inbox resolve, and the identity sender is the channel sender', async () => {
+    const m = await Test.createTestingModule({ providers: [...external, MailSettingsService, ResendTransport, { provide: EmailTransport, useExisting: ResendTransport }, GuardedEmailPort, { provide: EmailPort, useExisting: GuardedEmailPort }, { provide: InboxStore, useClass: PrismaInboxStore }, { provide: ConsentGate, useClass: NoConsentYet }, InboxService, SmsSettingsService, { provide: SmsTransport, useClass: UnboundSmsTransport }, GuardedSmsPort, { provide: SmsPort, useExisting: GuardedSmsPort }, { provide: PhoneCodeSender, useClass: SmsPhoneCodeSender }, { provide: IdentityOtpSender, useClass: ChannelIdentityOtpSender }] }).compile();
+    expect(m.get(InboxService)).toBeInstanceOf(InboxService); expect(m.get(IdentityOtpSender)).toBeInstanceOf(ChannelIdentityOtpSender);
+  });
+});

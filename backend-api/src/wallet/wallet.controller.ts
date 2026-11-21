@@ -9,6 +9,7 @@ import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-use
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { Throttle } from '@nestjs/throttler';
 import { RATE } from '../common/throttling';
+import { VendorOwnerGuard } from '../common/guards/vendor-owner.guard';
 
 @ApiTags('wallet')
 @ApiBearerAuth()
@@ -33,6 +34,7 @@ export class WalletController {
     return this.walletService.getTransactions(user.sub, page ? Number(page) : 1, limit ? Number(limit) : 20);
   }
 
+  @UseGuards(VendorOwnerGuard)   // S8-B: adding money is owner-only (balance and history stay wallet-area gated)
   @Throttle(RATE.payment)
   @Post('topup')
   @ApiOperation({ summary: 'Create a Razorpay order to top up the wallet' })
@@ -40,6 +42,7 @@ export class WalletController {
     return this.walletService.topup(user.sub, dto);
   }
 
+  @UseGuards(VendorOwnerGuard)
   @Throttle(RATE.payment)
   @Post('topup/verify')
   @ApiOperation({ summary: 'Verify a wallet top-up payment and credit the wallet with bonus' })

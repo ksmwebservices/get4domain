@@ -20,12 +20,12 @@ import { renewalBilling, shadowGst } from './arrangement-rules';
 export function vendorTermView(t: BillingTerm | null) {
   if (!t) return null;
   return {
-    id: t.id, planKey: t.planKey, billingCycle: t.billingCycle, cycleMonths: t.cycleMonths, status: t.status, source: t.source,
+    id: t.id, planKey: t.planKey ?? null, hasPlan: !!t.planKey, billingCycle: t.billingCycle, cycleMonths: t.cycleMonths, status: t.status, source: t.source,
     netAmountPaise: t.netAmountPaise, gstMode: t.gstMode, periodStart: t.periodStart, periodEnd: t.periodEnd, graceDays: t.graceDays,
     paymentDueAt: t.paymentDueAt, scheduledNextPlan: t.scheduledNextPlan, scheduledNextCycle: t.scheduledNextCycle,
-    adminDeal: t.source === 'ADMIN_DEAL', entitlements: entitlementsFor(t.planKey as PlanKey),
+    adminDeal: t.source === 'ADMIN_DEAL', entitlements: entitlementsFor(t.planKey as PlanKey | undefined),   // no plan key = the defined empty "no plan" state
     // "AI Studio credit included" for THIS term (prorated by length, or the admin's figure). Never an invoice line.
-    aiCreditIncludedPaise: t.aiCreditPaise ?? aiStudioCreditPaise(t.planKey as PlanKey, t.cycleMonths),
+    aiCreditIncludedPaise: t.aiCreditPaise ?? (t.planKey ? aiStudioCreditPaise(t.planKey as PlanKey, t.cycleMonths) : 0),
   };
 }
 

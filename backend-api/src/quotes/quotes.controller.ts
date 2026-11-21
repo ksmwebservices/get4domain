@@ -74,7 +74,7 @@ export class PublicQuotesController {
     const items = (quote.items as unknown as { label: string; qty: number; rate: number }[] | null) ?? [
       { label: quote.itemLabel, qty: 1, rate: quote.amount },
     ];
-    return { html: renderProposalHtml(quote, items), status: quote.status };
+    return { html: renderProposalHtml(quote, items, { company: await this.quotesService.proposalCompany() }), status: quote.status };
   }
 
   @Public()

@@ -1,13 +1,16 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { DomainRegistration } from '@prisma/client';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { VendorOwnerGuard } from '../common/guards/vendor-owner.guard';
+import { RequiresTab } from '../v3-packs/requires-tab';
 import { DomainsService, DomainSearchResult } from './domains.service';
 import { RegisterDomainDto } from './dto/register-domain.dto';
 import { ConnectDomainDto } from './dto/connect-domain.dto';
 
 @ApiTags('domains')
 @ApiBearerAuth()
+@RequiresTab('domain')   // closed on a Free trial (Amendment 11 Q2, Amendment 13 B11); Version 2 vendors are never restricted
 @Controller('domains')
 export class DomainsController {
   constructor(private readonly service: DomainsService) {}
@@ -30,19 +33,23 @@ export class DomainsController {
     return this.service.listMine(user.sub);
   }
 
+  // Buying, claiming and activating a domain spends the vendor's wallet and changes where their site is served: the account OWNER only (S8-A).
   @Post('register')
+  @UseGuards(VendorOwnerGuard)
   @ApiOperation({ summary: 'Buy a domain, charged to the vendor wallet (refunded on registrar failure)' })
   register(@CurrentUser() user: AuthenticatedUser, @Body() dto: RegisterDomainDto): Promise<DomainRegistration> {
     return this.service.register(user.sub, dto);
   }
 
   @Post('connect')
+  @UseGuards(VendorOwnerGuard)
   @ApiOperation({ summary: 'Register intent to point an externally-owned domain at the platform' })
   connect(@CurrentUser() user: AuthenticatedUser, @Body() dto: ConnectDomainDto): Promise<DomainRegistration> {
     return this.service.connect(user.sub, dto.domain);
   }
 
   @Post('verify')
+  @UseGuards(VendorOwnerGuard)
   @ApiOperation({ summary: 'Check DNS propagation and activate the domain once it points at us' })
   verify(@CurrentUser() user: AuthenticatedUser, @Body() dto: ConnectDomainDto) {
     return this.service.verifyMapping(user.sub, dto.domain);

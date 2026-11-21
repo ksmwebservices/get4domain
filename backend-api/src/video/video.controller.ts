@@ -3,12 +3,11 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { VideoService, VideoProvider } from './video.service';
 import { GenerateVideoDto } from './dto/generate-video.dto';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { staffMayUse } from '../auth/guards/staff-access';
+import { RouteKey } from '../common/decorators/route-key.decorator';
 import { REEL_VIDEO_COMING_SOON } from '../common/coming-soon';
 
-/** Internal Get4Domain staff generate video for free (no wallet), like AI Studio. */
-function isInternalStaff(user: AuthenticatedUser): boolean {
-  return Boolean(user.adminRole) || user.kind === 'admin_member';
-}
+// Free internal generation for Get4Domain staff (no wallet) is decided by the staff matrix (auth/guards/admin-role-matrix.ts), keyed by the route.
 
 @ApiTags('video')
 @ApiBearerAuth()
@@ -25,8 +24,8 @@ export class VideoController {
 
   @Post('generate')
   @ApiOperation({ summary: 'Start a video/reel generation job (deducts wallet; free for internal staff)' })
-  generate(@CurrentUser() user: AuthenticatedUser, @Body() dto: GenerateVideoDto) {
-    return this.video.generate(user.sub, dto, isInternalStaff(user));
+  generate(@CurrentUser() user: AuthenticatedUser, @RouteKey() route: string, @Body() dto: GenerateVideoDto) {
+    return this.video.generate(user.sub, dto, staffMayUse(user, route));
   }
 
   @Get('status')

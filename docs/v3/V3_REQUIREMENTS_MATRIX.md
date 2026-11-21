@@ -27,17 +27,17 @@ A row can carry several flags, e.g. `EI + CRED + APPR`. "Docs-only" = built in a
 
 | ID | Decision | Effect on this matrix |
 |---|---|---|
-| **D1** | V3 covers the **public business directory, instant free websites, and the four plans in spec §3 only: Free, Handyman, Professional, Ecommerce.** Billing: quarterly, half-yearly, annual; optional monthly possible later. Plans, prices, taxes, billing periods, discounts, grace periods and entitlements are **database data editable by admin without code changes.** | Rows in §3 are **ND**. **Workspace and BOS are legacy, out of V3 scope**: not extended, not built on, not deleted, not migrated; existing vendor data is untouched. No "grandfathering" or "build on Workspace/BOS" work exists in the V3 plan. Dependents are listed in the section "Legacy, out of V3 scope" below. |
+| **D1** | V3 covers the **public business directory, instant free websites, and plans as data: three tracks (Handyman, Professional, Ecommerce), each with a Free and a Pro level = six plan rows (owner decision 2026-11-03; the earlier four-plan reading of spec §3 is replaced).** Billing: quarterly, half-yearly, annual; optional monthly possible later. Plans, prices, taxes, billing periods, discounts, grace periods and entitlements are **database data editable by admin without code changes.** | Rows in §3 are **ND**. **Workspace and BOS are legacy, out of V3 scope**: not extended, not built on, not deleted, not migrated; existing vendor data is untouched. No "grandfathering" or "build on Workspace/BOS" work exists in the V3 plan. Dependents are listed in the section "Legacy, out of V3 scope" below. |
 | **D3** | Keep the existing **HTML/CSS themes**. **Next.js theme packages are deferred.** | §5.3 Next.js row = **Deferred**. |
 | **D4** | Redis/BullMQ approved, but **not added in Step 0.** A managed Redis is introduced only when queues are needed (≈V3.6/V3.7). | §19 queue row = **ND, scheduled V3.6/V3.7**. |
 
 ## Headline findings (the ones that change the plan)
 
-1. **Plan model: resolved by D1.** Spec §3 (Free, Handyman, Professional, Ecommerce; quarterly/half-yearly/annual; data-driven) is the V3 model. It is **new development** on new tables. The existing Workspace (₹11,988/yr) and BOS (₹23,988/yr) annual-only plans, with the "Essentials / Pro" display names used in later dispatches, are **legacy and out of V3 scope**.
+1. **Plan model: resolved by D1.** Spec §3 as decided by the owner on 2026-11-03 (three tracks x Free/Pro = six plans; quarterly/half-yearly/annual only; data-driven) is the V3 model; **built in slice 5.1 on staging** (see `V3_S1_PLANS_ENTITLEMENTS.md`). It is **new development** on new tables. The existing Workspace (₹11,988/yr) and BOS (₹23,988/yr) annual-only plans, with the "Essentials / Pro" display names used in later dispatches, are **legacy and out of V3 scope**.
 2. **There is no public business directory.** No `/businesses/...` routes, no Listing-as-directory, no location engine, no category/location sitemaps. The `Listing` model in the schema is a *real-estate* module model, not a directory. §7 is almost entirely **ND**.
 3. **The "Tenant" is the `Vendor` row.** There is no Tenant/Business/Branch/TenantMember split; auth is single-vendor-per-login with a small `TeamMember`. All 148 model IDs are `cuid()`. §20's "Core" entities are mostly **RM** (map onto Vendor) rather than new tables.
 4. **Theme packages exist as sanitised HTML/CSS — not Next.js. Resolved by D3:** keep the HTML/CSS contract (`docs/v2/THEME_CONTRACT.md`); Next.js theme packages are deferred.
-5. **Zero automated test files are tracked in git and there is no CI** (`.github/` absent). Verification is bespoke Node scripts (`npm run bos:verify`, `verify:commercial`, `security-verify`). Spec Rule 7 (cross-tenant tests on every important API) cannot be claimed met.
+5. **RESOLVED in Step 0 (updated with slice 5.1):** a Jest suite is tracked in git (unit project run in CI, staging-integration project run with `npm run test:int`) and `.github/workflows/v3-ci.yml` exists. The bespoke verify scripts remain. Spec Rule 7 (cross-tenant tests on every important API) is **partly met**: see the Rule 7 row below.
 6. **No queue infrastructure.** No Redis/BullMQ anywhere (`backend-api/package.json`, `src/`). Approved by D4 but deliberately **not** added in Step 0; managed Redis arrives ≈V3.6/V3.7. Scheduling today is `@nestjs/schedule` cron in-process.
 7. **Many "integrations" are mock/sandbox or credential-blocked** (Meta publish, Google Ads, video, WhatsApp Cloud API approval, ResellerClub untested, Fast2SMS DLT). See `V3_INTEGRATION_STATUS.md`. Rule 6 forbids calling any of these complete.
 8. **Open security findings from V2 (S7–S15) are not confirmed fixed** in anything I read. S1–S6 were patched in code (commit 6cf999b) but the V2 docs said "not yet deployed" at the time; current production state is unverified by me.
@@ -124,10 +124,10 @@ Wallet rows tagged `ai_studio_bonus`; `ThemeEntitlement` theme-change allowance 
 | 5.3 | Theme security (no arbitrary code, size limits, version, rollback, tenant isolation) | **EW** (design) | Script-free contract, sanitiser, lint CLI, size limits. Rollback via versions. Static review only. |
 | 5.3 | Next.js theme packages with controlled build/preview deployments | **Deferred (D3)** | Out of V3 scope for now. The HTML/CSS contract is the supported format. |
 | 5.4 | Vendor Theme Marketplace (browse, filter, desktop/mobile preview, preview with own content, activate, change, restore) | **EI** | Paid yearly marketplace, unlock/buy, `theme-preview`, theme-change limits (2/4 per year). Per-plan eligibility mapping to V3 plans = **RM**. |
-| 5.5 | Global/page/section managers (all listed components) | **EI** | Website Manager: `VendorCMS` single-row model + `draft` JSON + pack sections. Not a relational Pages/Sections model (§20 wants `WebsitePages`, `WebsiteSections`). |
-| 5.5 | Draft / preview / publish / revision history / restore | **EW** (docs) | `SiteVersion` keeps last 10 versions; signed 30-min preview link. |
+| 5.5 | Global/page/section managers (all listed components) | **EI** | Website Manager: `VendorCMS` single-row model + `draft` JSON + pack sections. Not a relational Pages/Sections model (§20 wants `WebsitePages`, `WebsiteSections`). **Batch 9 (`v3-b9`, built, not pushed, staging NOT RUN):** the Website manager edits every page's typed fields from a map derived from each theme's templates, through a draft overlay and a managed content document (`V3_WEBSITE_MANAGER.md`); landing pages, editable menu labels and opening-hours rows remain gaps. |
+| 5.5 | Draft / preview / publish / revision history / restore | **EW** (docs) | `SiteVersion` keeps last 10 versions; signed 30-min preview link. **Batch 9:** per-field autosave, preview, publish (one snapshot per publication), restore and compare through `/v3/me/site/*`. |
 | 5.5 | Schedule publication | **ND** | Not found. |
-| 5.5 | Employee approval + vendor approval workflow | **ND** | Not found. |
+| 5.5 | Employee approval + vendor approval workflow | **ND** | Not found. **Batch 9:** Free edits go to staff review (submit, approve, reject with a reason); Pro edits go live with the activity log. |
 | 5.5 | Shared content schema reused by directory, website, chatbot, CRM | **EI** | `VendorCMS` is read by site, sitemap, readiness, WhatsApp bot (per doc). Directory/CRM reuse absent. |
 
 ## §6 Hosting and multi-domain
@@ -260,12 +260,12 @@ Wallet rows tagged `ai_studio_bonus`; `ThemeEntitlement` theme-change allowance 
 
 ## §20 Database design — entity coverage
 
-148 `cuid()` IDs; **150 `model` + 20 `enum`** blocks; **54 migration folders** (28 core tables historically created by `prisma db push`, drift noted in V2 `MIGRATION_PLAN.md`; `20260719093736_add_leads` applied in DB with no local folder).
+148 `cuid()` IDs; **150 `model` + 21 `enum`** blocks; **53 migration folders** (28 core tables historically created by `prisma db push`, drift noted in V2 `MIGRATION_PLAN.md`; `20260719093736_add_leads` applied in DB with no local folder).
 
 | Spec group | Coverage |
 |---|---|
 | Core (Users, Roles, Permissions, Tenants, Businesses, Branches, Employees, TenantMembers) | **RM** — `Vendor`, `AdminTeamMember`, `TeamMember` partially cover; no Permissions/Tenant/Business/Branch tables. |
-| Subscription (Plans, PlanPrices, Features, PlanFeatures, Subscriptions, Entitlements, UsageRecords, Invoices, Payments, Refunds) | **ND** under D1. New V3 tables for plans, prices, features, plan features, taxes, discounts, subscription terms, entitlements, refunds, usage. The existing `Subscription`, `Invoice`, `BillingTerm`, `BillingDeal`, `PlanOverride`, `PaymentRecord`, `PromoCode` tables are **legacy (Workspace/BOS era), out of V3 scope**. Where V3 needs invoices/payments it adds V3-named tables rather than altering these. |
+| Subscription (Plans, PlanPrices, Features, PlanFeatures, Subscriptions, Entitlements, UsageRecords, Invoices, Payments, Refunds) | **ND** under D1. New V3 tables for plans, prices, features, plan features, taxes, discounts, subscription terms, entitlements, refunds, usage. The existing `Subscription`, `Invoice`, `BillingTerm`, `BillingDeal`, `PlanOverride`, `PaymentRecord`, `PromoCode` tables are **legacy (Workspace/BOS era), out of V3 scope**. Where V3 needs invoices/payments it adds V3-named tables rather than altering these. **Slice 5.1 built the plan tables (`g4d_plans`, `g4d_plan_prices`, `g4d_features`, `g4d_plan_features`, `g4d_tax_rates`, `g4d_discount_rules`, `g4d_plan_settings`, `g4d_plan_subscriptions`, `g4d_subscription_events`, `g4d_entitlement_overrides`, `g4d_audit_logs`, `g4d_vendor_flags`) on staging; payments, invoices, refunds and usage are still to come (slice 5.1b).** |
 | Website (Websites, Domains, DomainVerifications, DNSRecords, SSLRecords, WebsitePages/Sections/Revisions/Media, ThemePackages/Versions/Deployments) | **EI** — `VendorCMS`(single row), `SiteVersion`, `MediaAsset`, `ThemePackage`(versioned), `ThemeAsset`, `ThemeEntitlement`, `WebsiteTheme`; domain fields live on `Vendor`; `DomainRegistration` exists. No Verification/DNS/SSL tables. |
 | Directory | **ND** (see §7; `Category`, `CategoryPack` exist) |
 | Domain | **EI** — `DomainRegistration` only. DomainTransfers / MigrationJobs / RegistrarTransactions / RenewalRecords **ND**. |
@@ -287,7 +287,49 @@ Wallet rows tagged `ai_studio_bonus`; `ThemeEntitlement` theme-change allowance 
 | 3 Preserve functionality / data | Constraint on every V3 phase; additive-migration verify scripts exist (`verify-migrations-additive.js`). |
 | 5 Secure theme uploads | Contract is script-free (EW design). |
 | 6 External API honesty | Integration status tracked in `V3_INTEGRATION_STATUS.md`. |
-| 7 Tenant-isolation tests | **Not met** — no test suite; ad-hoc security scripts only. |
+| 7 Tenant-isolation tests | **Partly met.** A tenant guard and `forTenant()` exist, the route surface is pinned by a reviewed baseline, and cross-tenant integration tests cover the high-risk vendor families (`tenant-isolation.int.spec.ts`, `owner-only-money.int.spec.ts`, `team-owner-only.int.spec.ts`) and, from slice 5.1, the plans tables and routes (`plans-tenant.int.spec.ts`, written for staging), and, from slice 5.3, the provisioning tables and routes (`provisioning-tenant.int.spec.ts`, written for staging; `tenant-model-registry.spec.ts` fails in CI if a V3 table with a `vendorId` is not classified), and, from slice 5.4, the site tables and routes (`site-tenant.int.spec.ts`, written for staging). Not every legacy controller has a cross-tenant test. |
 | 8 Migrations / backups | Many migrations are "written, not applied"; ordered VM runbooks exist; backups not in repo. |
 | 10 No fake functionality | Prior Release 1A removed unbuilt claims; mocks (Meta, Google Ads, video) must stay labelled. |
 | 11 Tracker docs | 7 required; this phase creates 4. `V3_API_DOCUMENTATION`, `V3_TEST_REPORT`, `V3_CHANGELOG` start in V3.1. |
+
+## Status as built (2026-11-04, B2.0)
+| Slice | Branch | State | Requirement rows it moves |
+|---|---|---|---|
+| 5.1 Plans and entitlements | `v3-s51` | Built and pushed; staging suites written (`plans-*.int.spec.ts`). | Plan model (D1), entitlement checks, plan admin |
+| 5.3 Provisioning engine | `v3-s53` | Built and pushed; first staging run found and fixed the reissue bug (`041b4b9`). | Free business creation, claim links, invites (sandbox) |
+| 5.4 Renderer, SEO layer, publish | `v3-s54` | Built and pushed; staging 310 of 311, the one failure a test timeout, addressed in `c3e9bd4`; re-run pending. Internal read API only: no real host is served. | Instant free site, SEO fundamentals, publish and rollback |
+| SEO-0 | `v3-seo0` | Four commits on the marketing frontend only; not part of the backend batches. | SEO fundamentals on get4domain.com |
+| B2.0 Hygiene | `v3-b2` | Done: plans suites clean up after a failed assertion (`cleanup-guard`); this status block. | Rule 7 (tenant tests) housekeeping |
+
+
+## Status as built (2026-11-04, Batch 2)
+| Slice | Branch | State | Requirement rows it moves |
+|---|---|---|---|
+| 5.6 Subdomain rules and domain mapping | `v3-b2` | Built; unit tests green; staging suites written, NOT RUN. Live DNS checks off by default; no certificate or server change. | Free subdomain, custom domain mapping, canonical host, redirects |
+| 5.7 Public directory, claim by OTP, removal | `v3-b2` | Built; sandbox SMS only; seed is proposed data awaiting owner review; staging NOT RUN. | Directory search, claim flow, takedown flow |
+| 5.1b Plan purchase and renewal | `v3-b2` | Built with a fake provider in tests; Razorpay TEST adapter only; live refused; staging NOT RUN. | Plan purchase, invoices, renewal reminders |
+| 5.11 AI Studio providers and credits | `v3-b2` | Built with a mock model; live adapters gated off; wallet-bought credits not included (legacy wallet, D1). Staging NOT RUN. | AI suggestions, credits, provider management |
+
+
+## Status as built (2026-11-05, Batch 3)
+| Slice | Branch | State | Requirement rows it moves |
+|---|---|---|---|
+| 5.1c Free versus Pro matrix | `v3-b3` | Seed change only (12 cells changed, 36 added, no price touched); unit tests green; seed dry run NOT RUN. | Free is a listing with no call to action; Pro features locked-preview on Free |
+| 5.1d Plan expiry, suspension, deletion | `v3-b3` | Built; unit tests green; staging NOT RUN. Personal-data erasure beyond the retention list is NOT built. | Plan lifecycle, suspension, account deletion |
+| 5.4b Listing-only render and CTA gating | `v3-b3` | Built in the theme kit and the backend; unit and kit tests green; one cosmetic gap in the Standard themes (Bolt). | Free site has no call to action; seeded notice; seeded indexing rule |
+| 5.6b Canonical rule and custom-domain add-on | `v3-b3` | Built; supersedes the Batch 2 "custom domain is primary" rule; staging NOT RUN. | Canonical host, promotion add-on |
+| 5.6c Own-domain automation | `v3-b11` | Built; unit tests green; staging suite written, NOT RUN. Cloudflare is fake-only in tests; the product binding says automatic connection is not switched on. | Custom hostname, certificate watch, connect or forward, per-registrar steps, lapse after grace (Q11), domain log |
+| 5.6d Domain sales | `v3-b11` | Built; unit tests green; staging suite written, NOT RUN. The ResellerClub adapter is written behind two live flags (both OFF); every path is TO VERIFY (documentation could not be fetched). Identity code delivery is not connected. | Registrar port, identity check, price book, purchase from the wallet, renewal before expiry, reconciliation, expiry alerts, invoice |
+| 5.6e Domain transfer-in | `v3-b11` | Built; unit tests green; staging case written, NOT RUN. Same flags and TO VERIFY status as 5.6d. | Transfer into the owner's registrar account, Pro only |
+| 5.23a One customer list | `v3-b13` | Built (reduced by owner override: no TeleCRM, pipeline, tasks or segments, no legacy import); unit tests green; staging case written, NOT RUN. | One customer per person, source attribution, consent, Free locked |
+| 5.23b Accounts | `v3-b13` | Built; sales posted idempotently from 5.17d documents, expenses, items and services, GST summary from the tax profile; staging case written, NOT RUN. Grouping the GST summary by rate and the return mapping are accountant questions. | Accounts, GST summary, items and services (Handyman and Professional), Free locked |
+| 5.24a Jobs and quotes | `v3-b13` | Built; state machines tested edge by edge; PAID only from a confirmed payment; staging case written, NOT RUN. No customer-facing accept page, nothing is sent. | Handyman: request, quote, booking, job, paid, calendar |
+| 5.24b Appointments | `v3-b13` | Built; request-and-confirm, nothing confirms itself; reminders go to a FAKE port (Stage 17B); staging case written, NOT RUN. No public booking page. | Professional: services, providers, hours, slots |
+| 5.24c Store | `v3-b13` | Built; stock cannot go below zero, ledger, stock import loader (Step N Rock readiness), returns recorded, catalogue bridge to the Stage 9 checkout; staging case written, NOT RUN. The public cart still refuses an order when no payment method is active (open question 6); fractional tax rates are not orderable online. | Ecommerce: products, variants, inventory, import, checkout decision |
+| 5.25 Retire per-industry modules | `v3-b13` | Built; the 21 Version 2 industry modules answer 404 for V3 vendors by entitlement, legacy vendors untouched, no data changed; seed rows NOT loaded on staging. | Retired modules |
+| 5.7b Directory as a search engine | `v3-b3` | Built; the directory has no form or lead endpoint (tested); staging NOT RUN. | Visit-site beacon, `siteUrl`, badges, visit stats |
+| 5.13a Seeded sites | `v3-b3` | Built through the real job runner (SEEDED mode); no live outreach; staging NOT RUN. | Seeded promotion pages, do-not-contact register, claim handover |
+| 5.14 Requests and orders bridge | `v3-b3` | Built; sandbox messaging, fake gateway; no live mode; per-item tax is an open question; staging NOT RUN. | Enquiries, orders, vendor payment methods, vendor invoices, offers, stock, reports |
+| 5.15 Terms and acceptances | `v3-b3` | Built; placeholder text cannot be published; immutability trigger NOT RUN on a database; the claim guard waits for the set-password endpoint. | Terms documents, acceptance guards, session flag |
+
+Gated and not started: 5.8, 5.9, 5.10, 5.12, the rest of 5.13, CRM, TeleCRM, booking, Accounts, live messaging, live gateways, registrar and certificate automation, the Pro theme importer, the pricing scheme change.

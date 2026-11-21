@@ -1,0 +1,35 @@
+import { Actor } from '../plans/admin/audit.service';
+import { SeedInput } from './core/seeded';
+
+/** Creates the vendor shell, the Free plan, the Free site draft and the UNCLAIMED directory profile for one seeded business, through the slice 5.3 job runner (SEEDED mode). */
+export abstract class SeedProvisioner {
+  abstract provision(i: { input: SeedInput; placeholderEmail: string; idempotencyKey: string; actor: Actor; duplicateOverride?: { reason: string; staffId: string; staffRole: string } }): Promise<{ vendorId: string; directoryBusinessId: string | null }>;
+}
+
+/** Builds and publishes the listing-only Free site. The indexing decision (noindex unless the quality rule and the setting allow) is made by the site build itself. */
+export abstract class SeededPublisher {
+  abstract publish(vendorId: string, actor: Actor): Promise<{ published: boolean }>;
+  /**
+   * C12: has the owner of a CLAIMED business accepted the current Terms and policies? Staff can approve a site on the owner's behalf, but they can never accept the Terms for the owner, so a claimed
+   * business whose owner has not accepted is refused. The default says yes (a unit test and a build without the terms module have nothing to ask); the real adapter asks the terms module.
+   */
+  async ownerTermsAccepted(_vendorId: string): Promise<boolean> { return true; }
+}
+
+import type { ListableCategory } from '../directory/core/listable-categories';
+
+/** The claim link for a seeded business: given to staff ONCE (nothing is emailed or sent), and revoked on request. */
+export abstract class ClaimHandover {
+  abstract issue(vendorId: string, actor: Actor): Promise<{ claimUrl: string; expiresAt: string }>;
+  abstract revoke(vendorId: string, actor: Actor): Promise<number>;
+}
+
+/** What the quality check and the views need about the business behind a seeded site. */
+export interface BusinessFacts { name: string; categoryKnown: boolean; city: string | null; area: string | null; phoneE164: string | null; businessStatus: string; proActive: boolean; /** a version of the vendor's site is published now (Part B, B1) */ sitePublished?: boolean }
+export abstract class SeededFacts {
+  abstract factsOf(vendorId: string): Promise<BusinessFacts | null>;
+  abstract categoryExists(id: string): boolean;
+  abstract trackOf(categoryId: string): string;
+  /** K1: every category a seeded listing can be made in, with its pack and family, and whether its row is in the directory yet. Default: none (a twin without a directory). */
+  async listableCategories(): Promise<Array<ListableCategory & { inDirectory: boolean }>> { return []; }
+}

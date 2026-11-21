@@ -1,6 +1,7 @@
 import { Clock, MapPin, Phone } from 'lucide-react';
 import type { ShellRuntime } from './types';
 import { SocialLinks } from './SocialLinks';
+import { PoweredBy } from '../components/PoweredBy';
 
 /**
  * The footer every design and theme gets: the business line, quick links, contact, opening hours, social icons (an empty link hides its icon) and legal links generated for
@@ -28,7 +29,7 @@ export default function ShellFooter({ runtime, variant = 'columns', tagline, lin
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-sm md:flex-row">
           <p className="font-medium">{b.name}</p>
           <SocialLinks social={runtime.social} />
-          <div className="text-center text-xs text-[var(--sh-muted)] md:text-right"><p>© {year} {b.name}</p>{legal}</div>
+          <div className="text-center text-xs text-[var(--sh-muted)] md:text-right"><p>© {year} {b.name}</p>{legal}<p className="mt-1"><PoweredBy /></p></div>
         </div>
       </footer>
     );
@@ -40,7 +41,7 @@ export default function ShellFooter({ runtime, variant = 'columns', tagline, lin
         {tagline && <p className="mx-auto mt-2 max-w-md text-sm text-[var(--sh-muted)]">{tagline}</p>}
         <div className="mt-5 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">{quick.map((l) => <a key={l.href} href={l.href} className="hover:text-[var(--sh-accent)]">{l.label}</a>)}</div>
         <div className="mx-auto mt-6 flex max-w-sm flex-col items-center gap-4">{contact}{hours}<SocialLinks social={runtime.social} className="justify-center" /></div>
-        <div className="mt-8 flex flex-col items-center gap-2 text-xs text-[var(--sh-muted)]"><p>© {year} {b.name}. All rights reserved.</p>{legal}<p>Powered by Get4Domain</p></div>
+        <div className="mt-8 flex flex-col items-center gap-2 text-xs text-[var(--sh-muted)]"><p>© {year} {b.name}. All rights reserved.</p>{legal}<p><PoweredBy /></p></div>
       </footer>
     );
   }
@@ -53,7 +54,7 @@ export default function ShellFooter({ runtime, variant = 'columns', tagline, lin
           <div><p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[var(--sh-muted)]">Contact</p>{contact}</div>
           <div>{hours && <><p className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-[var(--sh-muted)]"><Clock className="h-3.5 w-3.5" />Opening hours</p>{hours}</>}</div>
         </div>
-        <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t border-[var(--sh-border)] pt-6 text-xs text-[var(--sh-muted)] md:flex-row md:items-center"><p>© {year} {b.name}. All rights reserved. · Powered by Get4Domain</p>{legal}</div>
+        <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t border-[var(--sh-border)] pt-6 text-xs text-[var(--sh-muted)] md:flex-row md:items-center"><p>© {year} {b.name}. All rights reserved. · <PoweredBy /></p>{legal}</div>
       </div>
     </footer>
   );

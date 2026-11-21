@@ -8,6 +8,7 @@ import { AuthenticatedUser, CurrentUser } from '../common/decorators/current-use
 import { Public } from '../common/decorators/public.decorator';
 import { RequireModule } from '../common/decorators/require-module.decorator';
 import { RATE } from '../common/throttling';
+import { VendorOwnerGuard } from '../common/guards/vendor-owner.guard';
 import { CommercialAdminGuard } from '../commercial/foundation.services';
 import { PaymentsService } from '../payments/payments.service';
 import { ReconcileDto, RefillOrderDto, SavePackDto, VerifyRefillDto } from './leadspace.dto';
@@ -29,6 +30,7 @@ export class LeadspaceRefillController {
   @ApiOperation({ summary: 'Refill packs with the exact amount you will pay (GST included or added, as set) and the custom amount limits' })
   async packs() { return { packs: await this.refill.packs(), custom: await this.refill.customLimits() }; }
 
+  @UseGuards(VendorOwnerGuard)   // S8-B: legacy LeadSpace refill is still callable, so it is locked too
   @Post('refill')
   @Throttle(RATE.payment)
   @ApiOperation({ summary: 'Start a refill: returns a Razorpay order for a pack or a custom amount' })
@@ -37,6 +39,7 @@ export class LeadspaceRefillController {
     return this.refill.createOrder(u.sub, dto);
   }
 
+  @UseGuards(VendorOwnerGuard)
   @Post('refill/verify')
   @Throttle(RATE.payment)
   @ApiOperation({ summary: 'Confirm the payment with Razorpay, credit the wallet once, issue the tax invoice and release waiting customers' })

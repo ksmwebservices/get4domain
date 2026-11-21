@@ -8,6 +8,8 @@ import { CallSummaryDto } from './dto/call-summary.dto';
 import { GenerateImageDto } from './dto/generate-image.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { staffMayUse } from '../auth/guards/staff-access';
+import { RouteKey } from '../common/decorators/route-key.decorator';
 
 @ApiTags('ai')
 @Controller('ai')
@@ -31,8 +33,8 @@ export class AiController {
   @ApiBearerAuth()
   @Post('generate-content')
   @ApiOperation({ summary: 'Generate campaign content for a channel (deducts wallet credits; free for internal admin staff)' })
-  generateContent(@CurrentUser() user: AuthenticatedUser, @Body() dto: GenerateContentDto) {
-    return this.aiService.generateContent(user.sub, dto, isInternalStaff(user));
+  generateContent(@CurrentUser() user: AuthenticatedUser, @RouteKey() route: string, @Body() dto: GenerateContentDto) {
+    return this.aiService.generateContent(user.sub, dto, staffMayUse(user, route));
   }
 
   @ApiBearerAuth()
@@ -45,24 +47,16 @@ export class AiController {
   @ApiBearerAuth()
   @Post('call-summary')
   @ApiOperation({ summary: 'Summarize a TeleCRM call note (deducts wallet credits; free for internal admin staff)' })
-  callSummary(@CurrentUser() user: AuthenticatedUser, @Body() dto: CallSummaryDto) {
-    return this.aiService.callSummary(user.sub, dto, isInternalStaff(user));
+  callSummary(@CurrentUser() user: AuthenticatedUser, @RouteKey() route: string, @Body() dto: CallSummaryDto) {
+    return this.aiService.callSummary(user.sub, dto, staffMayUse(user, route));
   }
 
   @ApiBearerAuth()
   @Post('generate-image')
   @ApiOperation({ summary: 'Generate a design-only background image for a document (text overlaid client-side)' })
-  generateImage(@CurrentUser() user: AuthenticatedUser, @Body() dto: GenerateImageDto) {
-    return this.aiService.generateDesignImage(user.sub, dto.prompt, isInternalStaff(user));
+  generateImage(@CurrentUser() user: AuthenticatedUser, @RouteKey() route: string, @Body() dto: GenerateImageDto) {
+    return this.aiService.generateDesignImage(user.sub, dto.prompt, staffMayUse(user, route));
   }
 }
 
-/**
- * Internal Get4Domain staff (Vendor SUPER_ADMIN `admin@get4domain.com` and any
- * standalone AdminTeamMember) carry an `adminRole` / `kind: 'admin_member'` claim.
- * Their AI Studio usage on the Admin Platform is free — no wallet required — so
- * the team can test and use content generation without topping up credits.
- */
-function isInternalStaff(user: AuthenticatedUser): boolean {
-  return Boolean(user.adminRole) || user.kind === 'admin_member';
-}
+// Free internal AI usage for Get4Domain staff (no wallet) is decided by the staff matrix (auth/guards/admin-role-matrix.ts), keyed by the route.

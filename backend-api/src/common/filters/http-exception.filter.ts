@@ -7,6 +7,29 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
+import { randomBytes } from 'crypto';
+import { PLAN_ERROR_CODES } from '../../plans/plans.errors';
+import { B3_ERROR_CODES } from '../../b3-settings/b3-errors';
+import { PROVISIONING_API_ERROR_CODES } from '../../provisioning/provisioning.errors';
+import { SITE_ERROR_CODES } from '../../site-publish/site.errors';
+import { DOMAIN_ERROR_CODES } from '../../site-domains/site-domains.errors';
+import { DIRECTORY_ERROR_CODES } from '../../directory/directory.errors';
+import { SEO_ERROR_CODES } from '../../seo-directory/seo-directory.errors';
+import { BILLING_ERROR_CODES } from '../../plan-billing/plan-billing.errors';
+import { AI_ERROR_CODES } from '../../ai-studio/ai-studio.errors';
+import { WALLET_ERROR_CODES, WALLET_NUMERIC_FIELDS } from '../../v3-wallet/wallet.errors';
+import { SERVICES_ERROR_CODES } from '../../v3-services/services.errors';
+import { SERVICE_REQUEST_ERROR_CODES } from '../../v3-service-requests/requests.errors';
+import { THEME_SWITCH_ERROR_CODES } from '../../v3-theme-switch/theme-switch.errors';
+import { ACTIVITY_ERROR_CODES } from '../../v3-activity/activity.errors';
+import { TRUST_ERROR_CODES } from '../../v3-trust/trust.errors';
+import { WEBSITE_ERROR_CODES } from '../../v3-website/website.errors';
+import { REGISTRAR_ERROR_CODES } from '../../v3-registrar/registrar.service';
+import { IDENTITY_ERROR_CODES } from '../../v3-registrar/identity.service';
+import { CONNECTION_ERROR_CODES } from '../../v3-domain-automation/connection.service';
+import { BUSINESS_ERROR_CODES } from '../../v3-business/business.errors';
+import { DUPLICATE_CODES } from '../../v3-duplicates/duplicate.errors';
 
 /** "createdAt" -> "Created at" */
 const words = (field: string): string => { const t = field.replace(/\[\d+\]/g, '').split('.').pop() ?? field; const w = t.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').toLowerCase().trim(); return w.charAt(0).toUpperCase() + w.slice(1); };
@@ -34,6 +57,29 @@ export function plainValidation(messages: string[]): { message: string; fields: 
   return { message: `${shown}${parts.length > 4 ? ` (and ${parts.length - 4} more)` : ''}. Check those details and try again.`, fields };
 }
 
+/**
+ * Prisma errors a client can act on, with a fixed sentence each. The Prisma message itself is never sent: it contains the
+ * server's file path, the failing call and the constraint name.
+ */
+const PRISMA_CLIENT_ERRORS: Record<string, { status: number; message: string }> = {
+  P2025: { status: HttpStatus.NOT_FOUND, message: 'That item could not be found.' },
+  P2002: { status: HttpStatus.CONFLICT, message: 'That already exists.' },
+  P2003: { status: HttpStatus.CONFLICT, message: 'This item is still linked to other records (for example invoices or bookings), so it cannot be removed or changed that way. Remove or reassign those first.' },
+  P2014: { status: HttpStatus.CONFLICT, message: 'This item is still linked to other records (for example invoices or bookings), so it cannot be removed or changed that way. Remove or reassign those first.' },
+};
+const GENERIC_SERVER_ERROR = 'Something went wrong on our side. Please try again.';
+const PROVIDER_ERROR = 'A connected provider (payments, messaging or similar) could not complete this request. Please try again in a moment.';
+
+/** What the client is told about an error that is not a deliberate HttpException. The real detail goes to the server log only. */
+interface Classified {
+  status: number;
+  message: string;
+  /** Present for 5xx: shown to the client and written next to the full error in the log so support can find it. */
+  reference?: string;
+  /** Short note for the server log of a mapped (non-5xx) error. */
+  logNote?: string;
+}
+
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
@@ -43,29 +89,38 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
+    const classified = this.classify(exception);
+
     const statusCode =
-      exception instanceof HttpException
+      classified?.status ??
+      (exception instanceof HttpException
         ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+        : HttpStatus.INTERNAL_SERVER_ERROR);
 
     const exceptionResponse =
       exception instanceof HttpException ? exception.getResponse() : null;
 
+    // A deliberate HttpException keeps its own message. Anything else uses the classified, fixed sentence: raw error text
+    // (file paths, SQL, Prisma invocation text, provider detail) must never reach the client.
     const message =
-      exceptionResponse && typeof exceptionResponse === 'object' && 'message' in exceptionResponse
+      classified?.message ??
+      (exceptionResponse && typeof exceptionResponse === 'object' && 'message' in exceptionResponse
         ? (exceptionResponse as { message: string | string[] }).message
         : exception instanceof Error
           ? exception.message
-          : this.extractMessage(exception);
+          : 'Internal server error');
 
     if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
       // Log the full error detail, not just the route. Some SDKs (e.g. Razorpay)
       // reject with a plain object rather than an Error, so `instanceof Error`
       // fails and we would otherwise lose the message and stack entirely.
+      const ref = classified?.reference ? `[${classified.reference}] ` : '';
       this.logger.error(
-        `${request.method} ${request.url} -> ${statusCode}: ${this.describe(exception)}`,
+        `${ref}${request.method} ${request.url} -> ${statusCode}: ${this.describe(exception)}`,
         exception instanceof Error ? exception.stack : undefined,
       );
+    } else if (classified?.logNote) {
+      this.logger.warn(`${request.method} ${request.url} -> ${statusCode} (${classified.logNote})`);
     }
 
     // An exception may carry structured `details` (e.g. the open invoice that blocked a deal) so a screen can offer a link / override.
@@ -76,11 +131,40 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Structured, machine-readable reasons (e.g. PLAN_REQUIRED + the feature and plan that unlock it) so a screen can render an upgrade card.
     const extra: Record<string, unknown> = {};
-    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', 'LIMIT_REACHED'].includes(String((exceptionResponse as Record<string, unknown>).code))) {
-      for (const k of ['code', 'feature', 'requiredPlan'] as const) {
+    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', ...PLAN_ERROR_CODES, ...PROVISIONING_API_ERROR_CODES, ...SITE_ERROR_CODES, ...DOMAIN_ERROR_CODES, ...DIRECTORY_ERROR_CODES, ...SEO_ERROR_CODES, ...BILLING_ERROR_CODES, ...AI_ERROR_CODES, ...B3_ERROR_CODES, ...WALLET_ERROR_CODES, ...SERVICES_ERROR_CODES, ...SERVICE_REQUEST_ERROR_CODES, ...THEME_SWITCH_ERROR_CODES, ...ACTIVITY_ERROR_CODES, ...TRUST_ERROR_CODES, ...WEBSITE_ERROR_CODES, ...REGISTRAR_ERROR_CODES, ...IDENTITY_ERROR_CODES, ...CONNECTION_ERROR_CODES, ...BUSINESS_ERROR_CODES, ...DUPLICATE_CODES].includes(String((exceptionResponse as Record<string, unknown>).code))) {
+      // Batch 4 adds `problem`: the machine reason behind a refusal (for example EFFECTIVE_DATE_IN_PAST, or RATES_MISSING for tax)
+      for (const k of ['code', 'feature', 'requiredPlan', 'upsellText', 'problem'] as const) {
         const v = (exceptionResponse as Record<string, unknown>)[k];
         if (typeof v === 'string') extra[k] = v;
       }
+      // Batch 4: INSUFFICIENT_WALLET and the top-up limits carry whole numbers of paise (the exact shortfall and the top-up that covers it)
+      for (const k of WALLET_NUMERIC_FIELDS) { const n = (exceptionResponse as Record<string, unknown>)[k]; if (typeof n === 'number' && Number.isFinite(n)) extra[k] = n; }
+      const limit = (exceptionResponse as Record<string, unknown>).limit;
+      if (typeof limit === 'number') extra.limit = limit;
+      // B3 validation reasons: plain strings only
+      const errs = (exceptionResponse as Record<string, unknown>).errors;
+      if (Array.isArray(errs)) extra.errors = errs.filter((e): e is string => typeof e === 'string').slice(0, 20);
+      // TERMS_ACCEPTANCE_REQUIRED: which documents wait, as plain { kind, version } pairs
+      const waiting = (exceptionResponse as Record<string, unknown>).outstanding;
+      if (Array.isArray(waiting)) extra.outstanding = waiting.filter((o): o is { kind: string; version: number } => !!o && typeof (o as { kind?: unknown }).kind === 'string' && typeof (o as { version?: unknown }).version === 'number').map((o) => ({ kind: o.kind, version: o.version }));
+      // THEME_PACKAGE_INVALID and THEME_PUBLISH_BLOCKED: every problem of a theme package as plain { file, rule, message, source } (nothing else from the body, nothing from the file's content)
+      const problems = (exceptionResponse as Record<string, unknown>).problems;
+      if (Array.isArray(problems)) extra.problems = problems.filter((p): p is { file: string; rule: string; message: string; source: string } => !!p && typeof (p as { file?: unknown }).file === 'string' && typeof (p as { rule?: unknown }).rule === 'string' && typeof (p as { message?: unknown }).message === 'string').slice(0, 100).map((p) => ({ file: p.file.slice(0, 200), rule: p.rule.slice(0, 80), message: p.message.slice(0, 300), source: typeof p.source === 'string' ? p.source.slice(0, 20) : 'package' }));
+      const problemCount = (exceptionResponse as Record<string, unknown>).problemCount;
+      if (typeof problemCount === 'number' && Number.isFinite(problemCount)) extra.problemCount = problemCount;
+      // Duplicate refusals (B5.2): the claim route and the matching listings, PUBLIC facts only. Whatever the service put in a candidate, only these six fields leave the server.
+      const claim = (exceptionResponse as Record<string, unknown>).claim;
+      if (claim === null) extra.claim = null;
+      else if (claim && typeof claim === 'object' && typeof (claim as { businessSlug?: unknown }).businessSlug === 'string') extra.claim = { businessSlug: (claim as { businessSlug: string }).businessSlug, startPath: typeof (claim as { startPath?: unknown }).startPath === 'string' ? (claim as { startPath: string }).startPath : '/v3/claim/start' };
+      const candidates = (exceptionResponse as Record<string, unknown>).candidates;
+      if (Array.isArray(candidates)) {
+        const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+        extra.candidates = candidates.filter((c): c is Record<string, unknown> => !!c && typeof c === 'object' && typeof (c as { slug?: unknown }).slug === 'string' && typeof (c as { name?: unknown }).name === 'string').slice(0, 10)
+          .map((c) => ({ slug: c.slug as string, name: c.name as string, category: str(c.category), city: str(c.city), area: str(c.area), claimable: c.claimable === true }));
+      }
+      // PUBLISH_BLOCKED: what is missing, as plain { code, label } pairs (nothing else from the body)
+      const missing = (exceptionResponse as Record<string, unknown>).missing;
+      if (Array.isArray(missing)) extra.missing = missing.filter((m): m is { code: string; label: string } => !!m && typeof (m as { code?: unknown }).code === 'string' && typeof (m as { label?: unknown }).label === 'string').map((m) => ({ code: m.code, label: m.label }));
     }
 
     let outMessage: string | string[] = message;
@@ -92,19 +176,31 @@ export class HttpExceptionFilter implements ExceptionFilter {
       statusCode,
       message: outMessage,
       ...extra,
-      data: details ?? (Object.keys(extra).length ? extra : fieldInfo),
+      data: details ?? (classified?.reference ? { reference: classified.reference } : Object.keys(extra).length ? extra : fieldInfo),
       timestamp: new Date().toISOString(),
     });
   }
 
-  /** Best-effort human-readable message for non-Error / non-HttpException throws. */
-  private extractMessage(exception: unknown): string {
-    if (exception && typeof exception === 'object') {
-      const err = exception as { error?: { description?: string }; message?: string };
-      if (err.error?.description) return err.error.description;
-      if (typeof err.message === 'string' && err.message) return err.message;
+  /**
+   * Decide what a client may be told about anything that is not a deliberate HttpException (those return null: their message
+   * was written to be shown). Prisma constraint errors become 404/409 with a fixed sentence; provider SDK objects become 502;
+   * everything else becomes a generic 500 carrying only a reference id.
+   */
+  private classify(exception: unknown): Classified | null {
+    if (exception instanceof HttpException) return null;
+
+    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      const mapped = PRISMA_CLIENT_ERRORS[exception.code];
+      if (mapped) return { status: mapped.status, message: mapped.message, logNote: `Prisma ${exception.code}` };
     }
-    return 'Internal server error';
+
+    const reference = randomBytes(4).toString('hex');
+    // A payment/messaging SDK rejecting with a plain object like { statusCode, error: { code, description } } (Razorpay does this).
+    const providerShaped =
+      exception !== null && typeof exception === 'object' && !(exception instanceof Error) &&
+      typeof (exception as { error?: unknown }).error === 'object' && (exception as { error?: unknown }).error !== null;
+    if (providerShaped) return { status: HttpStatus.BAD_GATEWAY, message: `${PROVIDER_ERROR} Reference: ${reference}`, reference };
+    return { status: HttpStatus.INTERNAL_SERVER_ERROR, message: `${GENERIC_SERVER_ERROR} Reference: ${reference}`, reference };
   }
 
   /** Full description of any thrown value for server logs (Error, plain object, or primitive). */

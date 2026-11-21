@@ -1,9 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { Invoice } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { PaymentsService } from '../payments/payments.service';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
+import { FirmService } from '../v3-firm/firm.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { renderInvoiceHtml, InvoiceCompany } from './templates/invoice.template';
 
@@ -16,24 +17,16 @@ export class InvoicesService {
     private readonly emailService: EmailService,
     private readonly paymentsService: PaymentsService,
     private readonly settings: PlatformSettingsService,
+    @Optional() private readonly firm?: FirmService,
   ) {}
 
-  /** Company invoice details from Admin → Integrations (env fallback in template). */
+  /** Company invoice details from the firm profile (v3-firm); the logo from Admin → Integrations. */
   async resolveCompany(): Promise<Partial<InvoiceCompany>> {
-    const [name, gstin, pan, address, phone, email, logoUrl] = await Promise.all([
-      this.settings.getResolvedValue('company', 'name'),
-      this.settings.getResolvedValue('company', 'gstin'),
-      this.settings.getResolvedValue('company', 'pan'),
-      this.settings.getResolvedValue('company', 'address'),
-      this.settings.getResolvedValue('company', 'phone'),
-      this.settings.getResolvedValue('company', 'email'),
-      this.settings.getResolvedValue('company', 'logo_url'),
-    ]);
-    return {
-      name: name ?? undefined, gstin: gstin ?? undefined, pan: pan ?? undefined,
-      address: address ?? undefined, phone: phone ?? undefined, email: email ?? undefined,
-      logoUrl: logoUrl ?? undefined,
-    };
+    const logoUrl = await this.settings.getResolvedValue('company', 'logo_url');
+    // the firm profile (v3-firm) is the one source of the name, address, tax numbers, phone and email; only the logo still comes from the Integrations settings
+    if (!this.firm) return { logoUrl: logoUrl ?? undefined };
+    const f = await this.firm.seller();
+    return { name: f.name, address: f.address, gstin: f.gstin || undefined, pan: f.pan || undefined, phone: f.phone || undefined, email: f.email || undefined, logoUrl: logoUrl ?? undefined };
   }
 
   async createInvoice(dto: CreateInvoiceDto): Promise<Invoice> {

@@ -9,7 +9,9 @@ export interface AuthenticatedUser {
   role: string;
   /** Internal Get4Domain staff role (SUPER_ADMIN | MARKETING | OPERATIONS). Present for admin principals. */
   adminRole?: string;
-  /** Discriminates principal kind: 'admin_member' | 'team_member' | 'sandbox' | undefined(vendor). */
+  /** Wave 3 Part A: the label (FIELD_EXECUTIVE or TELECALLER) of a SALES staff member. Display only: `adminRole` already holds the SALES value, so a label carries no right of its own. */
+  staffLabel?: string;
+  /** Discriminates principal kind: 'admin_member' | 'team_member' | 'sandbox' | 'referral_partner' | undefined(vendor). */
   kind?: string;
   /** Present only for kind==='team_member': the vendor team-member's own id. */
   memberId?: string;

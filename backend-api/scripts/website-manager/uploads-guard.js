@@ -13,6 +13,7 @@ const src = path.join(__dirname, '..', '..', 'src');
 const ALLOWED = {
   'uploads/uploads.controller.ts': { shared: true, why: 'the one picture endpoint (logo, banner, gallery, products, about, receipts, AI Studio, LeadSpace items)' },
   'themes/themes.controllers.ts': { shared: false, why: 'admin-only theme zip (never a loose picture, nothing is written to the uploads folder): staff-guarded, 6 MB, taken apart and made safe by the theme sanitiser; its pictures are stored inside the database' },
+  'v3-website/api/media.controllers.ts': { shared: true, why: 'the V3 media library (slice 5.5b): its own MediaService in v3-website/media, which checks the caps and the bytes, re-encodes through ImagePort, stores through the storage port and records every picture' },
   'commercial/commercial.controllers.ts': { shared: false, why: 'payment-proof screenshots: private (never public), 3 MB, checked by the payment service' },
 };
 
@@ -38,6 +39,8 @@ for (const f of files) {
   if (/writeFileSync|createWriteStream|writeFile\(/.test(t) && /uploadsDir|\/uploads\//.test(t)) say(false, `${rel} writes a file into uploads without the shared writeUpload()`);
   if (/uploadsDir\(\)/.test(t) && /writeFileSync|createWriteStream|writeFile\(/.test(t)) say(false, `${rel} writes into the public uploads folder without MediaService`);
 }
+const v3ctl = fs.readFileSync(path.join(src, 'v3-website', 'api', 'media.controllers.ts'), 'utf8');
+say(/MediaService/.test(v3ctl) && /this\.media\.upload\(/.test(v3ctl), 'the V3 media controller hands every file to its MediaService.upload (check, re-encode, store, record)');
 say(true, 'no other file writes into the public uploads folder');
 const media = fs.readFileSync(path.join(src, 'uploads', 'media.service.ts'), 'utf8');
 say(/MAX_UPLOAD_BYTES/.test(media) && /sharp\(/.test(media) && /mediaAsset\.create/.test(media), 'MediaService enforces the size rule, processes with sharp and records every file');

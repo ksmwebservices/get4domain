@@ -1,0 +1,16 @@
+{{> head}}
+<main id="main">
+<section class="sec" data-g4d-section="content" data-g4d-label="About" data-g4d-optional="false">
+  <div class="wrap split">
+    <div class="about-copy"><h1>{{page.title}}</h1><div class="rich">{{about.text}}</div></div>
+    <img data-g4d-if="about.image" class="about-img" src="{{about.image}}" alt="{{about.imageAlt}}" width="800" height="600" decoding="async">
+  </div>
+</section>
+<section class="sec alt" data-g4d-section="process" data-g4d-label="Process" data-g4d-optional="true" data-g4d-if="steps">
+  <div class="wrap"><h2 class="sec-title">{{ui.process}}</h2><ol class="steps"><template data-g4d-each="steps"><li><strong>{{step.title}}</strong> <span>{{step.desc}}</span></li></template></ol></div>
+</section>
+{{> team}}
+{{> credentials}}
+{{> share}}
+</main>
+{{> foot}}

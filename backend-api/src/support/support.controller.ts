@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SupportTicket } from '@prisma/client';
 import { SupportService } from './support.service';
@@ -6,6 +6,8 @@ import { CreateTicketDto } from './dto/create-ticket.dto';
 import { ReplyTicketDto } from './dto/reply-ticket.dto';
 import { RequestCallbackDto } from './dto/request-callback.dto';
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { assertOwnerOrStaff } from '../auth/guards/staff-access';
+import { RouteKey } from '../common/decorators/route-key.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 
@@ -50,11 +52,9 @@ export class SupportController {
   findByVendor(
     @Param('vendorId') vendorId: string,
     @CurrentUser() user: AuthenticatedUser,
+    @RouteKey() route: string,
   ): Promise<SupportTicket[]> {
-    const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
-    if (!isAdmin && user.sub !== vendorId) {
-      throw new ForbiddenException('You may only view your own support tickets');
-    }
+    assertOwnerOrStaff(user, vendorId, route, 'You may only view your own support tickets');
     return this.supportService.findByVendor(vendorId);
   }
 

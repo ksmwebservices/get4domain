@@ -1,0 +1,133 @@
+# The V3 live apps inside the v3live container (E1b): the API, the Next public site and the three static SPAs. No value is in this file.
+# Images are built by the runbook (several repos, so no "build:" here) and only referenced by tag.
+#   docker compose -f deploy/v3live/docker-compose.apps.yml --env-file /opt/v3live/env/compose.env up -d --no-build
+# Every port is published ONLY on V3_BIND_IP (the LXD container's own address), never on 0.0.0.0: the host nginx is outside the container and reaches that address.
+# The services join the existing Docker network of the Postgres project (external), so the API reaches the database by its container name.
+name: g4d-v3-apps
+
+x-common: &common
+  restart: unless-stopped
+  pull_policy: never
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+  networks:
+    - v3net
+
+services:
+  api:
+    <<: *common
+    image: get4domain-v3-api:${IMAGE_TAG:?IMAGE_TAG must be set in compose.env}
+    container_name: g4d-v3-api
+    user: "1001:1001"
+    env_file:
+      - ${V3_ENV_DIR:-/opt/v3live/env}/api.env
+    environment:
+      NODE_ENV: production
+      V3_LIVE: "true"
+      PORT: "3008"
+      HOST: 0.0.0.0
+    ports:
+      - "${V3_BIND_IP:?V3_BIND_IP must be set in compose.env}:3008:3008"
+    volumes:
+      - public_uploads:/app/uploads
+      - private_uploads:/app/private-uploads
+    mem_limit: 1536m
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3008/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  site:
+    <<: *common
+    image: get4domain-v3-site:${IMAGE_TAG:?IMAGE_TAG must be set in compose.env}
+    container_name: g4d-v3-site
+    user: "1001:1001"
+    env_file:
+      - ${V3_ENV_DIR:-/opt/v3live/env}/site.env
+    environment:
+      NODE_ENV: production
+      PORT: "3006"
+      HOSTNAME: 0.0.0.0
+    ports:
+      - "${V3_BIND_IP:?V3_BIND_IP must be set in compose.env}:3006:3006"
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3006/manifest.webmanifest').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  vendor:
+    <<: *common
+    image: get4domain-v3-vendor:${IMAGE_TAG:?IMAGE_TAG must be set in compose.env}
+    container_name: g4d-v3-vendor
+    user: "101:101"
+    environment:
+      API_BASE_URL: ${API_PUBLIC_URL:?API_PUBLIC_URL must be set in compose.env}
+      STORAGE_BASE_URL: ${STORAGE_BASE_URL:-}
+    ports:
+      - "${V3_BIND_IP:?V3_BIND_IP must be set in compose.env}:3101:8080"
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  admin:
+    <<: *common
+    image: get4domain-v3-admin:${IMAGE_TAG:?IMAGE_TAG must be set in compose.env}
+    container_name: g4d-v3-admin
+    user: "101:101"
+    environment:
+      API_BASE_URL: ${API_PUBLIC_URL:?API_PUBLIC_URL must be set in compose.env}
+      STORAGE_BASE_URL: ${STORAGE_BASE_URL:-}
+    ports:
+      - "${V3_BIND_IP:?V3_BIND_IP must be set in compose.env}:3102:8080"
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  partner:
+    <<: *common
+    image: get4domain-v3-partner:${IMAGE_TAG:?IMAGE_TAG must be set in compose.env}
+    container_name: g4d-v3-partner
+    user: "101:101"
+    environment:
+      API_BASE_URL: ${API_PUBLIC_URL:?API_PUBLIC_URL must be set in compose.env}
+      STORAGE_BASE_URL: ${STORAGE_BASE_URL:-}
+    ports:
+      - "${V3_BIND_IP:?V3_BIND_IP must be set in compose.env}:3103:8080"
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  public_uploads:
+    name: g4d_v3_public_uploads
+  private_uploads:
+    name: g4d_v3_private_uploads
+
+networks:
+  v3net:
+    external: true
+    name: ${V3_NETWORK:-v3net}

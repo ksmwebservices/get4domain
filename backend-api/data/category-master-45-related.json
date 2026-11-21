@@ -1,0 +1,576 @@
+{
+ "_note": "NEEDS OWNER REVIEW. Written by engineering as a first proposal, not by the owner. Each row says two families are related; the relation is symmetric (stored once, both directions follow). A vendor may pick categories from its own family and from the families related to it.",
+ "needsOwnerReview": true,
+ "pairs": [
+  {
+   "a": "home-services",
+   "b": "construction-and-building",
+   "reason": "house building trades and home trades overlap (painters, waterproofing, tiles)"
+  },
+  {
+   "a": "home-services",
+   "b": "interior-design-and-home-decor",
+   "reason": "modular kitchen, false ceiling and fit-out sit between home trades and interiors"
+  },
+  {
+   "a": "home-services",
+   "b": "electronics-and-electrical",
+   "reason": "electricians, solar and home automation overlap electrical work"
+  },
+  {
+   "a": "home-services",
+   "b": "security-and-safety",
+   "reason": "CCTV installation and locks are home and security work"
+  },
+  {
+   "a": "home-services",
+   "b": "repairs-and-technical-services",
+   "reason": "appliance, TV and geyser repair is both a home service and a repair trade"
+  },
+  {
+   "a": "home-services",
+   "b": "housekeeping-and-facility-management",
+   "reason": "house, sofa and tank cleaning overlaps facility housekeeping"
+  },
+  {
+   "a": "home-services",
+   "b": "home-garden-and-outdoor",
+   "reason": "gardening and outdoor works are listed in both"
+  },
+  {
+   "a": "healthcare-and-medical",
+   "b": "beauty-salon-and-personal-care",
+   "reason": "skin, hair and cosmetic clinics sit between medical and beauty"
+  },
+  {
+   "a": "healthcare-and-medical",
+   "b": "pets-and-animal-services",
+   "reason": "veterinary doctors are care providers for animals"
+  },
+  {
+   "a": "healthcare-and-medical",
+   "b": "sports-and-fitness",
+   "reason": "physiotherapy, nutrition and fitness overlap"
+  },
+  {
+   "a": "healthcare-and-medical",
+   "b": "beauty-health-and-wellness-products",
+   "reason": "pharmacies and wellness products serve the same patients"
+  },
+  {
+   "a": "healthcare-and-medical",
+   "b": "baby-child-and-family-services",
+   "reason": "child doctors, child psychologists and maternity care overlap"
+  },
+  {
+   "a": "healthcare-and-medical",
+   "b": "medical-and-home-care-equipment",
+   "reason": "clinics and hospitals buy and rent medical equipment"
+  },
+  {
+   "a": "beauty-salon-and-personal-care",
+   "b": "weddings-and-events",
+   "reason": "bridal makeup and mehndi artists work weddings"
+  },
+  {
+   "a": "beauty-salon-and-personal-care",
+   "b": "sports-and-fitness",
+   "reason": "spas, massage and wellness overlap fitness and body care"
+  },
+  {
+   "a": "beauty-salon-and-personal-care",
+   "b": "beauty-health-and-wellness-products",
+   "reason": "beauty and personal care products are sold by the same businesses"
+  },
+  {
+   "a": "automobiles-and-two-wheelers",
+   "b": "education-and-training",
+   "reason": "driving schools are listed under automobiles and education"
+  },
+  {
+   "a": "automobiles-and-two-wheelers",
+   "b": "transportation-and-logistics",
+   "reason": "taxi and cab services are vehicles and transport"
+  },
+  {
+   "a": "automobiles-and-two-wheelers",
+   "b": "finance-banking-and-insurance",
+   "reason": "car insurance and vehicle loans link to finance"
+  },
+  {
+   "a": "automobiles-and-two-wheelers",
+   "b": "repairs-and-technical-services",
+   "reason": "vehicle repair and servicing are technical repair work"
+  },
+  {
+   "a": "automobiles-and-two-wheelers",
+   "b": "rental-and-hire-services",
+   "reason": "car, bike and self drive rental are vehicles and rental"
+  },
+  {
+   "a": "education-and-training",
+   "b": "it-software-and-digital-services",
+   "reason": "coding, software and digital marketing training sit in education and IT"
+  },
+  {
+   "a": "education-and-training",
+   "b": "entertainment-and-recreation",
+   "reason": "music, dance and drawing classes are education and recreation"
+  },
+  {
+   "a": "education-and-training",
+   "b": "sports-and-fitness",
+   "reason": "sports academies and coaching overlap"
+  },
+  {
+   "a": "education-and-training",
+   "b": "recruitment-and-job-services",
+   "reason": "training institutes and placement services overlap"
+  },
+  {
+   "a": "education-and-training",
+   "b": "baby-child-and-family-services",
+   "reason": "play schools, Montessori and child development overlap"
+  },
+  {
+   "a": "restaurants-and-food",
+   "b": "grocery-and-daily-needs",
+   "reason": "food shops and restaurants share suppliers and customers"
+  },
+  {
+   "a": "restaurants-and-food",
+   "b": "hotels-and-accommodation",
+   "reason": "hotels run restaurants and banquets"
+  },
+  {
+   "a": "restaurants-and-food",
+   "b": "weddings-and-events",
+   "reason": "wedding and corporate catering overlap events"
+  },
+  {
+   "a": "restaurants-and-food",
+   "b": "industrial-commercial-and-office-services",
+   "reason": "restaurant and commercial kitchen equipment is bought by restaurants"
+  },
+  {
+   "a": "grocery-and-daily-needs",
+   "b": "shopping-and-retail",
+   "reason": "daily needs retail overlaps general retail"
+  },
+  {
+   "a": "grocery-and-daily-needs",
+   "b": "agriculture-and-farming",
+   "reason": "farm produce, dairy and flour mills link agriculture to grocery"
+  },
+  {
+   "a": "grocery-and-daily-needs",
+   "b": "pets-and-animal-services",
+   "reason": "pet food stores sit between grocery and pets"
+  },
+  {
+   "a": "shopping-and-retail",
+   "b": "interior-design-and-home-decor",
+   "reason": "furniture, decor and lighting shops are retail and interiors"
+  },
+  {
+   "a": "shopping-and-retail",
+   "b": "electronics-and-electrical",
+   "reason": "electronics and appliance stores are retail"
+  },
+  {
+   "a": "shopping-and-retail",
+   "b": "repairs-and-technical-services",
+   "reason": "mobile and computer repair shops are retail"
+  },
+  {
+   "a": "shopping-and-retail",
+   "b": "textiles-clothing-and-fashion",
+   "reason": "clothing, boutiques and footwear overlap textiles and fashion"
+  },
+  {
+   "a": "shopping-and-retail",
+   "b": "home-garden-and-outdoor",
+   "reason": "florists, plants and garden shops overlap"
+  },
+  {
+   "a": "shopping-and-retail",
+   "b": "baby-child-and-family-services",
+   "reason": "baby product and toy shops overlap"
+  },
+  {
+   "a": "shopping-and-retail",
+   "b": "other-local-businesses",
+   "reason": "gift shops, florists and watch shops appear in other local businesses"
+  },
+  {
+   "a": "real-estate-and-property",
+   "b": "construction-and-building",
+   "reason": "builders and developers overlap construction"
+  },
+  {
+   "a": "real-estate-and-property",
+   "b": "interior-design-and-home-decor",
+   "reason": "property buyers and builders hire interior designers"
+  },
+  {
+   "a": "real-estate-and-property",
+   "b": "finance-banking-and-insurance",
+   "reason": "property loans and home finance link to real estate"
+  },
+  {
+   "a": "real-estate-and-property",
+   "b": "legal-and-professional-services",
+   "reason": "property registration and documents need legal help"
+  },
+  {
+   "a": "construction-and-building",
+   "b": "interior-design-and-home-decor",
+   "reason": "building and interior fit-out overlap"
+  },
+  {
+   "a": "construction-and-building",
+   "b": "industrial-and-manufacturing",
+   "reason": "building materials and manufacturing suppliers overlap"
+  },
+  {
+   "a": "construction-and-building",
+   "b": "waste-management-and-environment",
+   "reason": "construction waste and debris removal"
+  },
+  {
+   "a": "interior-design-and-home-decor",
+   "b": "textiles-clothing-and-fashion",
+   "reason": "curtains, upholstery and soft furnishings overlap textiles"
+  },
+  {
+   "a": "interior-design-and-home-decor",
+   "b": "home-garden-and-outdoor",
+   "reason": "home decor, garden and outdoor furniture overlap"
+  },
+  {
+   "a": "travel-and-tourism",
+   "b": "transportation-and-logistics",
+   "reason": "tickets, cabs and tours overlap transport"
+  },
+  {
+   "a": "travel-and-tourism",
+   "b": "hotels-and-accommodation",
+   "reason": "tour and travel packages include accommodation"
+  },
+  {
+   "a": "travel-and-tourism",
+   "b": "rental-and-hire-services",
+   "reason": "car rental and tempo traveller hire serve tourists"
+  },
+  {
+   "a": "travel-and-tourism",
+   "b": "entertainment-and-recreation",
+   "reason": "tourist attractions and recreation overlap"
+  },
+  {
+   "a": "travel-and-tourism",
+   "b": "other-local-businesses",
+   "reason": "ticket booking and travel counters overlap travel"
+  },
+  {
+   "a": "transportation-and-logistics",
+   "b": "rental-and-hire-services",
+   "reason": "vehicle hire and fleet rental overlap transport"
+  },
+  {
+   "a": "transportation-and-logistics",
+   "b": "shipping-export-and-import",
+   "reason": "freight, courier and shipping overlap transport and logistics"
+  },
+  {
+   "a": "transportation-and-logistics",
+   "b": "other-local-businesses",
+   "reason": "parking and ticket booking overlap transport"
+  },
+  {
+   "a": "hotels-and-accommodation",
+   "b": "weddings-and-events",
+   "reason": "hotels and resorts host weddings and events"
+  },
+  {
+   "a": "hotels-and-accommodation",
+   "b": "entertainment-and-recreation",
+   "reason": "resorts and recreation overlap"
+  },
+  {
+   "a": "weddings-and-events",
+   "b": "photography-and-media",
+   "reason": "wedding photographers and videographers work weddings"
+  },
+  {
+   "a": "weddings-and-events",
+   "b": "rental-and-hire-services",
+   "reason": "event equipment, tents and vehicle hire serve events"
+  },
+  {
+   "a": "weddings-and-events",
+   "b": "entertainment-and-recreation",
+   "reason": "DJs, bands and entertainment work events"
+  },
+  {
+   "a": "weddings-and-events",
+   "b": "astrology-and-spiritual-services",
+   "reason": "horoscope matching serves marriage and weddings"
+  },
+  {
+   "a": "weddings-and-events",
+   "b": "textiles-clothing-and-fashion",
+   "reason": "bridal wear, sarees and tailoring serve weddings"
+  },
+  {
+   "a": "photography-and-media",
+   "b": "it-software-and-digital-services",
+   "reason": "video editing and creative design sit in media and digital"
+  },
+  {
+   "a": "photography-and-media",
+   "b": "entertainment-and-recreation",
+   "reason": "videography and entertainment media overlap"
+  },
+  {
+   "a": "photography-and-media",
+   "b": "advertising-printing-and-branding",
+   "reason": "photography, design and printing overlap media and advertising"
+  },
+  {
+   "a": "finance-banking-and-insurance",
+   "b": "chartered-accountants-and-taxation",
+   "reason": "accountants, tax and insurance work side by side"
+  },
+  {
+   "a": "finance-banking-and-insurance",
+   "b": "legal-and-professional-services",
+   "reason": "loans, insurance and legal documents link finance and law"
+  },
+  {
+   "a": "finance-banking-and-insurance",
+   "b": "business-and-management-consultants",
+   "reason": "financial and business consultants overlap"
+  },
+  {
+   "a": "chartered-accountants-and-taxation",
+   "b": "legal-and-professional-services",
+   "reason": "company registration, tax and legal advice overlap"
+  },
+  {
+   "a": "chartered-accountants-and-taxation",
+   "b": "business-and-management-consultants",
+   "reason": "business and tax consultants overlap"
+  },
+  {
+   "a": "legal-and-professional-services",
+   "b": "business-and-management-consultants",
+   "reason": "legal and management consultants overlap"
+  },
+  {
+   "a": "legal-and-professional-services",
+   "b": "government-and-public-services",
+   "reason": "legal documents and government services overlap"
+  },
+  {
+   "a": "legal-and-professional-services",
+   "b": "professional-and-personal-services",
+   "reason": "notaries and documentation services overlap"
+  },
+  {
+   "a": "business-and-management-consultants",
+   "b": "it-software-and-digital-services",
+   "reason": "business and IT consultants overlap"
+  },
+  {
+   "a": "business-and-management-consultants",
+   "b": "recruitment-and-job-services",
+   "reason": "HR and recruitment consultants overlap"
+  },
+  {
+   "a": "business-and-management-consultants",
+   "b": "advertising-printing-and-branding",
+   "reason": "marketing and branding consultants overlap"
+  },
+  {
+   "a": "business-and-management-consultants",
+   "b": "professional-and-personal-services",
+   "reason": "consultants and personal services overlap"
+  },
+  {
+   "a": "it-software-and-digital-services",
+   "b": "electronics-and-electrical",
+   "reason": "software, hardware and electronics overlap"
+  },
+  {
+   "a": "it-software-and-digital-services",
+   "b": "advertising-printing-and-branding",
+   "reason": "digital marketing and web design overlap advertising"
+  },
+  {
+   "a": "it-software-and-digital-services",
+   "b": "other-local-businesses",
+   "reason": "cyber cafes and internet cafes overlap digital services"
+  },
+  {
+   "a": "electronics-and-electrical",
+   "b": "industrial-and-manufacturing",
+   "reason": "electrical suppliers and manufacturers overlap"
+  },
+  {
+   "a": "electronics-and-electrical",
+   "b": "security-and-safety",
+   "reason": "CCTV and electronic security are electrical and security work"
+  },
+  {
+   "a": "electronics-and-electrical",
+   "b": "repairs-and-technical-services",
+   "reason": "electronic and appliance repair overlap"
+  },
+  {
+   "a": "electronics-and-electrical",
+   "b": "industrial-commercial-and-office-services",
+   "reason": "industrial and commercial electrical suppliers overlap"
+  },
+  {
+   "a": "industrial-and-manufacturing",
+   "b": "agriculture-and-farming",
+   "reason": "agricultural machinery and equipment overlap manufacturing"
+  },
+  {
+   "a": "industrial-and-manufacturing",
+   "b": "shipping-export-and-import",
+   "reason": "exporters and manufacturers overlap shipping"
+  },
+  {
+   "a": "industrial-and-manufacturing",
+   "b": "waste-management-and-environment",
+   "reason": "recycling and industrial waste overlap"
+  },
+  {
+   "a": "industrial-and-manufacturing",
+   "b": "industrial-commercial-and-office-services",
+   "reason": "industrial equipment and commercial suppliers overlap"
+  },
+  {
+   "a": "agriculture-and-farming",
+   "b": "pets-and-animal-services",
+   "reason": "livestock, fodder and animal husbandry overlap"
+  },
+  {
+   "a": "agriculture-and-farming",
+   "b": "waste-management-and-environment",
+   "reason": "farm waste, compost and organic recycling overlap"
+  },
+  {
+   "a": "agriculture-and-farming",
+   "b": "home-garden-and-outdoor",
+   "reason": "farming, nurseries and garden supplies overlap"
+  },
+  {
+   "a": "security-and-safety",
+   "b": "housekeeping-and-facility-management",
+   "reason": "security guards and facility management overlap"
+  },
+  {
+   "a": "security-and-safety",
+   "b": "industrial-commercial-and-office-services",
+   "reason": "fire, safety and commercial security equipment overlap"
+  },
+  {
+   "a": "repairs-and-technical-services",
+   "b": "other-local-businesses",
+   "reason": "repair shops and local repair work overlap"
+  },
+  {
+   "a": "rental-and-hire-services",
+   "b": "medical-and-home-care-equipment",
+   "reason": "medical equipment rental overlaps hire services"
+  },
+  {
+   "a": "entertainment-and-recreation",
+   "b": "sports-and-fitness",
+   "reason": "sports, games and recreation overlap"
+  },
+  {
+   "a": "entertainment-and-recreation",
+   "b": "astrology-and-spiritual-services",
+   "reason": "spiritual and cultural services overlap recreation"
+  },
+  {
+   "a": "entertainment-and-recreation",
+   "b": "baby-child-and-family-services",
+   "reason": "kids activity centres and recreation overlap"
+  },
+  {
+   "a": "sports-and-fitness",
+   "b": "beauty-health-and-wellness-products",
+   "reason": "sports nutrition and wellness products overlap"
+  },
+  {
+   "a": "astrology-and-spiritual-services",
+   "b": "professional-and-personal-services",
+   "reason": "astrologers and spiritual advisers offer personal services"
+  },
+  {
+   "a": "government-and-public-services",
+   "b": "recruitment-and-job-services",
+   "reason": "government jobs and recruitment overlap"
+  },
+  {
+   "a": "government-and-public-services",
+   "b": "shipping-export-and-import",
+   "reason": "customs and export documentation overlap"
+  },
+  {
+   "a": "government-and-public-services",
+   "b": "professional-and-personal-services",
+   "reason": "government, document and public help services overlap"
+  },
+  {
+   "a": "recruitment-and-job-services",
+   "b": "housekeeping-and-facility-management",
+   "reason": "manpower and housekeeping staff overlap"
+  },
+  {
+   "a": "recruitment-and-job-services",
+   "b": "professional-and-personal-services",
+   "reason": "manpower and personal assistants overlap"
+  },
+  {
+   "a": "housekeeping-and-facility-management",
+   "b": "waste-management-and-environment",
+   "reason": "facility waste and housekeeping overlap"
+  },
+  {
+   "a": "shipping-export-and-import",
+   "b": "advertising-printing-and-branding",
+   "reason": "packaging and printing serve shipping"
+  },
+  {
+   "a": "shipping-export-and-import",
+   "b": "industrial-commercial-and-office-services",
+   "reason": "packaging and industrial suppliers overlap"
+  },
+  {
+   "a": "advertising-printing-and-branding",
+   "b": "professional-and-personal-services",
+   "reason": "printing, typing and DTP overlap"
+  },
+  {
+   "a": "textiles-clothing-and-fashion",
+   "b": "professional-and-personal-services",
+   "reason": "tailoring and laundry are personal services"
+  },
+  {
+   "a": "professional-and-personal-services",
+   "b": "other-local-businesses",
+   "reason": "local personal services and other local businesses overlap"
+  },
+  {
+   "a": "medical-and-home-care-equipment",
+   "b": "industrial-commercial-and-office-services",
+   "reason": "hospital and commercial equipment suppliers overlap"
+  }
+ ]
+}

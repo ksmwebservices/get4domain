@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, Contact } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateContactDto, UpdateContactDto } from './dto/contact.dto';
@@ -86,6 +86,18 @@ export class ContactsService {
 
   async remove(vendorId: string, id: string): Promise<{ id: string }> {
     await this.findOne(vendorId, id);
+    // Records and invoices keep a reference to their contact. Say what is in the way instead of failing on the database constraint.
+    const [records, invoices] = await Promise.all([
+      this.prisma.record.count({ where: { vendorId, contactId: id } }),
+      this.prisma.genericInvoice.count({ where: { vendorId, contactId: id } }),
+    ]);
+    if (records > 0 || invoices > 0) {
+      const parts = [
+        records > 0 ? `${records} record${records === 1 ? '' : 's'}` : null,
+        invoices > 0 ? `${invoices} invoice${invoices === 1 ? '' : 's'}` : null,
+      ].filter((p): p is string => p !== null);
+      throw new ConflictException(`This contact is used by ${parts.join(' and ')}, so it cannot be deleted. Remove or reassign those first.`);
+    }
     await this.prisma.contact.delete({ where: { id } });
     return { id };
   }

@@ -9,6 +9,7 @@ import KitNav from './KitNav';
 import { ShellProvider } from '../shell/ShellProvider';
 import ShellBottomNav from '../shell/ShellBottomNav';
 import ShellFooter from '../shell/ShellFooter';
+import { PoweredBy } from '../components/PoweredBy';
 import { FloatingContact } from '../shell/ShellExtras';
 import KitHero from './KitHero';
 import KitEnquiry from './KitEnquiry';
@@ -46,7 +47,7 @@ function KitFooter({ model }: { model: KitSiteModel }) {
         </div>
         <div className="mt-12 flex flex-col items-center justify-between gap-2 border-t border-[var(--eng-border)] pt-6 text-xs text-[var(--eng-muted)] sm:flex-row">
           <p>© {new Date().getFullYear()} {b.name}. All rights reserved.</p>
-          <p>Powered by Get4Domain</p>
+          <p><PoweredBy /></p>
         </div>
       </div>
     </footer>

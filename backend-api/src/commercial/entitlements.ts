@@ -38,7 +38,14 @@ export const ENTITLEMENTS: Record<PlanKey, Entitlements> = {
   },
 };
 
-export function entitlementsFor(planKey: PlanKey): Entitlements {
+/** The defined state of a vendor with no plan key: nothing is included. (A plan key that is present but unknown is still an error.) */
+export const NO_PLAN_ENTITLEMENTS: Entitlements = {
+  aiCreditAnnualPaise: 0, seoKeywords: 0, themeChangesPerYear: 0,
+  whatsappBotReply: false, fullAccounting: false, hrm: false, inventory: false, taskManagement: false,
+};
+
+export function entitlementsFor(planKey: PlanKey | null | undefined): Entitlements {
+  if (planKey === undefined || planKey === null || (planKey as string) === '') return NO_PLAN_ENTITLEMENTS;
   const e = ENTITLEMENTS[planKey];
   if (!e) throw new RangeError(`Unknown plan key: ${String(planKey)}`);
   return e;

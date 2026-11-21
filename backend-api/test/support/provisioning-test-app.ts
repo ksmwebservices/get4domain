@@ -1,0 +1,145 @@
+import { INestApplication, Provider } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { PassportModule } from '@nestjs/passport';
+import { Test } from '@nestjs/testing';
+import { JwtStrategy } from '../../src/auth/jwt.strategy';
+import { JwtAuthGuard } from '../../src/common/guards/jwt-auth.guard';
+import { ModuleGuard } from '../../src/common/guards/module.guard';
+import { HttpExceptionFilter } from '../../src/common/filters/http-exception.filter';
+import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
+import { buildValidationPipe } from '../../src/common/pipes/edit-validation.pipe';
+import { EmailModule } from '../../src/email/email.module';
+import { PlansModule } from '../../src/plans/plans.module';
+import { PrismaModule } from '../../src/prisma/prisma.module';
+import { ProvisioningSettingsService } from '../../src/provisioning/settings/provisioning-settings.service';
+import { PROVISIONING_CONTROLLERS, PROVISIONING_PROVIDERS } from '../../src/provisioning/provisioning.providers';
+import { SiteProvisioner } from '../../src/provisioning/site/site-provisioner';
+import { StarterService } from '../../src/site-doc/starter.service';
+import { DIRECTORY_CONTROLLERS, DIRECTORY_PROVIDERS } from '../../src/directory/directory.providers';
+import { SEO_CONTROLLERS, SEO_PROVIDERS } from '../../src/seo-directory/seo-directory.module';
+import { AI_STUDIO_CONTROLLERS, AI_STUDIO_PROVIDERS } from '../../src/ai-studio/ai-studio.providers';
+import { PLAN_BILLING_CONTROLLERS, PLAN_BILLING_PROVIDERS } from '../../src/plan-billing/plan-billing.providers';
+import { ActivityBus } from '../../src/common/activity-bus';
+import { DOMAIN_AUTOMATION_CONTROLLERS, DOMAIN_AUTOMATION_PROVIDERS } from '../../src/v3-domain-automation/domain-automation.module';
+import { CloudflarePort } from '../../src/v3-domain-automation/cloudflare.port';
+import { REGISTRAR_CONTROLLERS, REGISTRAR_PROVIDERS, RegistrarCron, RegistrarStartupGuard } from '../../src/v3-registrar/registrar.module';
+import { RegistrarPort } from '../../src/v3-registrar/registrar.port';
+import { IdentityOtpSender } from '../../src/v3-registrar/identity.service';
+import { DocCrypto } from '../../src/v3-registrar/doc-crypto';
+import { DomainSettingsService } from '../../src/site-domains/settings/domain-settings.service';
+import { WALLET_CONTROLLERS, WALLET_PROVIDERS } from '../../src/v3-wallet/wallet.module';
+import { DUPLICATE_PROVIDERS } from '../../src/v3-duplicates/duplicate-check.module';
+import { VendorsController } from '../../src/vendors/vendors.controller';
+import { VendorsService } from '../../src/vendors/vendors.service';
+import { SERVICES_CONTROLLERS, SERVICES_PROVIDERS } from '../../src/v3-services/services.module';
+import { PACK_PROVIDERS } from '../../src/v3-packs/packs.module';
+import { SERVICE_REQUESTS_CONTROLLERS, SERVICE_REQUESTS_PROVIDERS } from '../../src/v3-service-requests/service-requests.module';
+import { THEME_SWITCH_CONTROLLERS, THEME_SWITCH_PROVIDERS } from '../../src/v3-theme-switch/theme-switch.module';
+import { PaymentsGate } from '../../src/plan-billing/razorpay/payments-gate';
+import { BillingSettingsService } from '../../src/plan-billing/settings/billing-settings.service';
+import { FakeGate } from './fake-gate';
+import { PARTNERS_CONTROLLERS, PARTNERS_PROVIDERS } from '../../src/v3-partners/partners.module';
+import { PartnerScopeGuard } from '../../src/v3-partners/partner-scope.guard';
+import { REFERRALS_CONTROLLERS, REFERRALS_PROVIDERS } from '../../src/v3-referrals/referrals.module';
+import { PlanInvoiceDeliveryService } from '../../src/plan-billing/invoice-delivery.service';
+import { PaymentGatewayPort } from '../../src/plan-billing/gateway/gateway.port';
+import { TestGate } from './wave3-world';
+import { TrialSignupPolicy } from '../../src/v3-trial/trial-signup.policy';
+import { TrialController } from '../../src/v3-trial/api/trial.controller';
+import { FakeRazorpay } from './fake-razorpay';
+import { SITE_DOMAIN_CONTROLLERS, SITE_DOMAIN_PROVIDERS } from '../../src/site-domains/site-domains.providers';
+import { SITE_PUBLISH_CONTROLLERS, SITE_PUBLISH_PROVIDERS } from '../../src/site-publish/site-publish.providers';
+import { B3SettingsService } from '../../src/b3-settings/b3-settings.service';
+import { VENDOR_LIFECYCLE_CONTROLLERS, VENDOR_LIFECYCLE_PROVIDERS } from '../../src/vendor-lifecycle/vendor-lifecycle.providers';
+import { SEEDED_CONTROLLERS, SEEDED_PROVIDERS } from '../../src/seeded-sites/seeded-sites.module';
+import { REQUESTS_CONTROLLERS, REQUESTS_PROVIDERS } from '../../src/requests-orders/requests-orders.providers';
+import { EmailPort, EmailTransport, GuardedEmailPort, ResendTransport } from '../../src/v3-mail/email.port';
+import { MeInboxController } from '../../src/v3-mail/api/inbox.controllers';
+import { InboxService } from '../../src/v3-mail/inbox.service';
+import { InboxStore } from '../../src/v3-mail/inbox.store';
+import { PrismaInboxStore } from '../../src/v3-mail/prisma-inbox.store';
+import { MailSettingsService } from '../../src/v3-mail/settings/mail-settings';
+import { TERMS_CONTROLLERS, TERMS_PROVIDERS } from '../../src/terms/terms.module';
+import { PrismaSiteLifecycle } from '../../src/seeded-sites/prisma-site-lifecycle';
+import { SiteLifecycle } from '../../src/site-publish/publish/site-lifecycle';
+import { KIT } from '../../src/site-publish/renderer/theme-render.service';
+import { PAYMENTS_CONTROLLERS, PAYMENTS_PROVIDERS } from '../../src/v3-payments/payments.module';
+import { ActivityStore } from '../../src/v3-activity/activity.store';
+import { PrismaActivityStore } from '../../src/v3-activity/prisma-activity.store';
+import { ActivityService } from '../../src/v3-activity/activity.service';
+import { ActivityInterceptor } from '../../src/v3-activity/activity.interceptor';
+import { OtpPepper } from '../../src/directory/pepper';
+import { Kit, loadKit } from '../../src/site-publish/renderer/renderer-loader';
+import { WEBSITE_CONTROLLERS, WEBSITE_PROVIDERS } from '../../src/v3-website/website.module';
+
+/** Batch 3 pieces, switched on with the b3 option; each slice appends its lists here. */
+const B3_PROVIDERS: Provider[] = [B3SettingsService, ...VENDOR_LIFECYCLE_PROVIDERS, { provide: SiteLifecycle, useClass: PrismaSiteLifecycle }, ...SEEDED_PROVIDERS, ...REQUESTS_PROVIDERS, ...TERMS_PROVIDERS,
+  // the enquiry form route writes into the mail inbox (EnquiryFormService needs InboxService, the mail settings and the guarded e-mail port)
+  MailSettingsService, ResendTransport, { provide: EmailTransport, useExisting: ResendTransport }, GuardedEmailPort, { provide: EmailPort, useExisting: GuardedEmailPort }, { provide: InboxStore, useClass: PrismaInboxStore }, InboxService];
+const B3_CONTROLLERS = [...VENDOR_LIFECYCLE_CONTROLLERS, ...SEEDED_CONTROLLERS, ...REQUESTS_CONTROLLERS, ...TERMS_CONTROLLERS, MeInboxController];   // MeInboxController: the vendor reads the enquiries the site form wrote
+
+/**
+ * A slim app for the staging integration tests: the REAL provisioning providers, controllers, JWT strategy, guards, pipe, interceptor and filter, over the
+ * real (staging) database. The only stub is StarterService (the existing site seeding code, which needs the whole application to construct) and, optionally,
+ * the SiteProvisioner (so a test can make the site step fail once). Requires ./staging-env to have been imported first. Mail stays in EmailService's
+ * capture mode (EMAIL_MODE=test) and the invite adapter is the sandbox, so nothing is sent.
+ */
+export interface ProvisioningTestOptions {
+  siteProvisioner?: (real: SiteProvisioner) => SiteProvisioner;
+  includeSiteApi?: boolean;
+  includeDirectoryApi?: boolean;
+  /** the SEO block (keyword sets, templates, page models, click-out, sitemaps, keyword targets, UTM beacon, backlink block, badge); needs includeDirectoryApi */ includeSeoApi?: boolean;
+  includeAiApi?: boolean;
+  /** the Batch 3 API (settings, lifecycle) */ b3?: boolean;
+  /** the plan billing API, with this FAKE provider (the staging suites never use a real one) */ billing?: { fake: FakeRazorpay };
+  /** Wave 3: partners, referrals and commission with their routes and the partner scope guard; `gateways` replaces the payment gate with in-memory gateways made by the test (never a real provider). Needs billing. */ wave3?: { gateways?: Partial<Record<'razorpay' | 'cashfree', PaymentGatewayPort>> };
+  /** Mounts the real legacy VendorsController (GET /vendors) with a stub service, so a suite can prove a guard answers before a legacy route's own code runs. */ legacyVendorsRoute?: boolean;
+  /** the Batch 4 wallet API (needs billing: it reuses the payment seam) */ wallet?: boolean;
+  /** the Batch 4 service catalogue, price book and packs (needs wallet) */ services?: boolean;
+  /** the Batch 4 service requests (needs services) */ requests?: boolean;
+  /** the Batch 4 theme switch service (needs services; the site providers are always present) */ themeSwitch?: boolean;
+  /** wraps the theme kit this app serves (in memory only; the theme folders and the database are never touched), e.g. to add a synthetic second theme */ themeKit?: (real: Kit) => Kit;
+  /** the Stage 9 pay requests, receipts and invoices API (needs b3) */ payments?: boolean;
+  /** the Website manager API (slice 5.5; needs the site API and b3) */ website?: boolean;
+  /** Batch 11 slice 5.6c: the own-domain connection API with the given Cloudflare port (a fake; never live). Needs includeSiteApi. */ domainAutomation?: { cloudflare: CloudflarePort };
+  /** Batch 11 slice 5.6d: domain sales and identity checks with a FAKE registrar, a recording OTP sender and a test crypto (never live). Needs wallet and includeSiteApi. */ registrar?: { port: RegistrarPort; sender: IdentityOtpSender; crypto: DocCrypto };
+  /** also install the route activity interceptor (needs `activity`): the per-route log rows the real app writes */ activityRoutes?: boolean;
+  /** the activity service (log only, no routes, no interceptor), so `payment_method.upi_changed` and the like are written */ activity?: boolean;
+  /** default: true unless the site API or the directory API is included */ pinLegacySiteMode?: boolean }
+
+/** The module definition, separate from the boot so a unit test can compile it (with a faked database) and catch a missing provider without staging. */
+export function provisioningTestModuleMetadata(opts: ProvisioningTestOptions = {}) {
+  // The Batch 3 PROVIDERS are always present: DIRECTORY_PROVIDERS, the site providers and others list services that inject B3SettingsService, the lifecycle service and the terms guard, whatever the option. Only the b3 API (controllers) is optional.
+
+  const providers: Provider[] = [...DUPLICATE_PROVIDERS, ...PROVISIONING_PROVIDERS, ...SITE_PUBLISH_PROVIDERS, ...SITE_DOMAIN_PROVIDERS, ...DIRECTORY_PROVIDERS, ...(opts.includeSeoApi ? SEO_PROVIDERS : []), ...(opts.includeAiApi ? AI_STUDIO_PROVIDERS : []), ...B3_PROVIDERS, ...(opts.billing ? [...PLAN_BILLING_PROVIDERS, { provide: PaymentsGate, useFactory: (s: BillingSettingsService) => { if (!opts.wave3?.gateways) return new FakeGate(s as never, opts.billing!.fake); const g = new TestGate(s as never); for (const [k, v] of Object.entries(opts.wave3.gateways)) if (v) g.gws.set(k, v as never); return g; }, inject: [BillingSettingsService] }] : []),
+    ...(opts.wave3 ? [...PARTNERS_PROVIDERS, ...REFERRALS_PROVIDERS, PlanInvoiceDeliveryService, TrialSignupPolicy] : []), ...(opts.legacyVendorsRoute ? [{ provide: VendorsService, useValue: {} }] : []), ...(opts.wallet ? [ActivityBus, ...WALLET_PROVIDERS] : []), ...(opts.services ? SERVICES_PROVIDERS : []), ...(opts.requests ? SERVICE_REQUESTS_PROVIDERS : []), ...(opts.themeSwitch ? THEME_SWITCH_PROVIDERS : []), ...(opts.payments ? PAYMENTS_PROVIDERS : []), ...(opts.website ? WEBSITE_PROVIDERS : []), ...(opts.registrar ? [...REGISTRAR_PROVIDERS.filter((p) => p !== RegistrarStartupGuard && p !== RegistrarCron && !(typeof p === 'object' && 'provide' in p && [RegistrarPort, IdentityOtpSender, DocCrypto].includes(p.provide as never))), { provide: RegistrarPort, useValue: opts.registrar.port }, { provide: IdentityOtpSender, useValue: opts.registrar.sender }, { provide: DocCrypto, useValue: opts.registrar.crypto }] : []), ...(opts.domainAutomation ? [...DOMAIN_AUTOMATION_PROVIDERS.filter((p) => !(typeof p === 'object' && 'provide' in p && p.provide === CloudflarePort) && p !== DomainSettingsService), { provide: CloudflarePort, useValue: opts.domainAutomation.cloudflare }] : []), ...(opts.activity ? [{ provide: ActivityStore, useClass: PrismaActivityStore }, OtpPepper, ActivityService] : []), ...(opts.themeKit ? [{ provide: KIT, useFactory: () => opts.themeKit!(loadKit()) }] : []), { provide: StarterService, useValue: { seed: async () => ({ filled: [], kept: [], itemsCreated: 0, designKey: 'none' }) } }];
+  return {
+    imports: [PrismaModule, PassportModule, PlansModule, EmailModule],
+    controllers: [...PROVISIONING_CONTROLLERS, ...(opts.b3 ? B3_CONTROLLERS : []), ...(opts.includeSiteApi ? [...SITE_PUBLISH_CONTROLLERS, ...SITE_DOMAIN_CONTROLLERS] : []), ...(opts.includeDirectoryApi ? DIRECTORY_CONTROLLERS : []), ...(opts.includeSeoApi ? SEO_CONTROLLERS : []), ...(opts.billing ? PLAN_BILLING_CONTROLLERS : []), ...(opts.wave3 ? [...PARTNERS_CONTROLLERS, ...REFERRALS_CONTROLLERS, TrialController] : []), ...(opts.legacyVendorsRoute ? [VendorsController] : []), ...(opts.wallet ? WALLET_CONTROLLERS : []), ...(opts.services ? SERVICES_CONTROLLERS : []), ...(opts.requests ? SERVICE_REQUESTS_CONTROLLERS : []), ...(opts.themeSwitch ? THEME_SWITCH_CONTROLLERS : []), ...(opts.payments ? PAYMENTS_CONTROLLERS : []), ...(opts.website ? WEBSITE_CONTROLLERS : []), ...(opts.domainAutomation ? DOMAIN_AUTOMATION_CONTROLLERS : []), ...(opts.registrar ? REGISTRAR_CONTROLLERS : []), ...(opts.includeAiApi ? AI_STUDIO_CONTROLLERS : [])],
+    providers: [JwtStrategy, { provide: APP_GUARD, useClass: JwtAuthGuard }, { provide: APP_GUARD, useClass: ModuleGuard }, ...(opts.wave3 ? [{ provide: APP_GUARD, useClass: PartnerScopeGuard }] : []), ...providers, ...PACK_PROVIDERS],   // the pack engine: the domain and services controllers use @RequiresTab and the add-on list
+  };
+}
+
+export async function buildProvisioningTestApp(opts: ProvisioningTestOptions = {}): Promise<INestApplication> {
+  const moduleRef = await Test.createTestingModule(provisioningTestModuleMetadata(opts)).compile();
+  const app = moduleRef.createNestApplication({ rawBody: true });   // the payment webhook is verified over the raw bytes
+  if (opts.siteProvisioner) {
+    const real = app.get(SiteProvisioner);
+    const original: SiteProvisioner = { createDraftSite: real.createDraftSite.bind(real) };   // captured first, so a wrapper that calls it does not call itself
+    const wrapped = opts.siteProvisioner(original);
+    real.createDraftSite = wrapped.createDraftSite.bind(wrapped);   // swap behaviour in place; the step already holds this instance
+  }
+  // The provisioning tests must not depend on the shared staging setting siteDraftBuilderMode (a leftover "renderer" would add a full site build to every job).
+  // The pin is in this app instance only; nothing is written to the database. The site suites (includeSiteApi) read the real setting.
+  if (opts.pinLegacySiteMode ?? !(opts.includeSiteApi || opts.includeDirectoryApi || opts.billing || opts.wallet || opts.services || opts.requests || opts.themeSwitch || opts.includeAiApi || opts.b3)) {
+    const settings = app.get(ProvisioningSettingsService);
+    const real = settings.get.bind(settings);
+    settings.get = async () => ({ ...(await real()), siteDraftBuilderMode: 'legacy' as const, provisioningDirectoryProfileEnabled: false });   // the slice 5.3 suites must not depend on a leftover staging setting
+  }
+  app.useGlobalPipes(buildValidationPipe());
+  app.useGlobalInterceptors(new TransformInterceptor());
+  if (opts.activityRoutes) app.useGlobalInterceptors(new ActivityInterceptor(app.get(ActivityService)));   // the production APP_INTERCEPTOR: every mutating /v3/me and /v3/admin route is logged
+  app.useGlobalFilters(new HttpExceptionFilter());
+  await app.init();
+  return app;
+}

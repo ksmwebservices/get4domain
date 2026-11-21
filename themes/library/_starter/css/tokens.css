@@ -1,0 +1,29 @@
+/* Design tokens. The vendor may change only the accent (and approved fonts); everything else here belongs to the theme. */
+.g4d-theme {
+  --g4d-primary: var(--g4d-pal-primary, #0f5c4d);
+  --g4d-primary-contrast: var(--g4d-pal-primary-contrast, #ffffff);
+  --g4d-accent: var(--g4d-pal-accent, #0a5f7a);
+  --g4d-bg: var(--g4d-pal-bg, #ffffff);
+  --g4d-surface: var(--g4d-pal-surface, #f2f6f5);
+  --g4d-text: #14211e;
+  --g4d-muted: #4a5a56;
+  --g4d-border: var(--g4d-pal-border, #d3dcd9);
+  --g4d-radius: 12px;
+  --g4d-font-fallback: 'Noto Sans Tamil', 'Nirmala UI', 'Latha', system-ui, sans-serif;
+  --g4d-font-heading: 'Poppins', 'Noto Sans Tamil', 'Nirmala UI', 'Latha', system-ui, sans-serif;
+  --g4d-font-body: 'Inter', 'Noto Sans Tamil', 'Nirmala UI', 'Latha', system-ui, sans-serif;
+  --g4d-touch: 44px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .g4d-theme {
+    --g4d-primary: var(--g4d-pal-primary-d, #4fc7ac);
+    --g4d-primary-contrast: var(--g4d-pal-primary-contrast-d, #06201a);
+    --g4d-accent: var(--g4d-pal-accent-d, #63c2e0);
+    --g4d-bg: var(--g4d-pal-bg-d, #0f1615);
+    --g4d-surface: var(--g4d-pal-surface-d, #172220);
+    --g4d-text: #e8f0ee;
+    --g4d-muted: #a9bab6;
+    --g4d-border: var(--g4d-pal-border-d, #2c3a37);
+  }
+}

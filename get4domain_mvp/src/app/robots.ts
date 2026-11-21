@@ -19,11 +19,13 @@ const AI_BOTS = [
   'PerplexityBot',
 ];
 
+const AI_BOT_DISALLOW = ['/admin/', '/dashboard/', '/app/', '/api/'];
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      // Every AI crawler above: explicit Allow, full site — no disallows.
-      ...AI_BOTS.map((userAgent) => ({ userAgent, allow: '/' })),
+      // Every AI crawler above: the public site is open, the private app and API are not (they were not listed before, so these bots had no limit).
+      ...AI_BOTS.map((userAgent) => ({ userAgent, allow: '/', disallow: AI_BOT_DISALLOW })),
       // Everyone else (incl. Googlebot): allowed, minus the private app paths.
       {
         userAgent: '*',
@@ -35,7 +37,7 @@ export default function robots(): MetadataRoute.Robots {
           '/api/',
           '/login',
           '/register',
-          '/_next/',
+          // /_next/ is NOT listed: Googlebot must load the page's CSS and JavaScript to render it.
         ],
       },
     ],

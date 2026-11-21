@@ -1,0 +1,7 @@
+@keyframes g4d-mask{from{clip-path:inset(0 100% 0 0)}}
+@media (prefers-reduced-motion:no-preference){
+@supports (animation-timeline:view()){
+.g4d-theme:is([data-motion=medium],[data-motion=rich]) .g4d-mask img{animation:g4d-mask linear both;animation-timeline:view();animation-range:entry 0% entry 70%}}
+.g4d-theme .g4d-zoom img{transition:transform var(--g4d-tr)}
+.g4d-theme[data-motion=off] .g4d-zoom img{transition:none}
+.g4d-theme:not([data-motion=off]) .g4d-zoom:is(:hover,:focus-within) img{transform:scale(1.05)}}

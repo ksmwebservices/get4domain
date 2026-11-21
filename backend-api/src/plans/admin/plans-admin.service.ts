@@ -1,0 +1,219 @@
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
+import { EntitlementsService } from '../entitlements/entitlements.service';
+import { planError } from '../plans.errors';
+import { validateAmount, validateTerm } from './admin-validation';
+import { Actor, AuditService } from './audit.service';
+import { ApprovePlanPriceDto, CreatePlanDto, CreatePriceDto, UpdatePlanDto, UpdatePriceDto } from './dto/plans-admin.dto';
+import { expectedDate, PageQueryDto, pageArgs, paged, staleWrite, unknownPlan } from './plans-admin.common';
+
+/** Plans and their price rows. Every write: one transaction = the change + its audit row; the entitlement cache is cleared afterwards. */
+@Injectable()
+export class PlansAdminService {
+  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService, private readonly entitlements: EntitlementsService) {}
+
+  async listPlans(q: PageQueryDto) {
+    const { skip, take, page, pageSize } = pageArgs(q);
+    const [items, total] = await Promise.all([
+      this.prisma.v3Plan.findMany({ orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }], skip, take }),
+      this.prisma.v3Plan.count(),
+    ]);
+    return paged(items, total, page, pageSize);
+  }
+
+  async getPlan(id: string) {
+    const plan = await this.prisma.v3Plan.findUnique({ where: { id }, include: { prices: { orderBy: [{ termMonths: 'asc' }, { effectiveFrom: 'desc' }] }, features: { orderBy: { featureKey: 'asc' } } } });
+    if (!plan) throw unknownPlan();
+    return plan;
+  }
+
+  async createPlan(dto: CreatePlanDto, actor: Actor) {
+    if (dto.key !== `${dto.track.toLowerCase()}_${dto.level.toLowerCase()}`) {
+      throw new BadRequestException(`A plan key is the track and level in lower case, for example ${dto.track.toLowerCase()}_${dto.level.toLowerCase()}.`);
+    }
+    const plan = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.v3Plan.create({
+        data: { key: dto.key, track: dto.track, level: dto.level, name: dto.name, description: dto.description ?? null, status: dto.status ?? 'DRAFT', isPublic: dto.isPublic ?? false, sortOrder: dto.sortOrder ?? 0 },
+      });
+      await this.audit.record(tx, actor, 'plan.create', 'plan', created.id, null, created);
+      return created;
+    });
+    this.entitlements.invalidateAll();
+    return plan;
+  }
+
+  async updatePlan(id: string, dto: UpdatePlanDto, actor: Actor) {
+    const plan = await this.prisma.$transaction(async (tx) => {
+      const before = await tx.v3Plan.findUnique({ where: { id } });
+      if (!before) throw unknownPlan();
+      const data: Prisma.V3PlanUpdateManyMutationInput = {};
+      if (dto.name !== undefined) data.name = dto.name;
+      if (dto.description !== undefined) data.description = dto.description;
+      if (dto.status !== undefined) data.status = dto.status;
+      if (dto.isPublic !== undefined) data.isPublic = dto.isPublic;
+      if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
+      data.updatedAt = new Date();
+      const res = await tx.v3Plan.updateMany({ where: { id, updatedAt: expectedDate(dto.expectedUpdatedAt) }, data });
+      if (res.count === 0) throw staleWrite();
+      const after = await tx.v3Plan.findUniqueOrThrow({ where: { id } });
+      await this.audit.record(tx, actor, 'plan.update', 'plan', id, before, after);
+      return after;
+    });
+    this.entitlements.invalidateAll();
+    return plan;
+  }
+
+  /** B3.1: change only the display name of a plan, found by key. Same value = no write and no audit row. The key, track, level and prices are untouched. */
+  async renamePlan(key: string, name: string, actor: Actor) {
+    const clean = name.trim();
+    if (clean.length < 2) throw new BadRequestException(planError('PLAN_NAME_INVALID', 'Give the plan a name of at least two characters.'));
+    const plan = await this.prisma.$transaction(async (tx) => {
+      const before = await tx.v3Plan.findUnique({ where: { key } });
+      if (!before) throw unknownPlan();
+      if (before.name === clean) return before;
+      const after = await tx.v3Plan.update({ where: { key }, data: { name: clean } });
+      await this.audit.record(tx, actor, 'plan.rename', 'plan', before.id, { name: before.name }, { name: after.name });
+      return after;
+    });
+    this.entitlements.invalidateAll();
+    return { key: plan.key, name: plan.name };
+  }
+
+  /** A plan that has ever been given to a vendor can only be retired. An unused plan can be deleted (its price and matrix rows go with it). */
+  async deletePlan(id: string, actor: Actor) {
+    await this.prisma.$transaction(async (tx) => {
+      const before = await tx.v3Plan.findUnique({ where: { id }, include: { prices: true, features: true } });
+      if (!before) throw unknownPlan();
+      if ((await tx.v3PlanSubscription.count({ where: { planId: id } })) > 0) {
+        throw new ConflictException(planError('PLAN_IN_USE', 'This plan has been given to vendors, so it cannot be deleted. Retire it instead.'));
+      }
+      await tx.v3Plan.delete({ where: { id } });
+      await this.audit.record(tx, actor, 'plan.delete', 'plan', id, before, null);
+    });
+    this.entitlements.invalidateAll();
+    return { deleted: true };
+  }
+
+  // ------------------------------------------------------------------------------------------------------------------------------ prices
+  private async allowMonthly(tx: Prisma.TransactionClient | PrismaService): Promise<boolean> {
+    const s = await tx.v3PlanSetting.findUnique({ where: { key: 'allowMonthly' } });
+    return s?.valueJson === true;
+  }
+
+  async listPrices(planId: string, q: PageQueryDto) {
+    const { skip, take, page, pageSize } = pageArgs(q);
+    if (!(await this.prisma.v3Plan.findUnique({ where: { id: planId }, select: { id: true } }))) throw unknownPlan();
+    const where = { planId };
+    const [items, total] = await Promise.all([
+      this.prisma.v3PlanPrice.findMany({ where, orderBy: [{ termMonths: 'asc' }, { effectiveFrom: 'desc' }], skip, take }),
+      this.prisma.v3PlanPrice.count({ where }),
+    ]);
+    return paged(items, total, page, pageSize);
+  }
+
+  async createPrice(planId: string, dto: CreatePriceDto, actor: Actor) {
+    const price = await this.prisma.$transaction(async (tx) => {
+      const plan = await tx.v3Plan.findUnique({ where: { id: planId } });
+      if (!plan) throw unknownPlan();
+      if (plan.level === 'FREE') throw new BadRequestException(planError('FREE_PLAN_HAS_NO_PRICE', 'A Free plan has no price.'));
+      validateAmount(dto.amountPaise);
+      validateTerm(dto.termMonths, await this.allowMonthly(tx));
+      const created = await tx.v3PlanPrice.create({
+        data: { planId, termMonths: dto.termMonths, amountPaise: dto.amountPaise, taxInclusive: dto.taxInclusive ?? false, status: dto.status ?? 'PROPOSED', ...(dto.effectiveFrom ? { effectiveFrom: new Date(dto.effectiveFrom) } : {}) },
+      });
+      await this.audit.record(tx, actor, 'price.create', 'price', created.id, null, created);
+      return created;
+    });
+    this.entitlements.invalidateAll();
+    return price;
+  }
+
+  /**
+   * Editing a price never changes what a vendor already bought: a subscription keeps its own COPY of the price (priceSnapshotJson), so there is no
+   * live link to orphan.
+   */
+  async updatePrice(priceId: string, dto: UpdatePriceDto, actor: Actor) {
+    const price = await this.prisma.$transaction(async (tx) => {
+      const before = await tx.v3PlanPrice.findUnique({ where: { id: priceId } });
+      if (!before) throw new NotFoundException('That price does not exist.');
+      if (dto.amountPaise !== undefined) validateAmount(dto.amountPaise);
+      const data: Prisma.V3PlanPriceUpdateManyMutationInput = { updatedAt: new Date() };
+      if (dto.amountPaise !== undefined) data.amountPaise = dto.amountPaise;
+      if (dto.taxInclusive !== undefined) data.taxInclusive = dto.taxInclusive;
+      if (dto.status !== undefined) data.status = dto.status;
+      if (dto.effectiveFrom !== undefined) data.effectiveFrom = new Date(dto.effectiveFrom);
+      const res = await tx.v3PlanPrice.updateMany({ where: { id: priceId, updatedAt: expectedDate(dto.expectedUpdatedAt) }, data });
+      if (res.count === 0) throw staleWrite();
+      const after = await tx.v3PlanPrice.findUniqueOrThrow({ where: { id: priceId } });
+      await this.audit.record(tx, actor, 'price.update', 'price', priceId, before, after);
+      return after;
+    });
+    this.entitlements.invalidateAll();
+    return price;
+  }
+
+  /**
+   * Approve a PROPOSED plan price (SUPER_ADMIN, by the role matrix). The row starts now unless a later moment is given; a moment in the past (more than a minute ago) is refused so a price can never be
+   * back-dated under an invoice already issued. Approving an approved row is a no-op answer, not an error. Two prices of one plan and term may not start at the same moment. Audited; the cache is cleared.
+   */
+  async approvePrice(priceId: string, dto: ApprovePlanPriceDto, actor: Actor, now: Date = new Date()) {
+    // B2.3: the admin screen sends a bare date ("2026-11-18", today by default). That parses as midnight UTC, which is already past, so "today" was refused as "in the past" and the screen showed its
+    // generic "Some details do not look right". A bare date that is today (UTC or India date) or earlier-today means "from now"; a later bare date still starts at its midnight.
+    const bare = dto.effectiveFrom !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(dto.effectiveFrom);
+    const todays = [now, new Date(now.getTime() + 330 * 60_000)].map((d) => d.toISOString().slice(0, 10));
+    const when = dto.effectiveFrom ? (bare && todays.includes(dto.effectiveFrom) ? now : new Date(dto.effectiveFrom)) : now;
+    if (Number.isNaN(when.getTime())) throw new BadRequestException(planError('PRICE_DATE_INVALID', 'That date is not valid.'));
+    if (when.getTime() < now.getTime() - 60_000) throw new BadRequestException(planError('PRICE_DATE_IN_PAST', 'A price cannot start in the past.'));
+    const price = await this.prisma.$transaction(async (tx) => {
+      const before = await tx.v3PlanPrice.findUnique({ where: { id: priceId } });
+      if (!before) throw new NotFoundException('That price does not exist.');
+      if (before.status === 'APPROVED') return before;
+      validateAmount(before.amountPaise);
+      const clash = await tx.v3PlanPrice.findFirst({ where: { planId: before.planId, termMonths: before.termMonths, effectiveFrom: when, NOT: { id: priceId } } });
+      if (clash) throw new ConflictException(planError('PRICE_START_CLASH', 'Another price of this plan and term starts at that moment.'));
+      const after = await tx.v3PlanPrice.update({ where: { id: priceId }, data: { status: 'APPROVED', effectiveFrom: when } });
+      await this.audit.record(tx, actor, 'price.approve', 'price', priceId, before, after);
+      return after;
+    });
+    this.entitlements.invalidateAll();
+    return price;
+  }
+
+  /**
+   * B3.0: take an APPROVED price out of force. It never edits history: the amount, the start date and the creation time stay as they were, only the status becomes WITHDRAWN, and the audit row
+   * carries who, when, why, and what is in force afterwards. A price that has not started yet simply never starts; one that is in force is replaced by the latest earlier started APPROVED price of
+   * the same plan and term, or by PRICE_PENDING when there is none. Subscriptions keep their own copy of the price they were sold at, so nobody already subscribed changes. A withdrawn row
+   * cannot be approved again (propose a new price instead). Withdrawing a withdrawn price answers the same row.
+   */
+  async withdrawPrice(priceId: string, reasonIn: string, actor: Actor, now: Date = new Date()) {
+    const reason = String(reasonIn ?? '').trim();
+    if (reason.length < 5 || reason.length > 300) throw new BadRequestException(planError('PRICE_REASON_REQUIRED', 'A written reason of 5 to 300 characters is required.'));
+    const out = await this.prisma.$transaction(async (tx) => {
+      const before = await tx.v3PlanPrice.findUnique({ where: { id: priceId } });
+      if (!before) throw new NotFoundException('That price does not exist.');
+      if (before.status === 'WITHDRAWN') return { row: before, wasInForce: false, inForceAfter: null as null | { id: string; amountPaise: number; effectiveFrom: Date }, replay: true };
+      if (before.status !== 'APPROVED') throw new ConflictException(planError('PRICE_NOT_APPROVED', 'Only an approved price can be withdrawn. A proposed price can be deleted.'));
+      const rows = await tx.v3PlanPrice.findMany({ where: { planId: before.planId, termMonths: before.termMonths, status: 'APPROVED', currency: before.currency } });
+      const forceOf = (list: typeof rows) => list.filter((r) => r.effectiveFrom.getTime() <= now.getTime()).sort((a, b) => b.effectiveFrom.getTime() - a.effectiveFrom.getTime())[0] ?? null;
+      const wasInForce = forceOf(rows)?.id === before.id;
+      const row = await tx.v3PlanPrice.update({ where: { id: priceId }, data: { status: 'WITHDRAWN' } });
+      const next = forceOf(rows.filter((r) => r.id !== priceId));
+      await this.audit.record(tx, actor, 'price.withdraw', 'price', priceId, before, { ...row, reason, wasInForce, inForceAfter: next ? { id: next.id, amountPaise: next.amountPaise, effectiveFrom: next.effectiveFrom } : null });
+      return { row, wasInForce, inForceAfter: next ? { id: next.id, amountPaise: next.amountPaise, effectiveFrom: next.effectiveFrom } : null, replay: false };
+    });
+    if (!out.replay) this.entitlements.invalidateAll();
+    return { id: out.row.id, status: out.row.status, planId: out.row.planId, termMonths: out.row.termMonths, amountPaise: out.row.amountPaise, effectiveFrom: out.row.effectiveFrom, wasInForce: out.wasInForce, inForceAfter: out.inForceAfter };
+  }
+
+  async deletePrice(priceId: string, actor: Actor) {
+    await this.prisma.$transaction(async (tx) => {
+      const before = await tx.v3PlanPrice.findUnique({ where: { id: priceId } });
+      if (!before) throw new NotFoundException('That price does not exist.');
+      await tx.v3PlanPrice.delete({ where: { id: priceId } });
+      await this.audit.record(tx, actor, 'price.delete', 'price', priceId, before, null);
+    });
+    this.entitlements.invalidateAll();
+    return { deleted: true };
+  }
+}

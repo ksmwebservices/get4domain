@@ -1,0 +1,55 @@
+{
+  "id": "free-practice",
+  "version": 1,
+  "name": "Practice",
+  "description": "For clinics, dentists, labs, lawyers, accountants, advisers, photographers, designers, planners and consultants: a credentials and registration strip, practice areas or departments, consultation modes, timings, an appointment button and a clear disclaimer. Calm, clean, professional.",
+  "author": "Get4Domain",
+  "tier": "Standard",
+  "tracks": [
+    "professional"
+  ],
+  "families": [
+    "healthcare",
+    "legal-finance",
+    "creative-consulting"
+  ],
+  "categories": [
+    "doctor-clinic",
+    "dentist",
+    "physiotherapy",
+    "diagnostics-lab",
+    "lawyer",
+    "ca-tax-consultant",
+    "insurance-advisor",
+    "photographer",
+    "interior-designer-architect",
+    "event-planner",
+    "it-consultant"
+  ],
+  "layoutVariantRules": {
+    "healthcare": "calm-centered",
+    "legal-finance": "structured-split",
+    "creative-consulting": "portfolio-first"
+  },
+  "motion": {
+    "default": "Low",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "Lora",
+    "Inter",
+    "Manrope",
+    "Work Sans",
+    "Merriweather",
+    "Playfair Display",
+    "Noto Sans Tamil"
+  ]
+}

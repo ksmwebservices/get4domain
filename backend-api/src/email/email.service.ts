@@ -2,22 +2,67 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Resend } from 'resend';
 import { Vendor, Invoice, Subscription, SupportTicket, TeamMember } from '@prisma/client';
 
+const escapeHtml = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
+
 const formatDate = (date: Date | null | undefined): string =>
   date ? new Date(date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly resend: Resend;
+  /** Test mode (EMAIL_MODE=test, never in production): mail is captured here and nothing is sent. */
+  static readonly outbox: Array<{ to: string; subject: string; html: string }> = [];
+  private static testMode(): boolean {
+    return process.env.EMAIL_MODE === 'test' && process.env.NODE_ENV !== 'production';
+  }
+
+  private readonly resend: Resend | null;
   private readonly fromAddress: string;
   private readonly frontendUrl: string;
   private readonly adminEmail: string;
 
   constructor() {
-    this.resend = new Resend(process.env.RESEND_API_KEY);
+    this.resend = EmailService.testMode() ? null : new Resend(process.env.RESEND_API_KEY);
     this.fromAddress = process.env.COMPANY_EMAIL ? `Get4Domain <${process.env.COMPANY_EMAIL}>` : 'Get4Domain <onboarding@get4domain.com>';
     this.frontendUrl = process.env.FRONTEND_URL ?? 'https://get4domain.com';
     this.adminEmail = process.env.ADMIN_EMAIL ?? 'admin@get4domain.com';
+  }
+
+  /** S13: the password-reset link. The link carries the single-use token; the token is never logged. */
+  async sendPasswordReset(to: string, name: string, resetUrl: string, ttlMinutes: number): Promise<void> {
+    await this.send({
+      to,
+      subject: 'Reset your Get4Domain password',
+      html: `
+        <p>Hi ${escapeHtml(name)},</p>
+        <p>We received a request to reset your Get4Domain password. This link works once and expires in ${ttlMinutes} minutes:</p>
+        <p><a href="${resetUrl}">Reset my password</a></p>
+        <p>If you did not ask for this, you can ignore this email. Your password has not changed.</p>
+        <p>Team Get4Domain</p>
+      `,
+    });
+  }
+
+  /**
+   * V3 provisioning: a plain-text transactional message (the owner invite). Used ONLY by the guarded LiveEmailAdapter, which refuses to call it unless the
+   * environment flag V3_INVITE_LIVE_ENABLED is "true". Links in the text become clickable; nothing else is interpreted.
+   */
+  async sendPlainText(to: string, subject: string, text: string): Promise<void> {
+    const html = escapeHtml(text).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>').replace(/\n/g, '<br>');
+    await this.send({ to, subject, html: `<div>${html}</div>` });
+  }
+
+  async sendPasswordChangedNotice(to: string, name: string): Promise<void> {
+    await this.send({
+      to,
+      subject: 'Your Get4Domain password was changed',
+      html: `
+        <p>Hi ${escapeHtml(name)},</p>
+        <p>The password for your Get4Domain account was just changed, and you were signed out on your other devices.</p>
+        <p>If this was not you, reset your password straight away from the sign-in page and contact support.</p>
+        <p>Team Get4Domain</p>
+      `,
+    });
   }
 
   async sendWelcomeEmail(vendor: Vendor, plainPassword: string): Promise<void> {
@@ -170,6 +215,11 @@ export class EmailService {
   }
 
   private async send(params: { to: string; subject: string; html: string; fromName?: string | null; replyTo?: string | null }): Promise<void> {
+    if (EmailService.testMode()) {
+      EmailService.outbox.push({ to: params.to, subject: params.subject, html: params.html });
+      return;
+    }
+    if (!this.resend) throw new Error('Email provider is not configured');
     try {
       await this.resend.emails.send({
         from: this.fromWithName(params.fromName),

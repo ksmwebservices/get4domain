@@ -11,15 +11,15 @@ import CommunicationHub from '@/components/marketing/home/CommunicationHub';
 import AIStudio from '@/components/marketing/home/AIStudio';
 import HomePricing from '@/components/marketing/home/HomePricing';
 import WhyGet4Domain from '@/components/marketing/WhyGet4Domain';
-import { createPageMetadata } from '@/lib/metadata';
-import { BRAND_TITLE, BRAND_DESCRIPTION } from '@/constants/site';
 
-export const metadata: Metadata = createPageMetadata({
-  // BRAND_TITLE is 52 characters; adding " | Get4Domain" would pass 60, so the helper leaves it bare.
-  title: BRAND_TITLE,
-  description: BRAND_DESCRIPTION,
-  path: '',
-});
+export const metadata: Metadata = {
+  // `absolute` keeps the brand to one mention (the root template would append " | Get4Domain" again). Positioning: "Your Online Visible Partner".
+  // No plan names or prices here until a V3 price source exists (docs/v3/SEO_0_PLAN.md, P5).
+  title: { absolute: 'Get4Domain — Your Online Visible Partner' },
+  description:
+    'Get4Domain is your online visible partner: a professional website for your business, built fast, with the tools to capture leads, take bookings and grow.',
+  alternates: { canonical: 'https://get4domain.com' },
+};
 
 const INDUSTRIES = [
   { icon: '🚗', label: 'Travel & Tours', href: '/industries/travel' },

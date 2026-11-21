@@ -1,3 +1,5 @@
+import { hasRetiredWording } from '@/lib/retired-wording';
+
 export interface FaqItem {
   q: string;
   a: string;
@@ -14,10 +16,13 @@ interface FaqProps {
  * Server component — renders all answers inline for crawlers and readers.
  */
 export default function Faq({ items, title = 'Frequently Asked Questions', subtitle }: FaqProps) {
+  // Structured data may only repeat what the page shows, and it must not name the retired plans or prices. Until the visible copy is rewritten
+  // (queue Q-SEO-1) any question that still does is left out of the schema (it stays on the page); no remaining question means no schema.
+  const forSchema = items.filter((item) => !hasRetiredWording(item.q) && !hasRetiredWording(item.a));
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: items.map((item) => ({
+    mainEntity: forSchema.map((item) => ({
       '@type': 'Question',
       name: item.q,
       acceptedAnswer: { '@type': 'Answer', text: item.a },
@@ -43,7 +48,7 @@ export default function Faq({ items, title = 'Frequently Asked Questions', subti
           ))}
         </div>
       </div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {forSchema.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
     </section>
   );
 }

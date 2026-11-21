@@ -1,0 +1,56 @@
+{
+  "id": "free-shop-lite",
+  "version": 1,
+  "name": "Shop Lite",
+  "description": "For small shops (fashion, jewellery, grocery, bakery, electronics, furniture, gifts, books): a small catalogue of up to 12 products, category chips, an offers strip, the delivery PIN check note where the category has it, an order-on-WhatsApp button and a short delivery and returns note. Product enquiry links, or add to cart when the shop has the cart. Bright and product-first.",
+  "author": "Get4Domain",
+  "tier": "Standard",
+  "tracks": [
+    "ecommerce"
+  ],
+  "families": [
+    "fashion-lifestyle",
+    "food-grocery",
+    "electronics-home",
+    "gifts-books"
+  ],
+  "categories": [
+    "fashion-apparel",
+    "jewellery",
+    "grocery-kirana",
+    "bakery-sweets",
+    "electronics-mobile",
+    "home-furniture",
+    "gifts-handicrafts",
+    "books-stationery"
+  ],
+  "layoutVariantRules": {
+    "fashion-lifestyle": "product-first",
+    "food-grocery": "product-first",
+    "electronics-home": "product-first",
+    "gifts-books": "product-first"
+  },
+  "motion": {
+    "default": "Low",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "Poppins",
+    "DM Sans",
+    "Playfair Display",
+    "Nunito",
+    "Manrope",
+    "Inter",
+    "Work Sans",
+    "Merriweather",
+    "Noto Sans Tamil"
+  ]
+}

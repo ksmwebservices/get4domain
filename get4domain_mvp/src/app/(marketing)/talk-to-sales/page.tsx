@@ -8,7 +8,7 @@ export const metadata: Metadata = createPageMetadata({
   title: "You're ready to build",
   description: 'You have explored the demos — let us turn one into your own live website with payments, bookings and enquiries.',
   path: '/talk-to-sales',
-  noindex: true,
+  noIndex: true,
 });
 
 /**

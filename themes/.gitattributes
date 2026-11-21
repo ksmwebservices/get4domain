@@ -1,0 +1,9 @@
+# The theme kit compares committed files byte for byte with what its generators write (LF).
+# On Windows with core.autocrlf=true a fresh checkout turns them into CRLF and 6 kit tests fail. Keep LF here.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.zip binary
+*.woff2 binary

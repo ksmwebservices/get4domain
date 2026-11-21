@@ -1,0 +1,319 @@
+import * as path from 'path';
+import { ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { AdminGuard } from '../src/auth/guards/admin.guard';
+import { ADMIN_ROLE_MATRIX, rolesFor, StaffRole } from '../src/auth/guards/admin-role-matrix';
+import { AuthenticatedUser } from '../src/common/decorators/current-user.decorator';
+import { scanRoutes } from './support/route-scan';
+
+/**
+ * S7: AdminGuard used to check only "is this an admin?", so MARKETING and OPERATIONS staff could do everything a super admin could
+ * (delete or suspend vendors, mark invoices paid, deduct wallets). It now checks the staff role against a central matrix, deny by default.
+ *
+ * ORACLE: the owner-approved matrix, typed out independently of the implementation. Three tiers:
+ *   SUPER_ADMIN only   -> platform accounting, Demo Bookings (/leads), vendor DELETE (tightened to match the admin UI)
+ *   MARKETING denied   -> money, plans, vendors (incl. suspend), support, domains, platform content, demo data (OPERATIONS and SUPER_ADMIN allowed)
+ *   everyone allowed   -> CRM, quotes, AI templates, usage analytics, campaigns, managed services, push, themes GET
+ */
+const SUPER_ONLY_ROUTES = [
+  'GET /v3/admin/alert-rules', 'PUT /v3/admin/alert-rules',   // Batch 4B slice 5.20: the alert rules are SUPER_ADMIN only
+  'GET /v3/admin/prohibited-terms', 'POST /v3/admin/prohibited-terms', 'PUT /v3/admin/prohibited-terms/:id', 'DELETE /v3/admin/prohibited-terms/:id',   // Batch 4B slice 5.21: the prohibited phrases
+  'POST /v3/admin/domain-margins/:id/approve', 'POST /v3/admin/domain-margins/:id/reject',   // Batch 11 slice 5.6d: approving or rejecting a domain price is SUPER_ADMIN only
+  'POST /v3/admin/takedowns', 'POST /v3/admin/takedowns/:id/reverse',   // Batch 4B slice 5.21: a legal takedown is created and reversed by SUPER_ADMIN only
+  'POST /v3/admin/listing-merges/plan', 'POST /v3/admin/listing-merges', 'GET /v3/admin/listing-merges', 'POST /v3/admin/listing-merges/:id/reverse',   // Block 4b slice 9: merging two listings is SUPER_ADMIN only
+  'POST /v3/admin/mailbox-prices/:id/confirm',   // Block 4b slice 11: confirming a mailbox price makes it usable: SUPER_ADMIN only
+  'GET /analytics/platform-accounting',   // accounts: MARKETING refused on all accounts routes, and OPERATIONS matches the admin UI
+  'GET /leads', 'PUT /leads/:id/status',  // Demo Bookings
+  'DELETE /vendors/:id',                  // deleting a vendor; suspend and activate stay OPERATIONS + SUPER_ADMIN
+  // S51.6: every WRITE of the plans slice is a money rule, SUPER_ADMIN only
+  'POST /v3/admin/plans', 'PUT /v3/admin/plans/:id', 'PUT /v3/admin/plans/by-key/:key/name', 'POST /v3/admin/prices/:priceId/withdraw', 'PUT /v3/admin/included-services/:planKey/:termMonths/:groupKey', 'DELETE /v3/admin/plans/:id',
+  'POST /v3/admin/plans/:id/prices', 'POST /v3/admin/prices/:priceId/approve', 'PUT /v3/admin/prices/:priceId', 'DELETE /v3/admin/prices/:priceId',
+  'POST /v3/admin/features', 'PUT /v3/admin/features/:key', 'DELETE /v3/admin/features/:key', 'PUT /v3/admin/plans/:id/features',
+  'POST /v3/admin/tax-rates', 'PUT /v3/admin/tax-rates/:id', 'DELETE /v3/admin/tax-rates/:id',
+  'PUT /v3/admin/plan-settings/:key',
+  'POST /v3/admin/vendors/:id/subscription', 'POST /v3/admin/vendors/:id/overrides', 'PUT /v3/admin/overrides/:overrideId', 'DELETE /v3/admin/overrides/:overrideId',
+  'PUT /v3/admin/vendors/:id/flags/v3_plans',
+  // B2 slice 5.11: only SUPER_ADMIN touches AI providers (secrets), prompts and credit grants
+  'GET /v3/admin/ai/providers', 'POST /v3/admin/ai/providers', 'PUT /v3/admin/ai/providers/:id', 'POST /v3/admin/ai/providers/:id/test', 'GET /v3/admin/ai/prompts', 'POST /v3/admin/ai/prompts', 'POST /v3/admin/ai/prompts/:id/activate', 'POST /v3/admin/ai/credit-grants',
+  // B3 slice 5.15: legal documents are written and published by SUPER_ADMIN only
+  'GET /v3/admin/terms', 'GET /v3/admin/terms/:id', 'POST /v3/admin/terms/kinds/:kind/drafts', 'PUT /v3/admin/terms/:id', 'POST /v3/admin/terms/:id/publish',
+  // B3 slice 5.13a: the seeded-site indexing mode
+  'PUT /v3/admin/seeded-sites/indexing-mode',
+  // B4 slice 5.16b: only SUPER_ADMIN approves or retires a price
+  'POST /v3/admin/services/prices/:id/approve', 'POST /v3/admin/services/prices/:id/retire', 'POST /v3/admin/packs/prices/:id/approve', 'POST /v3/admin/packs/prices/:id/retire',
+  // B4 slice 5.16a: only SUPER_ADMIN adds or removes wallet credit by hand, or freezes a wallet
+  'POST /v3/admin/wallets/:vendorId/adjustments', 'PUT /v3/admin/wallets/:vendorId/frozen',
+  // B2 slice 5.1b: only SUPER_ADMIN marks a plan order paid offline or records a refund
+  'POST /v3/admin/billing/orders/:id/mark-paid', 'POST /v3/admin/billing/orders/:id/refund',
+];
+// Amendment 13 Part A: pack engine writes are SUPER_ADMIN only (tier matrix, switches, add-ons, packs, tabs, categories)
+const PACK_ENGINE_WRITES = ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/pack-engine/tier-matrix/:tier/:capabilityKey', 'PUT /v3/admin/pack-engine/vendors/:vendorId/addons/:addonKey', 'PUT /v3/admin/pack-engine/settings/:name'];
+
+const MARKETING_DENIED = [
+  'POST /addons/vendor/:key/enable', 'POST /addons/vendor/:key/disable', 'POST /modules/vendor/:key/enable', 'POST /modules/vendor/:key/disable',
+  'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
+  'GET /admin/domain-campaign/leads', 'POST /admin/domain-campaign/clients', 'GET /admin/domain-campaign/clients', 'GET /admin/domain-campaign/records',
+  'POST /admin/domain-campaign/records', 'GET /admin/domain-campaign/records/vendor/:vendorId', 'POST /admin/domain-campaign/records/:id/invoice',
+  'GET /admin/domains', 'POST /admin/domains/register', 'POST /admin/domains/connect', 'POST /admin/domains/verify',
+  'GET /industries/vendor/:vendorId/override', 'PUT /industries/vendor/:vendorId/override',
+  'POST /invoices', 'GET /invoices', 'POST /invoices/:id/send-payment-link', 'POST /invoices/:id/mark-paid',
+  'POST /subscriptions', 'GET /subscriptions', 'PUT /subscriptions/:id/activate', 'PUT /subscriptions/:id/cancel',
+  'GET /admin/vendor-comms', 'PATCH /admin/vendor-comms',
+  'GET /vendors', 'POST /vendors', 'GET /vendors/:id', 'PUT /vendors/:id', 'POST /vendors/:id/suspend', 'POST /vendors/:id/activate',
+  'GET /support/tickets', 'PUT /support/tickets/:id/reply', 'PUT /support/tickets/:id/resolve',
+  'POST /wallet/deduct',
+  'POST /website-themes', 'PUT /website-themes/:id', 'DELETE /website-themes/:id',
+  // S51.6: reads of the plans slice (OPERATIONS and SUPER_ADMIN; MARKETING refused)
+  'GET /v3/admin/plans', 'GET /v3/admin/included-services', 'GET /v3/admin/plans/:id', 'GET /v3/admin/plans/:id/prices', 'GET /v3/admin/price-book', 'GET /v3/admin/plans/:id/features', 'GET /v3/admin/features',
+  'GET /v3/admin/tax-rates', 'GET /v3/admin/plan-settings', 'GET /v3/admin/audit-logs',
+  'GET /v3/admin/vendors/:id/subscription', 'GET /v3/admin/vendors/:id/overrides', 'GET /v3/admin/vendors/:id/entitlements',
+  // B2 slice 5.11: reading AI usage is OPERATIONS and SUPER_ADMIN
+  'GET /v3/admin/ai/usage',
+  // B4 slice 5.16d: switching a vendor's theme for them (it can charge their wallet), their switch history and the recovery of stuck switches: OPERATIONS and SUPER_ADMIN
+  'POST /v3/admin/vendors/:vendorId/site/theme/switch', 'GET /v3/admin/vendors/:vendorId/site/theme/history', 'POST /v3/admin/theme-switches/recover',
+  // Batch 4B slice 5.20: alerts, a vendor's activity and the attention board
+  'GET /v3/admin/alerts', 'GET /v3/admin/alerts/:id', 'PATCH /v3/admin/alerts/:id', 'GET /v3/admin/vendors/:vendorId/activity', 'GET /v3/admin/attention',
+  'GET /v3/admin/mail-rules',   // Block 4b slice 11: the recorded mail lanes and promotion rules
+  // Block 4b slice 9: staff actions on a business: a plan change with a date, the business name and its history, the per-host visit report (OPERATIONS and SUPER_ADMIN; MARKETING refused)
+  'PUT /v3/admin/vendors/:id/business-name', 'GET /v3/admin/vendors/:id/business-name-history', 'POST /v3/admin/vendors/:id/plan-change', 'GET /v3/admin/vendors/:id/plan-changes', 'POST /v3/admin/plan-changes/:id/cancel', 'GET /v3/admin/vendors/:id/visits',
+  // Block 4b slice 4: the support desk (OPERATIONS and SUPER_ADMIN; MARKETING refused)
+  'GET /v3/admin/tickets', 'GET /v3/admin/tickets/:id', 'PUT /v3/admin/tickets/:id/assignee', 'PUT /v3/admin/tickets/:id/status', 'POST /v3/admin/tickets/:id/messages',
+  // Batch 4B slice 5.21: reports, proofs, the block list and the takedown list
+  'GET /v3/admin/business-reports', 'PATCH /v3/admin/business-reports/:id', 'GET /v3/admin/trust-blocklist', 'POST /v3/admin/trust-blocklist', 'DELETE /v3/admin/trust-blocklist/:id', 'GET /v3/admin/business-proofs', 'PATCH /v3/admin/business-proofs/:id', 'GET /v3/admin/takedowns',
+  // B4 slice 5.16c: the service request queue and its work: OPERATIONS and SUPER_ADMIN, MARKETING refused
+  'GET /v3/admin/service-requests', 'POST /v3/admin/service-requests/sla-sweep', 'POST /v3/admin/service-requests/auto-approve-run', 'GET /v3/admin/service-requests/:id', 'POST /v3/admin/service-requests/:id/assign', 'POST /v3/admin/service-requests/:id/status',
+  'POST /v3/admin/service-requests/:id/deliverables', 'POST /v3/admin/service-requests/:id/reject', 'POST /v3/admin/service-requests/:id/retry-grant', 'POST /v3/admin/vendors/:vendorId/service-requests',
+  // B4 slice 5.16b: changing the catalogue and proposing or editing a price: OPERATIONS and SUPER_ADMIN
+  'POST /v3/admin/services', 'PUT /v3/admin/services/:key', 'POST /v3/admin/packs', 'PUT /v3/admin/packs/:key',   // the catalogue; the PRICE writes moved to SUPER_ADMIN only in Wave 3 Part F (see below)
+  // B4 slice 5.16a: wallets are money: reads, the reconciliation report and the expiry run are OPERATIONS and SUPER_ADMIN
+  'GET /v3/admin/wallets', 'GET /v3/admin/wallets/reconciliation', 'POST /v3/admin/wallets/expiry-run', 'GET /v3/admin/wallets/:vendorId', 'GET /v3/admin/wallets/:vendorId/ledger', 'GET /v3/admin/wallets/:vendorId/reconcile',
+  // B2 slice 5.1b: reading orders and the payment inbox is OPERATIONS and SUPER_ADMIN
+  'GET /v3/admin/billing/orders', 'GET /v3/admin/billing/payment-events',
+  // B2 slice 5.7: directory writes, the claim phone override and removal requests (contact details): OPERATIONS and SUPER_ADMIN only
+  'POST /v3/admin/directory/locations', 'PUT /v3/admin/directory/locations/:id', 'POST /v3/admin/directory/categories', 'PUT /v3/admin/directory/categories/:id', 'POST /v3/admin/directory/businesses', 'PUT /v3/admin/directory/businesses/:id',
+  'POST /v3/admin/directory/businesses/:id/moderate', 'POST /v3/admin/directory/businesses/:id/placements', 'POST /v3/admin/directory/placements/:id/revoke', 'POST /v3/admin/directory/businesses/:id/claim-phone-override',
+  'GET /v3/admin/directory/removal-requests', 'POST /v3/admin/directory/removal-requests/:id/approve', 'POST /v3/admin/directory/removal-requests/:id/reject', 'POST /v3/admin/directory/removal-requests/:id/execute',
+  // B2 slice 5.6: vendors' addresses. Reads included, because a host name can identify a business: OPERATIONS and SUPER_ADMIN only.
+  'GET /v3/admin/domains', 'GET /v3/admin/domains/:id', 'POST /v3/admin/domains/:id/verify', 'PUT /v3/admin/domains/:id/state', 'POST /v3/admin/domains/:id/primary',
+  'POST /v3/admin/domains/:id/remove', 'PUT /v3/admin/vendors/:id/domains/subdomain',
+  // B3 slice 5.14: requests, the outbox, reports and the blocklist
+  'GET /v3/admin/requests', 'GET /v3/admin/requests/:id', 'GET /v3/admin/vendors/:vendorId/payment-methods', 'GET /v3/admin/message-outbox', 'GET /v3/admin/reports', 'POST /v3/admin/reports/:id/handle', 'GET /v3/admin/blocklist', 'POST /v3/admin/blocklist', 'DELETE /v3/admin/blocklist/:id',
+  // B3 slice 5.13a: seeded sites
+  'GET /v3/admin/seeded-sites/register', 'POST /v3/admin/seeded-sites/register', 'GET /v3/admin/seeded-sites/indexing-mode', 'POST /v3/admin/seeded-sites/:id/removal',
+  // B3 slice 5.7b: the Visit-site report across vendors
+  'GET /v3/admin/directory/visits',
+  // B3 slice 5.6b: the canonical host and the custom-domain promotion add-on
+  'GET /v3/admin/vendors/:id/canonical', 'POST /v3/admin/vendors/:id/custom-domain-addon', 'POST /v3/admin/vendors/:id/custom-domain-addon/end',
+  // B3 slice 5.1d: lifecycle actions and the owner deletion queue (a deletion request identifies a business): OPERATIONS and SUPER_ADMIN
+  'GET /v3/admin/vendors/:id/lifecycle', 'POST /v3/admin/vendors/:id/lifecycle/convert-to-free', 'POST /v3/admin/vendors/:id/lifecycle/restore-pro', 'POST /v3/admin/vendors/:id/lifecycle/extend-grace', 'POST /v3/admin/vendors/:id/lifecycle/suspend', 'POST /v3/admin/vendors/:id/lifecycle/reinstate', 'POST /v3/admin/vendors/:id/lifecycle/delete-empty-listing', 'GET /v3/admin/account-deletions', 'GET /v3/admin/account-deletions/:id', 'POST /v3/admin/account-deletions/:id/execute',
+  // S53.7: provisioning is onboarding work: OPERATIONS and SUPER_ADMIN read and write, MARKETING refused everywhere (a job holds a phone number and an email)
+  'POST /v3/admin/provisioning/jobs', 'GET /v3/admin/provisioning/jobs', 'GET /v3/admin/provisioning/jobs/:id',
+  'POST /v3/admin/provisioning/jobs/:id/retry', 'POST /v3/admin/provisioning/jobs/:id/cancel', 'POST /v3/admin/provisioning/jobs/:id/run',
+  'POST /v3/admin/vendors/:id/claim-link/reissue', 'POST /v3/admin/vendors/:id/claim-link/revoke', 'GET /v3/admin/invites',
+  // S54.7: sites. Anything that carries html, and every write, is OPERATIONS and SUPER_ADMIN; MARKETING only reads summaries (the two ALL_STAFF routes below)
+  'PUT /v3/admin/vendors/:id/site/theme', 'POST /v3/admin/vendors/:id/site/build', 'POST /v3/admin/vendors/:id/site/publish', 'POST /v3/admin/vendors/:id/site/rollback',
+  'GET /v3/admin/vendors/:id/site/preview/:publicationId/:path', 'PUT /v3/admin/vendors/:id/site/noindex',
+  // 5.13b: act on behalf and the onboarding queue
+  'POST /v3/admin/vendors/:id/act-on-behalf', 'POST /v3/admin/act-on-behalf/:sessionId/end', 'GET /v3/admin/act-on-behalf', 'GET /v3/admin/onboarding-queue',
+  // 5.6d: domain sales and identity checks
+  'GET /v3/admin/domain-orders', 'POST /v3/admin/vendors/:id/domains/register', 'GET /v3/admin/domain-margins', 'POST /v3/admin/registrar/recover', 'POST /v3/admin/registrar/reconcile', 'GET /v3/admin/registrar/runs',
+  'GET /v3/admin/identity-checks', 'GET /v3/admin/vendors/:id/identity', 'POST /v3/admin/vendors/:id/identity/document', 'POST /v3/admin/vendors/:id/identity/approve', 'POST /v3/admin/vendors/:id/identity/reject',
+  // 5.6c: own-domain automation and the domain log
+  'GET /v3/admin/domain-connections', 'POST /v3/admin/vendors/:id/domains/:domainId/connection/retry', 'GET /v3/admin/vendors/:id/domain-log', 'GET /v3/admin/vendors/:id/subdomain-log',
+  // Wave 2 Part C
+  'GET /v3/admin/vendors', 'GET /v3/admin/vendors/:id/held-count', 'GET /v3/admin/vendors/:id/notes', 'POST /v3/admin/vendors/:id/notes', 'GET /v3/admin/invoices',
+  // B4: customers' words on a vendor's live site
+  'GET /v3/admin/vendors/:id/site/testimonials',
+  // B3: the review link of a vendor's live site
+  'GET /v3/admin/vendors/:id/site/review-link',
+  // B2: the location of a vendor's live site
+  'GET /v3/admin/vendors/:id/site/location',
+  // 5.5c: review of Free edits
+  'GET /v3/admin/content-reviews', 'GET /v3/admin/content-reviews/:id', 'POST /v3/admin/content-reviews/:id/approve', 'POST /v3/admin/content-reviews/:id/reject',
+  // 5.5b: the Banner Library and set-up on a vendor's behalf
+  'PUT /v3/admin/banner-library/:id/active', 'GET /v3/admin/vendors/:id/site/banners', 'POST /v3/admin/vendors/:id/site/banner', 'GET /v3/admin/vendors/:id/site/media', 'POST /v3/admin/vendors/:id/site/media',
+];
+// Amendment 13 Part A: the pack engine reads are OPERATIONS and SUPER_ADMIN (MARKETING refused)
+const PACK_ENGINE_READS = ['GET /v3/admin/pack-engine/packs', 'GET /v3/admin/pack-engine/packs/:key', 'GET /v3/admin/pack-engine/tabs', 'GET /v3/admin/pack-engine/categories', 'GET /v3/admin/pack-engine/tier-matrix', 'GET /v3/admin/pack-engine/addons', 'GET /v3/admin/pack-engine/settings', 'GET /v3/admin/pack-engine/vendors/:vendorId/navigation'];
+
+const ALL_STAFF_ROUTES = [
+  'GET /admin/crm/leads', 'GET /admin/crm/leads/:id', 'PUT /admin/crm/leads/:id', 'POST /admin/crm/leads/:id/call',
+  'GET /admin-team/me',
+  'GET /ai-templates/all', 'POST /ai-templates', 'PUT /ai-templates/:id', 'DELETE /ai-templates/:id',
+  'GET /analytics/usage/all',
+  'GET /campaigns/admin/all', 'POST /growth-hub/ads/:id/launch',
+  'GET /admin/managed-services/leads', 'GET /admin/managed-services/catalog', 'POST /admin/managed-services/catalog', 'PUT /admin/managed-services/catalog/:id',
+  'POST /notifications/push',
+  'POST /admin/quotes', 'GET /admin/quotes', 'GET /admin/quotes/:id', 'PUT /admin/quotes/:id/status', 'POST /admin/quotes/proposals', 'GET /admin/quotes/:id/pdf', 'POST /admin/quotes/:id/share',
+  'GET /website-themes/all', 'GET /website-themes/:id/unlocks',
+  'GET /v3/admin/sites', 'GET /v3/admin/vendors/:id/site',   // S54.7: summaries only, never html
+  'GET /v3/admin/banner-library',   // 5.5b: the library with its licences is readable by all staff
+  'GET /v3/admin/seo/pages', 'GET /v3/admin/vendors/:id/site/seo',   // B1: SEO reports, read only
+  // B4 slice 5.16b: all staff read the catalogue; MARKETING gets no money field (tested in services-api.spec.ts)
+  'GET /v3/admin/services', 'GET /v3/admin/services/:key', 'GET /v3/admin/packs', 'GET /v3/admin/packs/:key',
+  // B3 slice 5.13a: MARKETING reads the seeded list and one site, non-personal fields only
+  'GET /v3/admin/categories/tree', 'POST /v3/admin/vendor-sites',   // B2.2
+  'GET /v3/admin/overview',   // K1
+  'GET /v3/admin/seeded-sites', 'GET /v3/admin/seeded-sites/:id', 'GET /v3/admin/seeded-sites/categories', 'GET /v3/admin/media/limits',
+  'POST /v3/admin/seeded-sites/:id/media/attach',   // Wave 2 Part G: attach a staff member's draft uploads to the listing
+  'GET /v3/admin/seeded-sites/:id/media', 'POST /v3/admin/seeded-sites/:id/media', 'DELETE /v3/admin/seeded-sites/:id/media/:mediaId', 'GET /v3/admin/media/drafts', 'POST /v3/admin/media/drafts', 'DELETE /v3/admin/media/drafts/:mediaId',   // Wave 2 D: C11
+  'GET /v3/admin/seeded-sites/imports/template', 'POST /v3/admin/seeded-sites/imports/dry-run', 'POST /v3/admin/seeded-sites/imports/apply',   // Wave 2 Part D: the listing import, every staff role that creates on behalf
+  'GET /v3/admin/categories/:slug/profile-schema', 'GET /v3/admin/seeded-sites/:id/profile', 'PUT /v3/admin/seeded-sites/:id/profile',   // Wave 2 Part E: every staff role that creates on behalf
+  'POST /v3/admin/seeded-sites/:id/go-live',   // Wave 3 Part G: SALES and its labels make the business they created live (the go-live keeps its own refusals)
+  'GET /v3/admin/permission-matrix',   // Wave 2 C1: every staff role reads the matrix (SUPPORT through STAFF_ROLE_EXTENSIONS.SUPPORT.allow)
+  // Part B (B2): SALES (the MARKETING value) creates on behalf, imports a CSV, follows up and issues the claim link
+  'POST /v3/admin/seeded-sites', 'POST /v3/admin/seeded-sites/batches/dry-run', 'POST /v3/admin/seeded-sites/batches/apply', 'PUT /v3/admin/seeded-sites/:id/outreach', 'POST /v3/admin/seeded-sites/:id/calls', 'PUT /v3/admin/seeded-sites/:id/consent', 'POST /v3/admin/seeded-sites/:id/claim-link', 'POST /v3/admin/seeded-sites/:id/claim-link/revoke',
+  // B2 slice 5.7: business reads (MARKETING gets them without personal fields: tested in directory-api.spec.ts), tree reads, placements read
+  'GET /v3/admin/directory/locations', 'GET /v3/admin/directory/categories', 'GET /v3/admin/directory/businesses', 'GET /v3/admin/directory/businesses/:id', 'GET /v3/admin/directory/businesses/:id/placements',
+];
+
+const scanned = scanRoutes(path.resolve(__dirname, '../src')).filter((r) => r.adminGuard === true).map((r) => r.route);
+
+const principal = (role: StaffRole | 'VENDOR' | 'bootstrap'): AuthenticatedUser | undefined => {
+  if (role === 'VENDOR') return { sub: 'v', email: 'v@x.invalid', role: 'VENDOR' };
+  if (role === 'bootstrap') return { sub: 'b', email: 'b@x.invalid', role: 'ADMIN', adminRole: 'SUPER_ADMIN' };   // the seeded admin Vendor row, as JwtStrategy returns it
+  return { sub: 's', email: 's@x.invalid', role: 'ADMIN', kind: 'admin_member', adminRole: role };
+};
+const ctx = (user: AuthenticatedUser | undefined, routeKey: string | null): ExecutionContext => {
+  const [method, routePath] = routeKey ? [routeKey.split(' ')[0], routeKey.slice(routeKey.indexOf(' ') + 1)] : ['GET', undefined];
+  return { switchToHttp: () => ({ getRequest: () => ({ user, method, route: routePath === undefined ? undefined : { path: routePath } }) }) } as unknown as ExecutionContext;
+};
+const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): boolean => {
+  try { return new AdminGuard().canActivate(ctx(user, routeKey)); } catch (e) { if (e instanceof ForbiddenException) return false; throw e; }
+};
+
+// Part B (B13): pausing and resuming a paid plan is OPERATIONS and SUPER_ADMIN (MARKETING refused; ADMIN inherits OPERATIONS and SUPPORT is refused: see staff-roles.spec.ts)
+const PLAN_PAUSE_ROUTES = ['POST /v3/admin/pack-engine/vendors/:vendorId/plan-pause', 'POST /v3/admin/pack-engine/vendors/:vendorId/plan-resume'];
+SUPER_ONLY_ROUTES.push(...PACK_ENGINE_WRITES); MARKETING_DENIED.push(...PACK_ENGINE_READS, ...PLAN_PAUSE_ROUTES);
+// Wave 2 Part E: reading the profile field sets is OPERATIONS and SUPER_ADMIN, editing them SUPER_ADMIN (ADMIN by STAFF_ROLE_EXTENSIONS.ADMIN.allow)
+SUPER_ONLY_ROUTES.push('PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map'); MARKETING_DENIED.push('GET /v3/admin/profile-fields');
+// Wave 2 Part G: the record fields of a pack tab (ADMIN edits through STAFF_ROLE_EXTENSIONS.ADMIN.allow)
+SUPER_ONLY_ROUTES.push('PUT /v3/admin/pack-engine/tab-fields'); MARKETING_DENIED.push('GET /v3/admin/pack-engine/tab-fields');
+// Wave 2 Part H3: the firm profile is SUPER_ADMIN only, read and write (ADMIN, OPERATIONS, SALES and SUPPORT are all refused)
+SUPER_ONLY_ROUTES.push('GET /v3/admin/firm-profile', 'PUT /v3/admin/firm-profile');
+// Wave 2 Part H2: add-on eligibility (ADMIN edits through STAFF_ROLE_EXTENSIONS.ADMIN.allow)
+SUPER_ONLY_ROUTES.push('PUT /v3/admin/pack-engine/addon-eligibility'); MARKETING_DENIED.push('GET /v3/admin/pack-engine/addon-eligibility');
+// Wave 3 Part A: referral partners. Reads OPERATIONS and SUPER_ADMIN (ADMIN inherits); writes SUPER_ADMIN in the base table and ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in wave3-roles.spec.ts)
+SUPER_ONLY_ROUTES.push('POST /v3/admin/partners', 'PUT /v3/admin/partners/:id'); MARKETING_DENIED.push('GET /v3/admin/partners', 'GET /v3/admin/partners/:id');
+// Wave 3 Part C: the payment gateway setting. Read OPERATIONS and SUPER_ADMIN (ADMIN inherits); write SUPER_ADMIN in the base table and ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in wave3-gateways.spec.ts)
+SUPER_ONLY_ROUTES.push('PUT /v3/admin/payment-gateway'); MARKETING_DENIED.push('GET /v3/admin/payment-gateway');
+// Wave 3 Part E: the cash order and its confirmation. SUPER_ADMIN in the base table; ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (mark-paid is in SUPER_ONLY_ROUTES above and gains ADMIN the same way). OPERATIONS is refused (tested in wave3-cash.spec.ts).
+SUPER_ONLY_ROUTES.push('POST /v3/admin/billing/vendors/:vendorId/cash-orders');
+// Wave 4 W2: held payments. SUPER_ADMIN in the base table; ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in wave4-held-payments.spec.ts).
+// Wave 4 W8: the payout preview (read) and the payouts CSV (ADMIN and SUPER_ADMIN, it carries the PAN)
+SUPER_ONLY_ROUTES.push('GET /v3/admin/commission/payouts/export.csv'); MARKETING_DENIED.push('GET /v3/admin/commission/payouts/preview');
+// Wave 4 W7: the GST rate. The write is SUPER_ADMIN only; the read is OPERATIONS and SUPER_ADMIN (MARKETING refused)
+SUPER_ONLY_ROUTES.push('PUT /v3/admin/gst-rate'); MARKETING_DENIED.push('GET /v3/admin/gst-rate');
+// Wave 4 W6: the gateway keys, SUPER_ADMIN only and NOT extended to ADMIN (tested in wave4-gateway-credentials.spec.ts)
+SUPER_ONLY_ROUTES.push('GET /v3/admin/payment-gateway/credentials', 'PUT /v3/admin/payment-gateway/credentials/:gateway/:mode', 'DELETE /v3/admin/payment-gateway/credentials/:gateway/:mode');
+// R1.1: the platform integration settings, SUPER_ADMIN only in every method (tested in r1-integrations.spec.ts)
+SUPER_ONLY_ROUTES.push('GET /v3/admin/integrations', 'GET /v3/admin/integrations/:provider', 'PUT /v3/admin/integrations/:provider', 'DELETE /v3/admin/integrations/:provider', 'POST /v3/admin/integrations/:provider/test');
+SUPER_ONLY_ROUTES.push('GET /v3/admin/billing/held-payments', 'GET /v3/admin/billing/held-payments/:id', 'POST /v3/admin/billing/held-payments/:id/resolve');
+// Wave 3 Part I: referrals and commission. Reads OPERATIONS and SUPER_ADMIN (ADMIN inherits); writes SUPER_ADMIN in the base table and ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in wave3-referrals.spec.ts)
+SUPER_ONLY_ROUTES.push('POST /v3/admin/partners/:id/links', 'POST /v3/admin/referral-links/:id/disable', 'POST /v3/admin/commission/slabs', 'PUT /v3/admin/commission/slabs/:id', 'POST /v3/admin/commission/months/:month/close', 'POST /v3/admin/commission/payouts', 'PUT /v3/admin/vendors/:id/referral', 'POST /v3/admin/vendors/:id/referral/change');
+MARKETING_DENIED.push('GET /v3/admin/partners/:id/links', 'GET /v3/admin/commission/slabs', 'GET /v3/admin/commission/ledger', 'GET /v3/admin/commission/ledger/export.csv', 'GET /v3/admin/commission/payouts', 'GET /v3/admin/vendors/:id/referral');
+// Wave 3 Part F: no role below SUPER_ADMIN changes a price: the service and pack price writes and the domain margin proposal are SUPER_ADMIN only (tested in wave3-no-discounts.spec.ts)
+SUPER_ONLY_ROUTES.push('POST /v3/admin/services/:key/prices', 'PUT /v3/admin/services/prices/:id', 'POST /v3/admin/packs/:key/prices', 'PUT /v3/admin/packs/prices/:id', 'POST /v3/admin/domain-margins');
+
+// SEO block: the keyword sets and page templates. The base table says SUPER_ADMIN for the writes and SUPER_ADMIN + MARKETING (SALES) for the reads; ADMIN is added for all five by
+// STAFF_ROLE_EXTENSIONS.ADMIN.allow and OPERATIONS and SUPPORT have no access (tested in seo-keywords.spec.ts).
+const SEO_WRITES = ['PUT /v3/admin/seo-directory/category-keywords/:slug', 'PUT /v3/admin/seo-directory/templates', 'PUT /v3/admin/seo-directory/crawlers', 'POST /v3/admin/seo-directory/keyword-targets', 'PUT /v3/admin/seo-directory/keyword-targets/:id', 'POST /v3/admin/seo-directory/keyword-targets/import', 'PUT /v3/admin/seo-directory/modifiers', 'POST /v3/admin/seo-directory/keyword-targets/import-volumes'];
+const SEO_READS = ['GET /v3/admin/seo-directory/category-keywords', 'GET /v3/admin/seo-directory/category-keywords/:slug', 'GET /v3/admin/seo-directory/templates', 'GET /v3/admin/seo-directory/crawlers', 'GET /v3/admin/seo-directory/vendor-sites',
+  'GET /v3/admin/seo-directory/keyword-targets', 'GET /v3/admin/seo-directory/keyword-targets/export.csv', 'GET /v3/admin/seo-directory/keyword-targets/:id', 'GET /v3/admin/seo-directory/keyword-plan', 'GET /v3/admin/seo-directory/keyword-plan/export.csv', 'POST /v3/admin/seo-directory/links', 'GET /v3/admin/seo-directory/utm-report', 'GET /v3/admin/seo-directory/businesses/:id/badge', 'GET /v3/admin/seo-directory/keyword-plan/research', 'GET /v3/admin/seo-directory/keyword-plan/research.csv', 'GET /v3/admin/seo-directory/keyword-plan/planner.csv', 'GET /v3/admin/seo-directory/modifiers'];
+SUPER_ONLY_ROUTES.push(...SEO_WRITES);
+// TM1: the theme marketplace. Reading and the dry-run check are OPERATIONS and SUPER_ADMIN (ADMIN inherits; MARKETING refused); the five changes are SUPER_ADMIN in the base table and ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in theme-market-http.spec.ts)
+SUPER_ONLY_ROUTES.push('POST /v3/admin/theme-market/themes', 'POST /v3/admin/theme-market/themes/:id/submit', 'POST /v3/admin/theme-market/themes/:id/return', 'POST /v3/admin/theme-market/themes/:id/publish', 'POST /v3/admin/theme-market/themes/:id/publish-to-marketplace', 'POST /v3/admin/theme-market/themes/:id/archive');
+// D1: the held possible duplicates (OPERATIONS and SUPER_ADMIN reach the routes, ADMIN by extension; the service lets only ADMIN and SUPER_ADMIN decide)
+MARKETING_DENIED.push('GET /v3/admin/duplicates/reviews', 'POST /v3/admin/duplicates/reviews/:id/clear', 'POST /v3/admin/duplicates/reviews/:id/reject');
+MARKETING_DENIED.push('GET /v3/admin/theme-market/themes', 'GET /v3/admin/theme-market/themes/:id', 'GET /v3/admin/theme-market/themes/:id/preview', 'POST /v3/admin/theme-market/validate');
+
+describe('the oracle itself', () => {
+  it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
+    const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
+    expect(oracle).toHaveLength(444);
+    expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
+    expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
+  });
+});
+
+describe('admin-role-matrix (the implementation must reproduce the oracle)', () => {
+  it('has an entry for every route that uses AdminGuard (deny-by-default means a gap is SUPER_ADMIN only)', () => {
+    expect(scanned.filter((r) => !(r in ADMIN_ROLE_MATRIX))).toEqual([]);
+  });
+  it('has no entry that matches no real AdminGuard route (typos)', () => {
+    expect(Object.keys(ADMIN_ROLE_MATRIX).filter((k) => !scanned.includes(k))).toEqual([]);
+  });
+  it.each(SUPER_ONLY_ROUTES.map((r) => [r]))('ONLY SUPER_ADMIN is allowed on %s', (route) => {
+    expect([...rolesFor(route)]).toEqual(['SUPER_ADMIN']);
+  });
+  it.each(MARKETING_DENIED.map((r) => [r]))('MARKETING is NOT allowed on %s, OPERATIONS and SUPER_ADMIN are', (route) => {
+    expect([...rolesFor(route)].sort()).toEqual(['OPERATIONS', 'SUPER_ADMIN']);
+  });
+  it.each(ALL_STAFF_ROUTES.map((r) => [r]))('all three staff roles are allowed on %s', (route) => {
+    expect([...rolesFor(route)].sort()).toEqual(['MARKETING', 'OPERATIONS', 'SUPER_ADMIN']);
+  });
+  it.each(SEO_READS.map((r) => [r]))('SUPER_ADMIN and MARKETING (SALES) only, in the base table, on %s', (route) => {
+    expect([...rolesFor(route)].sort()).toEqual(['MARKETING', 'SUPER_ADMIN']);
+  });
+  it('an unlisted route is SUPER_ADMIN only', () => {
+    expect([...rolesFor('GET /not/in/the/matrix')]).toEqual(['SUPER_ADMIN']);
+  });
+});
+
+describe('AdminGuard', () => {
+  it('MARKETING is refused with 403 on every money / vendor / support / plan / domain / platform / accounts route', () => {
+    const wrongly = [...MARKETING_DENIED, ...SUPER_ONLY_ROUTES].filter((r) => allowed(principal('MARKETING'), r));
+    expect(wrongly).toEqual([]);
+  });
+  it('MARKETING keeps the routes its work needs', () => {
+    expect(ALL_STAFF_ROUTES.filter((r) => !allowed(principal('MARKETING'), r))).toEqual([]);
+  });
+  it('OPERATIONS can use every route except the four SUPER_ADMIN-only ones', () => {
+    expect([...MARKETING_DENIED, ...ALL_STAFF_ROUTES].filter((r) => !allowed(principal('OPERATIONS'), r))).toEqual([]);
+    expect(SUPER_ONLY_ROUTES.filter((r) => allowed(principal('OPERATIONS'), r))).toEqual([]);
+  });
+  it('SUPER_ADMIN can use every AdminGuard route', () => {
+    expect([...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES].filter((r) => !allowed(principal('SUPER_ADMIN'), r))).toEqual([]);
+  });
+  it('vendors: OPERATIONS may suspend and activate but not delete', () => {
+    expect(allowed(principal('OPERATIONS'), 'POST /vendors/:id/suspend')).toBe(true);
+    expect(allowed(principal('OPERATIONS'), 'POST /vendors/:id/activate')).toBe(true);
+    expect(allowed(principal('OPERATIONS'), 'DELETE /vendors/:id')).toBe(false);
+    expect(allowed(principal('SUPER_ADMIN'), 'DELETE /vendors/:id')).toBe(true);
+  });
+  it('the seeded admin (an admin Vendor row, adminRole SUPER_ADMIN) can use everything, including an unlisted route', () => {
+    expect(allowed(principal('bootstrap'), 'DELETE /vendors/:id')).toBe(true);
+    expect(allowed(principal('bootstrap'), 'GET /not/in/the/matrix')).toBe(true);
+  });
+  it('DENY BY DEFAULT: an AdminGuard route with no matrix entry is refused to OPERATIONS and MARKETING, open to SUPER_ADMIN', () => {
+    expect(allowed(principal('OPERATIONS'), 'GET /not/in/the/matrix')).toBe(false);
+    expect(allowed(principal('MARKETING'), 'GET /not/in/the/matrix')).toBe(false);
+    expect(allowed(principal('SUPER_ADMIN'), 'GET /not/in/the/matrix')).toBe(true);
+  });
+  it('a request that does not say which route it is (no req.route) is treated as unlisted', () => {
+    expect(allowed(principal('OPERATIONS'), null)).toBe(false);
+    expect(allowed(principal('SUPER_ADMIN'), null)).toBe(true);
+  });
+  it('a trailing slash does not change the answer', () => {
+    expect(allowed(principal('MARKETING'), 'DELETE /vendors/:id/')).toBe(false);
+    expect(allowed(principal('MARKETING'), 'GET /admin/quotes/')).toBe(true);
+    expect(allowed(principal('OPERATIONS'), 'GET /leads/')).toBe(false);
+  });
+  it('vendors, team members and anonymous callers are still refused', () => {
+    expect(allowed(principal('VENDOR'), 'GET /leads')).toBe(false);
+    expect(allowed({ sub: 'v', email: 'v@x.invalid', role: 'VENDOR', kind: 'team_member' }, 'GET /leads')).toBe(false);
+    expect(allowed(undefined, 'GET /leads')).toBe(false);
+  });
+  it('an admin principal with no staff role is refused except the SUPER_ADMIN role itself', () => {
+    expect(allowed({ sub: 'x', email: 'x@x.invalid', role: 'ADMIN' }, 'GET /leads')).toBe(false);
+    expect(allowed({ sub: 'x', email: 'x@x.invalid', role: 'SUPER_ADMIN' }, 'GET /leads')).toBe(true);
+  });
+  it('an unknown adminRole value is refused', () => {
+    expect(allowed({ sub: 'x', email: 'x@x.invalid', role: 'ADMIN', adminRole: 'INTERN' }, 'GET /leads')).toBe(false);
+  });
+  it('the refusal says why in plain words and does not name the matrix', () => {
+    let message = '';
+    try { new AdminGuard().canActivate(ctx(principal('MARKETING'), 'DELETE /vendors/:id')); } catch (e) { message = (e as Error).message; }
+    expect(message).toMatch(/staff role/i);
+    expect(message).not.toMatch(/matrix|OPERATIONS|SUPER_ADMIN/);
+  });
+});
