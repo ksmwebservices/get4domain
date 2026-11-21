@@ -100,7 +100,7 @@ describe('5.1c Free versus Pro matrix', () => {
     expect(digest(expanded.prices)).toBe('3e655b52f6c2c2af');
     expect(digest(expanded.taxRates)).toBe('e5e4d6c8acc6002f');
     expect(digest(expanded.discountRules)).toBe('feaeafbb6d39fedc');
-    expect(digest(expanded.plans)).toBe('d37ddd7a561fab2f');
+    expect(digest(expanded.plans)).toBe('e9155d3e3973bf71');   // re-pinned in B3.1 (commit a3d6edb): the three Free plans were renamed "Free plan"; nothing else in the plan rows changed
   });
 
   it('the setting cartRequiresCustomDomain does not exist anywhere in the seed or the code', () => {

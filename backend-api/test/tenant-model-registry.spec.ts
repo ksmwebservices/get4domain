@@ -83,7 +83,9 @@ const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3VendorNote' /* Wave 2 C5: staff notes, 
   // block 4b slice 4: tickets, reached only through SupportStore: a business's own queries name the vendor (tested: vendor B cannot read or change vendor A's tickets); staff queries take no vendor on purpose
   'V3Ticket',
   // block 4b slice 9: staff-side tables reached only through AdminActionsStore from /v3/admin routes (never from a business's own routes); the host visit counts are written by the page counter
-  'V3BusinessNameHistory', 'V3ScheduledPlanChange', 'V3HostVisitDaily'];   // the grant is consumed by the set-password endpoint, no vendor route reads it; a removal row is written by staff and the removal flow and read only by the public host lookup (a removed business must look unknown); the deletion request is created for the signed-in owner by the service and read by staff across vendors
+  'V3BusinessNameHistory', 'V3ScheduledPlanChange', 'V3HostVisitDaily',
+  // D1 duplicate check: a held possible duplicate, written inside the registration transaction and read or decided only by staff (/v3/admin/duplicates); no business route reads it
+  'V3DuplicateReview'];   // the grant is consumed by the set-password endpoint, no vendor route reads it; a removal row is written by staff and the removal flow and read only by the public host lookup (a removed business must look unknown); the deletion request is created for the signed-in owner by the service and read by staff across vendors
 
 const v3WithVendorId = Prisma.dmmf.datamodel.models.filter((m) => /^V3/.test(m.name) && m.fields.some((f) => f.name === 'vendorId' && f.kind === 'scalar')).map((m) => m.name);
 
