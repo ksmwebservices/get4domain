@@ -92,6 +92,10 @@ export class VendorsService {
       this.logger.error(`Failed to send welcome email to ${vendor.email}`, error instanceof Error ? error.stack : undefined);
     }
 
+    // The website manager keeps every draft edit on this row, and the build ignores the draft when the row is missing (applyToSource), so every edit a new vendor made was silently dropped.
+    // Created here, before the hero seed (which upserts the same row), with the schema defaults (siteStatus LIVE, the same as no row for the legacy site route). Never blocks creation.
+    await this.ensureSiteContentRow(vendor);
+
     // Auto-seed the live site with an AI-generated hero banner (fire-and-forget so it
     // never slows or blocks account creation). It self-contains every failure and simply
     // does nothing when image gen / Supabase Storage isn't configured — the site then
@@ -99,6 +103,15 @@ export class VendorsService {
     void this.seedSiteHero(vendor);
 
     return vendor;
+  }
+
+  /** Makes the vendor's site-content row (VendorCMS) if it does not exist yet. Failure is logged and never blocks the vendor's creation. */
+  private async ensureSiteContentRow(vendor: Vendor): Promise<void> {
+    try {
+      await this.prisma.vendorCMS.upsert({ where: { vendorId: vendor.id }, create: { vendorId: vendor.id, businessName: vendor.businessName }, update: {} });
+    } catch (error) {
+      this.logger.warn(`Site content row not created for ${vendor.email}: ${error instanceof Error ? error.message : 'error'}`);
+    }
   }
 
   /**

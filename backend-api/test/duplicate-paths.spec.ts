@@ -12,6 +12,7 @@ import { TrialSignupPolicy } from '../src/v3-trial/trial-signup.policy';
 import { ProvisioningAdminService } from '../src/provisioning/admin/provisioning-admin.service';
 import { DuplicateCheckService } from '../src/v3-duplicates/duplicate-check.service';
 import { VendorsService } from '../src/vendors/vendors.service';
+import { applyToSource } from '../src/v3-website/core/managed-doc';
 import { directoryWorld } from './support/directory-world';
 import { MemoryDuplicateStore } from './support/memory-duplicate-store';
 import { ops, row, seededWorld, sup } from './support/seeded-world';
@@ -48,6 +49,25 @@ describe('VendorsService.create (POST /auth/register and POST /vendors)', () => 
     const { svc, tx } = mk(true);
     const r = await code(svc.create(dto() as never, { selfService: true }));
     expect(r).toMatchObject({ status: 409, body: { message: 'A vendor with this email already exists' } }); expect(r?.code).toBeUndefined(); expect(tx.vendor.create).not.toHaveBeenCalled();
+  });
+  it('creates the site-content row of the new vendor at registration (the website manager drops every draft edit when the row is missing), once, with the schema defaults', async () => {
+    const { svc, prisma } = mk();
+    const v = await svc.create(dto({ phone: '9000000001', businessName: 'Allwin Holidays', industry: 'travel-agency' }) as never, { selfService: true });
+    expect(prisma.vendorCMS.upsert).toHaveBeenCalledTimes(1);
+    expect(prisma.vendorCMS.upsert).toHaveBeenCalledWith({ where: { vendorId: v.id }, create: { vendorId: v.id, businessName: v.businessName }, update: {} });
+  });
+  it('a failure to create the site-content row never blocks the registration', async () => {
+    const { svc, prisma } = mk();
+    prisma.vendorCMS.upsert.mockRejectedValueOnce(new Error('db down'));
+    await expect(svc.create(dto({ phone: '9000000001' }) as never, { selfService: true })).resolves.toMatchObject({ id: 'v-new' });
+  });
+  it('without the row the build ignores the draft, with it the edit shows (why the row must exist)', () => {
+    const doc = { v: 1, fields: { 'hero.title': 'Cabs from Vadalur' }, lists: {}, sections: { hidden: [], order: [] }, brand: {}, navigation: { header: [], footer: [] }, seo: {} } as never;
+    const vendor = { id: 'v', businessName: 'B', subdomain: 'b', email: 'e@x.invalid', phone: null, industry: 'travel-agency' } as never;
+    const none = applyToSource({ vendor, cms: null, items: [], claimed: false } as never, doc);
+    expect(none.cms).toBeNull();
+    const row = applyToSource({ vendor, cms: { businessName: 'B', extras: {} } as never, items: [], claimed: false } as never, doc);
+    expect((row.cms as { extras?: { headline?: string } }).extras?.headline).toBe('Cabs from Vadalur');
   });
   it('REGISTER, strong match (phone): 409 DUPLICATE_BUSINESS with the claim route, and nothing is created', async () => {
     const { svc, tx } = mk();
