@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   creator: 'KSM Quantum Technologies',
   publisher: 'KSM Quantum Technologies',
   manifest: '/manifest.webmanifest',
+  appleWebApp: { capable: true, title: 'Get4Domain', statusBarStyle: 'default' },
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },

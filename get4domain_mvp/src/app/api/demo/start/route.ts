@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { DEMO_PASS_COOKIE, DEMO_PASS_TTL_SECONDS, signDemoPass } from '@/lib/demo-access';
+import { siteApiBase } from '@/lib/v3-public/site-state';
 
 // Mints a demo access pass for a SIGNED-IN vendor launching a demo tour from their
 // dashboard — the "create account → dashboard → visit demo" path. Unlike the public
@@ -9,7 +10,7 @@ import { DEMO_PASS_COOKIE, DEMO_PASS_TTL_SECONDS, signDemoPass } from '@/lib/dem
 // unauthenticated caller (which would re-open the public-URL hole).
 export const runtime = 'nodejs';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
+// server-side read: the runtime INTERNAL_API_URL first (siteApiBase), not the address fixed at build time
 
 interface Body { category?: string }
 
@@ -27,7 +28,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   // Validate the caller's session (backend /auth/refresh is JWT-guarded) before minting.
   try {
-    const check = await fetch(`${API_BASE}/auth/refresh`, { method: 'POST', headers: { Authorization: auth } });
+    const check = await fetch(`${siteApiBase()}/auth/refresh`, { method: 'POST', headers: { Authorization: auth } });
     if (!check.ok) return NextResponse.json({ ok: false, error: 'Your session has expired. Please sign in again.' }, { status: 401 });
   } catch {
     return NextResponse.json({ ok: false, error: 'Could not verify your session. Please try again.' }, { status: 502 });

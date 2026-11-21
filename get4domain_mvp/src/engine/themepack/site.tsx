@@ -1,3 +1,4 @@
+import { buildHead } from '@/lib/v3-public/site-kit/head';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import type { CSSProperties, ReactNode } from 'react';
@@ -16,22 +17,15 @@ import { extrasOf, groupsOf, itemsOf, pageSetOf, resolveRoute, type PageEntry, t
 import { parsedPage, renderNodes, type RenderCtx } from './render';
 import { submitFlow } from './actions';
 
+// The browser-facing address (theme pictures and files are loaded by the visitor's browser). Server reads use siteApiBase(): the runtime INTERNAL_API_URL first.
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
 const SITE_BASE = (process.env.NEXT_PUBLIC_SITE_BASE_DOMAIN || 'get4domain.com').toLowerCase();
 const BOOKING = new Set(['BOOKING', 'APPOINTMENT', 'SITE_VISIT']);
 
-/** A live theme package, cached for five minutes and refreshed when the theme changes (the tag is dropped on import). */
-export async function fetchThemePackage(id: string): Promise<ThemePackageData | null> {
-  try {
-    const res = await fetch(`${API_BASE}/themes/package/${encodeURIComponent(id)}`, { next: { tags: [`theme:${id}`], revalidate: 300 } });
-    if (!res.ok) return null;
-    const j = await res.json();
-    return (j.data ?? j) as ThemePackageData;
-  } catch { return null; }
-}
+export { fetchThemePackage } from './package-fetch';
 
 export interface ThemeOptions {
-  /** the address the pages live under, for example /site/ravi-clinic */
+  /** the address the pages live under, "" on a vendor host (its pages are /about, /p/news, never a /site/<name> path) */
   base: string;
   mode: ShellRuntime['mode'];
   shop: boolean;
@@ -65,30 +59,22 @@ export const routePath = (r: Route, set: PageSet): string => {
   }
 };
 
-/** Title, description, canonical address and robots for any page of a themed site. A page that does not exist answers 404. */
-export function themeMetadata(site: EngineSiteData, pkg: ThemePackageData, rest: string[], o: { base: string; subdomain: string; preview: boolean }): Metadata {
-  const { route, set, items } = prepare(site, pkg, rest, o.base);
+/** The head of any page of a themed site (the shared head identity: title, description, icon, one canonical, Open Graph). A page that does not exist answers 404. */
+export function themeMetadata(site: EngineSiteData, pkg: ThemePackageData, rest: string[], o: { base: string; subdomain: string; preview: boolean; category: string | null; baseDomain: string }): Metadata {
+  const { route, set } = prepare(site, pkg, rest, o.base);
   if (route.kind === 'notfound') notFound();
   const cms = site.cms;
   const name = (cms?.businessName || site.vendor.businessName || '').trim();
-  const homeTitle = cms?.seoTitle?.trim() || `${name} — ${cms?.tagline?.trim() || 'Official Website'}`;
-  const about = (cms?.about || '').replace(/\s+/g, ' ').trim();
-  let title = homeTitle; let description = cms?.seoDesc?.trim() || about.slice(0, 155) || `${name} — official website.`;
-  let image = cms?.ogImage || cms?.banner || cms?.logo || undefined;
-  if (route.kind === 'page') { title = `${route.entry.title} | ${name}`; description = `${route.entry.title} at ${name}. ${about.slice(0, 120)}`.trim(); }
-  if (route.kind === 'vendor') { title = `${route.entry.title} | ${name}`; const body = ((cms?.pages ?? []).find((p) => p.slug === route.entry.slug)?.body ?? '').replace(/\s+/g, ' ').trim(); description = body.slice(0, 155) || description; }
-  if (route.kind === 'item') { title = `${route.item.name} | ${name}`; description = (route.item.description || `${route.item.name} at ${name}.`).replace(/\s+/g, ' ').slice(0, 155); image = route.item.image || image; }
-  if (route.kind === 'flow') title = `${({ book: 'Book an appointment', enquire: 'Send an enquiry', order: 'Place an order' })[route.flow]} | ${name}`;
-  if (route.kind === 'legal') title = `${route.which === 'privacy' ? 'Privacy policy' : 'Terms of use'} | ${name}`;
-  void items; void set;
+  let page: string | null = null; let pageDescription: string | null = null; let image: string | null = null;
+  if (route.kind === 'page') { page = route.entry.title; pageDescription = `${route.entry.title} at ${name}.`; }
+  if (route.kind === 'vendor') { page = route.entry.title; pageDescription = ((cms?.pages ?? []).find((p) => p.slug === route.entry.slug)?.body ?? '').replace(/\s+/g, ' ').trim() || null; }
+  if (route.kind === 'item') { page = route.item.name; pageDescription = (route.item.description || `${route.item.name} at ${name}.`).replace(/\s+/g, ' '); image = route.item.image || null; }
+  if (route.kind === 'flow') page = ({ book: 'Book an appointment', enquire: 'Send an enquiry', order: 'Place an order' })[route.flow];
+  if (route.kind === 'legal') page = route.which === 'privacy' ? 'Privacy policy' : 'Terms of use';
   const noindex = o.preview || (site as { indexable?: boolean }).indexable === false || route.kind === 'flow' || route.kind === 'legal';
-  const canonical = `https://${o.subdomain}.${SITE_BASE}${routePath(route, set)}`;
-  return {
-    title: { absolute: title }, description, ...(cms?.favicon ? { icons: { icon: cms.favicon } } : {}),
-    ...(noindex ? { robots: { index: false, follow: route.kind !== 'flow' } } : {}),
-    alternates: { canonical },
-    openGraph: { title, description, type: 'website', url: canonical, images: image ? [{ url: image, alt: name }] : [] },
-  };
+  const head = buildHead({ site, subdomain: o.subdomain, path: routePath(route, set), pageTitle: page, pageDescription, category: o.category, baseDomain: o.baseDomain, image, noindex });
+  // the robots rule of this renderer is unchanged: a flow page is not followed either
+  return noindex ? { ...head, robots: { index: false, follow: route.kind !== 'flow' } } : head;
 }
 
 /** Structured data for a page: the business on the home page, the service or product on an item page. Real values only. */
@@ -125,17 +111,17 @@ export default function ThemeSite({ site, pkg, rest, opts, subdomain }: { site: 
   const primaryLabel = (ex.navigation?.primaryLabel || pack.ctaLabel || 'Get in touch').slice(0, 24);
   const cartOn = opts.shop && !!subdomain && opts.mode === 'live';
   const mfPages = new Map(manifest.pages.map((p) => [p.slug, p]));
-  const navEntries: PageEntry[] = [{ slug: '', template: 'home', title: 'Home', navLabel: 'Home', href: base }, ...set.all.filter((p) => p.vendor || mfPages.get(p.slug)?.nav !== false)];
-  const pageHref: Record<string, string> = { home: base, index: base };
+  const navEntries: PageEntry[] = [{ slug: '', template: 'home', title: 'Home', navLabel: 'Home', href: base || '/' }, ...set.all.filter((p) => p.vendor || mfPages.get(p.slug)?.nav !== false)];
+  const pageHref: Record<string, string> = { home: base || '/', index: base || '/' };
   for (const p of set.all) pageHref[p.slug.toLowerCase()] = p.href;
   // the vendor's own header items (Navigation tab) replace the automatic list; a target is a page address, home, p:<their page> or a web, phone or e-mail link
-  const resolveTarget = (t: string): string => (t === 'home' ? base : t.startsWith('p:') ? `${base}/p/${t.slice(2)}` : /^(https?:|tel:|mailto:)/i.test(t) ? t : pageHref[t.toLowerCase()] ?? base);
+  const resolveTarget = (t: string): string => (t === 'home' ? base || '/' : t.startsWith('p:') ? `${base}/p/${t.slice(2)}` : /^(https?:|tel:|mailto:)/i.test(t) ? t : pageHref[t.toLowerCase()] ?? (base || '/'));
   const hdrItems = (ex.navigation as { header?: { label: string; target: string }[] } | undefined)?.header?.filter((h) => h.label && h.target).slice(0, 8) ?? [];
   const headerNav: PageEntry[] = hdrItems.length ? hdrItems.map((h) => ({ slug: '', template: '', title: h.label, navLabel: h.label.slice(0, 24), href: resolveTarget(h.target) })) : navEntries;
   const find = (...slugs: string[]): string | undefined => slugs.map((s) => set.standard.find((p) => p.slug === s)?.href).find(Boolean);
   const shell = buildShell(site, {
     base, family, goal, primaryLabel, mode: opts.mode, cart: cartOn,
-    targets: { home: base, items: set.itemBase ? `${base}/${set.itemBase}` : find('services', 'menu', 'packages', 'properties', 'courses'), team: find('doctors', 'about'), gallery: find('gallery', 'portfolio'), about: find('about'), contact: find('contact'), pages: pageHref, nav: navEntries.map((p) => ({ label: p.navLabel, href: p.href })) },
+    targets: { home: base || '/', items: set.itemBase ? `${base}/${set.itemBase}` : find('services', 'menu', 'packages', 'properties', 'courses'), team: find('doctors', 'about'), gallery: find('gallery', 'portfolio'), about: find('about'), contact: find('contact'), pages: pageHref, nav: navEntries.map((p) => ({ label: p.navLabel, href: p.href })) },
   });
   const assets = new Map(pkg.assets.map((a) => [a.path, a.name]));
   const assetBase = `${API_BASE}/themes/assets/${pkg.id}/`;
@@ -201,8 +187,8 @@ function EngineHeader({ shell, nav }: { shell: ShellRuntime; nav: PageEntry[] })
   return (
     <header className="border-b border-[var(--sh-border)] bg-[var(--sh-bg)] px-5 py-4 text-[var(--sh-fg)]" data-g4d-header>
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-        <a href={shell.base} className="text-lg font-semibold">{shell.business.name}</a>
-        <nav aria-label="Main" className="hidden gap-5 text-sm md:flex">{nav.filter((p) => p.href !== shell.base).slice(0, 6).map((p) => <a key={p.href} href={p.href} className="hover:text-[var(--sh-accent)]">{p.navLabel}</a>)}</nav>
+        <a href={shell.base || '/'} className="text-lg font-semibold">{shell.business.name}</a>
+        <nav aria-label="Main" className="hidden gap-5 text-sm md:flex">{nav.filter((p) => p.href !== (shell.base || '/')).slice(0, 6).map((p) => <a key={p.href} href={p.href} className="hover:text-[var(--sh-accent)]">{p.navLabel}</a>)}</nav>
         <a href={shell.flowPath} data-g4d-open="primary" className="inline-flex min-h-[44px] items-center bg-[var(--sh-accent)] px-4 text-sm font-semibold text-[var(--sh-accent-fg)]" style={{ borderRadius: 'var(--sh-radius)' }}>{shell.primaryLabel}</a>
       </div>
     </header>
@@ -214,8 +200,8 @@ function Chrome({ shell, nav, children, title }: { shell: ShellRuntime; nav: Pag
     <div className="flex min-h-screen flex-col bg-[var(--sh-bg)] pb-20 text-[var(--sh-fg)] md:pb-0" style={{ ['--sh-bg' as string]: 'var(--g4d-bg, #ffffff)' }}>
       <header className="border-b border-[var(--sh-border)] px-5 py-4">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-          <a href={shell.base} className="text-lg font-semibold">{shell.business.name}</a>
-          <nav aria-label="Main" className="hidden gap-5 text-sm md:flex">{nav.filter((p) => p.href !== shell.base).slice(0, 6).map((p) => <a key={p.href} href={p.href} className="hover:text-[var(--sh-accent)]">{p.navLabel}</a>)}</nav>
+          <a href={shell.base || '/'} className="text-lg font-semibold">{shell.business.name}</a>
+          <nav aria-label="Main" className="hidden gap-5 text-sm md:flex">{nav.filter((p) => p.href !== (shell.base || '/')).slice(0, 6).map((p) => <a key={p.href} href={p.href} className="hover:text-[var(--sh-accent)]">{p.navLabel}</a>)}</nav>
         </div>
       </header>
       <main className="mx-auto w-full max-w-2xl flex-1 px-5 py-10">{title && <h1 className="mb-6 text-3xl font-semibold">{title}</h1>}{children}</main>

@@ -3,17 +3,18 @@ import { notFound } from 'next/navigation';
 import ThemeSite from '@/engine/themepack/site';
 import type { ThemePackageData } from '@/engine/themepack/data';
 import type { EngineSiteData } from '@/engine/types';
+import { siteApiBase } from '@/lib/v3-public/site-state';
 
 /**
  * A theme filled with one category's starter content, for the admin Theme marketplace, the vendor's "try before you buy" and the lint report. Never indexed, never sends
  * anything (the popup and the forms show their success step but write nothing), and holds no vendor data. ?category=<pack key>&token=<private link token for a draft theme>.
  */
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
+// server-side read: the runtime INTERNAL_API_URL first (siteApiBase), not the address fixed at build time
 type Query = { category?: string; token?: string; sent?: string; e?: string; popup?: string };
 
 async function load(id: string, category: string, token?: string): Promise<{ site: EngineSiteData & { pagesLimit?: number }; theme: ThemePackageData } | null> {
   try {
-    const url = `${API_BASE}/themes/sample/${encodeURIComponent(id)}?category=${encodeURIComponent(category)}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+    const url = `${siteApiBase()}/themes/sample/${encodeURIComponent(id)}?category=${encodeURIComponent(category)}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return null;
     const j = await res.json();

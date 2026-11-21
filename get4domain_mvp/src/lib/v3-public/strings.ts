@@ -1,0 +1,398 @@
+/**
+ * Every visible string of the V3 public site lives here and nowhere else.
+ * Copy rules (pinned by a test): never the words workspace, BOS or LeadSpace; "enquiries", never "leads"; no timeframes;
+ * no ranking claims; no price (prices exclude GST and are shown elsewhere); no phone, email or messaging address.
+ */
+export const S = {
+  brand: 'Get4Domain',
+  skipToContent: 'Skip to main content',
+  nav: {
+    label: 'Directory navigation',
+    directory: 'Directory',
+    claim: 'Claim a listing',
+    login: 'Business login',
+    register: 'Create an account',
+  },
+  footer: {
+    label: 'Directory footer',
+    legalHeading: 'Legal',
+    terms: 'Terms',
+    privacy: 'Privacy',
+    refund: 'Refunds and cancellation',
+    wallet: 'Wallet terms',
+    listing: 'Directory listing terms',
+    note: 'Listings are informational. To reach a business, use its own site.',
+  },
+  crumbs: { label: 'Breadcrumb' },
+  card: {
+    visit: 'Visit site',
+    visitFor: (name: string): string => `Visit the site of ${name}`,
+    listingOnly: 'Listing information only',
+    claimed: 'Claimed by the owner',
+    verified: 'Verified',
+    inLocality: (locality: string): string => `in ${locality}`,
+  },
+  list: {
+    heading: 'Businesses',
+    countOne: '1 business listed',
+    count: (n: number): string => `${n} businesses listed`,
+    browseHeading: 'Browse more',
+    localities: 'Nearby areas',
+    categories: 'Related categories',
+    parents: 'Wider area',
+    faqHeading: 'Questions and answers',
+  },
+  pagination: {
+    label: 'Pagination',
+    previous: 'Previous page',
+    next: 'Next page',
+    pageOf: (n: number, total: number): string => `Page ${n} of ${total}`,
+    goTo: (n: number): string => `Go to page ${n}`,
+    current: (n: number): string => `Page ${n}, current page`,
+  },
+  empty: {
+    title: 'No businesses to show here yet',
+    body: 'This page has no listings at the moment. Try a wider area or another category.',
+    browse: 'Back to the directory',
+  },
+  error: {
+    title: 'This page could not be loaded',
+    body: 'Something went wrong while loading the directory. Please try again.',
+    retry: 'Try again',
+    notConfigured: 'The directory is not connected to its data source in this environment.',
+  },
+  home: {
+    directoryTitle: 'Business directory',
+    browseCities: 'Browse by city',
+    browseCategories: 'Browse by category',
+  },
+  business: {
+    about: 'About this business',
+    category: 'Category',
+    area: 'Area',
+    hours: 'Opening hours',
+    services: 'Services',
+    noServices: 'This business has not added a services list yet.',
+    listingState: 'Listing status',
+    stateUnclaimed: 'This listing was added from public information. The owner has not claimed it yet.',
+    stateClaimed: 'This listing has been claimed by the business owner.',
+    stateVerified: 'The owner has also been verified.',
+    stateInformational: 'This page is an informational listing.',
+    visitHeading: 'Visit the business',
+    visitNote: 'The link opens the business site. The directory does not pass on any enquiry.',
+    claimHeading: 'Is this your business?',
+    claimBody: 'The owner can claim this listing, confirm the details we hold and then manage the listing and its site.',
+    claimCta: 'Claim this listing',
+    backlinksHeading: 'More from the directory',
+    removalNote: 'This business is no longer listed in the directory.',
+  },
+  gone: {
+    title: 'This business is no longer listed',
+    body: 'The listing was removed from the directory.',
+  },
+  notFound: {
+    title: 'Page not found',
+    body: 'There is no directory page at this address.',
+  },
+  claim: {
+    title: 'Claim your listing',
+    intro: 'Find your business, confirm that it is yours with a one-time code, then set up your account.',
+    stepsLabel: 'Claim steps',
+    steps: { find: 'Find your business', code: 'Get a code', verify: 'Enter the code', account: 'Set up your account', approval: 'Approval', live: 'Your site is live' },
+    find: {
+      title: 'Find your business',
+      nameLabel: 'Business name',
+      cityLabel: 'City',
+      submit: 'Search',
+      none: 'No listing matches that search. Check the spelling or try the city only.',
+      choose: 'Choose this business',
+      alreadyClaimed: 'Already claimed',
+      resultsLabel: 'Matching businesses',
+    },
+    request: {
+      title: 'Get your one-time code',
+      body: (name: string): string => `We will send a code to the email address held for ${name}. We never send it to an address typed here.`,
+      send: 'Email me the code',
+      sent: 'If this link is valid, a code has been sent to the email address we hold for this business.',
+      mailOff: 'Email codes are not being sent right now. Please come back to this page later.',
+      mailOffTitle: 'Email is switched off',
+    },
+    verify: {
+      title: 'Enter the code',
+      codeLabel: 'Six-digit code',
+      codeHint: 'Enter the six digits from the email.',
+      submit: 'Check the code',
+      resend: 'Send a new code',
+    },
+    account: {
+      title: 'Set up your account',
+      emailLabel: 'Login email',
+      emailHint: 'We need an email address to log you in, because this business has none on record.',
+      passwordLabel: 'Password',
+      passwordHint: 'At least 8 characters.',
+      termsLabel: 'I accept the Terms, the Privacy policy and the Directory listing terms',
+      submit: 'Create my account',
+    },
+    approval: {
+      title: 'Waiting for approval',
+      body: 'Your account is ready. Sign in to the business app and approve your listing so that your site can go live.',
+      cta: 'Sign in to approve',
+      notAvailable: 'The business app address is not set up yet.',
+    },
+    live: {
+      title: 'Your site is live',
+      body: 'Your listing has been claimed and your site is published. Sign in to manage it.',
+      cta: 'Open the business app',
+    },
+    states: {
+      unclaimed: { title: 'This listing is not claimed', body: 'You can claim it with a one-time code.' },
+      draft: { title: 'This listing is being prepared', body: 'A draft site exists but is not public yet. Claiming opens once it is ready.' },
+      claimed: { title: 'This listing is already claimed', body: 'The owner has claimed it. If that was not you, use the removal request on the listing page.' },
+      live: { title: 'This listing is live', body: 'The owner runs this listing and its site.' },
+    },
+    link: {
+      invalidTitle: 'This link is not valid',
+      invalidBody: 'The claim link is not valid or has already been used. Start again by finding your business.',
+      start: 'Find your business',
+      statusFor: (name: string): string => `Claiming the listing for ${name}`,
+    },
+    startUnavailable: 'Starting a claim from this page is not available yet. Please use the claim link you were given.',
+    start: {
+      title: 'Claim this listing',
+      listing: 'Listing',
+      cta: 'Start the claim',
+      working: 'Working',
+      back: 'Back to the search',
+      viewListing: 'View the listing',
+    },
+    wizard: { working: 'Working', stepOf: (n: number, total: number): string => `Step ${n} of ${total}` },
+    preview: { title: 'Claim screens', note: 'Every screen of the claim flow, for review. Available only while sample data is on.' },
+  },
+  errors: {
+    generic: 'Something went wrong. Please try again.',
+    network: 'We could not reach the service. Check your connection and try again.',
+    rateLimited: 'Too many attempts. Please wait before trying again.',
+    passwordShort: 'The password needs at least 8 characters.',
+    codeFormat: 'Enter the six digits of the code.',
+    emailInvalid: 'Enter a valid email address.',
+    codes: {
+      OTP_INVALID: 'That code is not valid. Check the six digits and try again.',
+      GRANT_INVALID: 'This step is no longer valid. Please start the claim again.',
+      CLAIM_EMAIL_REQUIRED: 'Please enter the email address you want to log in with.',
+      CLAIM_EMAIL_TAKEN: 'That email address is already used for another account.',
+      CLAIM_NOT_CLAIMED: 'This business has not been claimed yet. Enter the code first.',
+      CLAIM_TERMS_REQUIRED: 'Please accept the Terms and policies to continue.',
+      CLAIM_GO_LIVE_UNAVAILABLE: 'Publishing is not available right now. Please try again later.',
+      DIRECTORY_NOT_FOUND: 'We could not find that business.',
+      DIRECTORY_GONE: 'That business is no longer listed.',
+      DIRECTORY_INVALID: 'Some details are not valid. Please check and try again.',
+      DIRECTORY_STATE_INVALID: 'This listing cannot be claimed in its current state.',
+      SEO_NOT_FOUND: 'That page does not exist.',
+    } as Record<string, string>,
+  },
+  auth: {
+    login: {
+      title: 'Business login',
+      intro: 'Sign in to manage your listing and site in the business app.',
+      emailLabel: 'Email',
+      passwordLabel: 'Password',
+      submit: 'Continue to the business app',
+      forgot: 'Forgot your password?',
+      noAccount: 'New here?',
+      createAccount: 'Create an account',
+    },
+    register: {
+      title: 'Create a business account',
+      intro: 'Create your account in the business app.',
+      submit: 'Continue to the business app',
+      haveAccount: 'Already have an account?',
+      signIn: 'Sign in',
+    },
+    forgot: {
+      title: 'Reset your password',
+      intro: 'Enter the email address of your account. If an account exists for it, we send a reset link.',
+      emailLabel: 'Email',
+      submit: 'Send the reset link',
+      sent: 'If an account exists for that email, a password reset link has been sent.',
+      back: 'Back to sign in',
+      mailOffTitle: 'Email is switched off',
+      mailOff: 'Reset emails are not being sent right now. Please come back to this page later.',
+    },
+    reset: {
+      title: 'Choose a new password',
+      intro: 'Enter a new password for your account.',
+      passwordLabel: 'New password',
+      confirmLabel: 'Repeat the new password',
+      submit: 'Save the new password',
+      mismatch: 'The two passwords are not the same.',
+      passwordRules: 'From 8 to 72 characters, with a capital letter and a number.',
+      passwordWeak: 'The password needs 8 to 72 characters, with a capital letter and a number.',
+      done: 'Your password has been changed. You can sign in with it now.',
+      signIn: 'Go to sign in',
+      linkInvalidTitle: 'This reset link is not valid',
+      linkInvalid: 'This reset link is invalid or has expired. Please request a new one.',
+      newLink: 'Ask for a new reset link',
+      missingToken: 'This page needs the link from the reset email. Open the link in the email, or ask for a new one.',
+    },
+    fields: {
+      name: 'Your name',
+      business: 'Business name',
+      industry: 'Type of business',
+      industryPlaceholder: 'Choose one',
+      passwordRules: 'At least 8 characters, with a capital letter and a number.',
+    },
+    working: 'Working',
+    errors: {
+      badCredentials: 'The email or the password is not correct.',
+      emailTaken: 'An account already exists for that email. Try signing in instead.',
+      fieldsInvalid: 'Please check the details and try again.',
+      nameRequired: 'Enter your name.',
+      businessRequired: 'Enter the business name.',
+      industryRequired: 'Choose the type of business.',
+      passwordWeak: 'The password needs at least 8 characters, with a capital letter and a number.',
+      passwordMissing: 'Enter your password.',
+    },
+    signedIn: 'You are signed in.',
+    registered: 'Your account has been created.',
+    continueTo: 'Continue to the business app',
+    notAvailable: 'Not available yet',
+    notAvailableBody: 'The business app address is not set up yet, so this step cannot continue.',
+    handoffNote: 'After this step you continue to the business app.',
+  },
+  legal: {
+    draftBanner: 'Draft for review. This text is awaiting legal review and is not final.',
+    firmHeading: 'Who we are',
+    firmName: 'Firm name',
+    firmAddress: 'Registered address',
+    firmGstin: 'GSTIN',
+    updated: 'Draft text',
+    termsTitle: 'Terms',
+    privacyTitle: 'Privacy',
+    refundTitle: 'Refunds and cancellation',
+    walletTitle: 'Wallet terms',
+    listingTitle: 'Directory listing terms',
+    index: { label: 'Legal pages', title: 'Legal', intro: 'The terms and policies that apply to the directory and to business accounts. These texts are drafts awaiting legal review.' },
+    otherDocs: 'Other legal pages',
+    docs: {
+      terms: {
+        title: 'Terms',
+        summary: 'The terms for using the directory and for business accounts.',
+        sections: [
+          { heading: 'Who we are', body: ['The directory and the business accounts are run by the firm named on this page. In these terms, "we" means that firm.'] },
+          { heading: 'The directory', body: [
+            'The directory lists businesses so that people can find their sites. A listing is informational. The directory has one action on a listing, a Visit site link that opens the business site.',
+            'The directory does not pass on enquiries, and it does not show phone numbers or email addresses of businesses. To reach a business, use its own site.',
+            'A listing that has not been claimed was added from public information. Its owner can claim it, ask for a correction, or ask for it to be removed.',
+          ] },
+          { heading: 'Plans', body: [
+            'A Free site is an informational listing. Pro means any of the Pro plans.',
+            'Prices exclude GST. The price that applies to you is the price shown when you choose a plan.',
+          ] },
+          { heading: 'Accounts', body: [
+            'You must give correct details when you create an account or claim a listing. You are responsible for keeping your password safe and for what is done with your account.',
+            'You may claim a listing only if you are the owner of the business or are authorised by the owner.',
+          ] },
+          { heading: 'What you must not do', body: [
+            'Do not claim a business that is not yours, publish content you have no right to publish, or use the site to mislead people or to harm the service.',
+            'We may remove a listing, a site or an account that breaks these terms.',
+          ] },
+          { heading: 'Changes to these terms', body: ['We may update these terms. The version that applies is the one published on this page when you use the service.'] },
+        ],
+      },
+      privacy: {
+        title: 'Privacy',
+        summary: 'What we collect and why.',
+        sections: [
+          { heading: 'What we hold', body: [
+            'For a listing: the business name, category, area, description and the contact details held for the business so that its owner can be reached about a claim.',
+            'For an account: your name, your email address and your business name.',
+          ] },
+          { heading: 'What the directory shows', body: [
+            'Directory pages show a business name, category, area and description. They never show phone numbers or email addresses.',
+          ] },
+          { heading: 'Claim codes', body: ['A claim code is sent to the contact held for the business, never to a number or address typed on the claim page.'] },
+          { heading: 'Visits and clicks', body: [
+            'When a Visit site link is used we count the click. When a directory page is opened with campaign parameters in its address we add to a count for that campaign. These counts hold no personal details and no cookie is set for them.',
+            'We may use technical data such as the network address to protect the service from repeated or abusive requests.',
+          ] },
+          { heading: 'Your choices', body: [
+            'An owner can ask for a listing to be corrected or removed. A removal request is confirmed through the contact held for the business.',
+            'To ask about the data we hold, write to us at the registered address on this page.',
+          ] },
+        ],
+      },
+      refund: {
+        title: 'Refunds and cancellation',
+        summary: 'How cancellation works and what is not refunded.',
+        sections: [
+          { heading: 'Free listings', body: ['A Free listing costs nothing. It can be removed on request.'] },
+          { heading: 'Pro plans and services', body: [
+            'Prices exclude GST. Money paid for a plan, for a service or for a wallet top-up is not refunded.',
+            'Cancelling a plan or a service request stops further charges for it. It does not return money already paid.',
+          ] },
+          { heading: 'What is not a refund', body: [
+            'A hold placed on the wallet for a request and released because the request was cancelled or rejected is not a refund: the money never left the wallet.',
+            'A charge reversed because the service failed on our side is not a refund either. The wallet is returned to where it was.',
+          ] },
+          { heading: 'More', body: ['The wallet rules are in the Wallet terms.'] },
+        ],
+      },
+      wallet: {
+        title: 'Wallet terms',
+        summary: 'How the wallet works.',
+        sections: [
+          { heading: 'What the wallet is', body: ['The wallet holds prepaid credit that you can spend on plans and services. Prices exclude GST.'] },
+          { heading: 'No refunds', body: ['Money added to the wallet is not refunded. Money spent on a plan or a service is not refunded.'] },
+          { heading: 'No cash-out', body: ['Credit cannot be withdrawn, paid out or converted to cash, and it cannot be moved to another person.'] },
+          { heading: 'Expiry', body: ['Each top-up carries an expiry date, which is shown with it. Credit that has expired cannot be used.'] },
+          { heading: 'Holds and reversals', body: [
+            'A hold may be placed while a request is open. It is released if the request is cancelled or rejected.',
+            'A charge reversed after a failure on our side puts the credit back. Neither is a refund.',
+          ] },
+          { heading: 'Balance', body: ['The wallet balance cannot go below zero.'] },
+        ],
+      },
+      listing: {
+        title: 'Directory listing terms',
+        summary: 'The rules for being listed in the directory and for claiming a listing.',
+        sections: [
+          { heading: 'What a listing is', body: [
+            'A listing shows the business name, category, area and a short description, and one Visit site link. It is informational.',
+            'We may list a business from public information. An unclaimed listing carries no contact details.',
+          ] },
+          { heading: 'Claiming a listing', body: [
+            'The owner proves ownership with a one-time code sent to the contact held for the business. The owner then sets up an account and accepts the current terms and policies.',
+            'After approval the owner can manage the listing and its site.',
+          ] },
+          { heading: 'Corrections and removal', body: [
+            'An owner can ask for a listing to be corrected or removed. A removal request is confirmed through the contact held for the business.',
+            'When a listing is removed it is no longer shown in the directory.',
+          ] },
+          { heading: 'Order and wording', body: [
+            'Listings are shown in an order set by the directory rules. A listing may not describe itself with ranking claims or with claims we cannot check.',
+          ] },
+          { heading: 'Free and Pro', body: ['A Free site is an informational listing. Pro means any of the Pro plans. Prices exclude GST.'] },
+        ],
+      },
+    },
+  },
+} as const;
+
+export type LegalDocKey = keyof typeof S.legal.docs;
+export const LEGAL_DOC_KEYS: readonly LegalDocKey[] = ['terms', 'privacy', 'refund', 'wallet', 'listing'];
+
+/** The address segment of each legal page. */
+export const LEGAL_SLUGS: Record<LegalDocKey, string> = {
+  terms: 'terms',
+  privacy: 'privacy',
+  refund: 'refund-and-cancellation',
+  wallet: 'wallet-terms',
+  listing: 'directory-listing-terms',
+};
+
+/** A registered backend error code to its plain message; anything unknown gets the generic message (never the backend sentence). */
+export function messageForCode(code: string | null | undefined, status?: number | null): string {
+  if (status === 429) return S.errors.rateLimited;
+  if (code && Object.prototype.hasOwnProperty.call(S.errors.codes, code)) return S.errors.codes[code];
+  return S.errors.generic;
+}

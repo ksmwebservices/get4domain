@@ -42,7 +42,7 @@ export function itemsOf(site: EngineSiteData, itemBase: string | null, base: str
     used.add(slug);
     return {
       id: p.id, name: p.name, description: p.description ?? '', price: cf.samplePrice === 'true' ? 'Contact for price' : (rupees(p.price) ?? ''), image: p.image ?? '', category: p.category ?? '', slug,
-      href: itemBase ? `${base}/${itemBase}/${slug}` : base, duration: cfs(cf, 'duration'), badge: cfs(cf, 'badge'), includes: cfs(cf, 'includes'), location: cfs(cf, 'location'), area: cfs(cf, 'area'), bedrooms: cfs(cf, 'bedrooms'), veg: cfs(cf, 'veg'), tags: cfs(cf, 'tags'),
+      href: itemBase ? `${base}/${itemBase}/${slug}` : base || '/', duration: cfs(cf, 'duration'), badge: cfs(cf, 'badge'), includes: cfs(cf, 'includes'), location: cfs(cf, 'location'), area: cfs(cf, 'area'), bedrooms: cfs(cf, 'bedrooms'), veg: cfs(cf, 'veg'), tags: cfs(cf, 'tags'),
     };
   });
 }
@@ -85,7 +85,7 @@ export function pageSetOf(site: EngineSiteData, manifest: ThemeManifest, base: s
   const standard: PageEntry[] = std.slice(0, room).map((p) => ({ slug: p.slug, template: p.template, title: p.title, navLabel: p.navLabel || p.title, href: `${base}/${p.slug}` }));
   const vendor: PageEntry[] = vendorPages.map((p) => ({ slug: p.slug, template: 'page', title: p.title, navLabel: p.title, href: `${base}/p/${p.slug}`, vendor: true }));
   const itemsPage = manifest.itemsPage && standard.some((p) => p.slug === manifest.itemsPage) ? manifest.itemsPage : null;
-  return { home: base, standard, vendor, itemBase: itemsPage, all: [...standard, ...vendor], limit };
+  return { home: base || '/', standard, vendor, itemBase: itemsPage, all: [...standard, ...vendor], limit };
 }
 
 export type Route =

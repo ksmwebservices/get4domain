@@ -29,14 +29,20 @@ const nextConfig: NextConfig = {
       // Both used to be page-level redirect() calls, which answer 307 (temporary). They moved for good, so 308.
       { source: '/products', destination: '/features', permanent: true },
       { source: '/digital-growth', destination: '/leadspace', permanent: true },
+      // P6.1: the guide was renamed from a paid plan to a Pro plan; the old address stays.
+      { source: '/guides/from-free-to-paid-plan', destination: '/guides/from-free-to-pro-plan', permanent: true },
     ];
   },
   // The OTP gate is never content. Header and page meta both say noindex; robots.txt must NOT disallow it, or a crawler never gets to read them.
   // Private, token and transactional addresses are never search results. A header covers client-rendered pages too, which cannot export metadata.
   // (robots.txt already disallows most of these; a disallowed page is never fetched, so it cannot show a noindex. Both are kept on purpose.)
+  // The service worker file is always fetched fresh (a stale worker could keep an old rule alive); it may control the whole site.
   async headers() {
     const noindex = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];
-    return ['/visit-demo', ...NOINDEX_PATHS].map((source) => ({ source, headers: noindex }));
+    return [
+      { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache, max-age=0' }, { key: 'Service-Worker-Allowed', value: '/' }] },
+      ...['/visit-demo', ...NOINDEX_PATHS].map((source) => ({ source, headers: noindex })),
+    ];
   },
   async rewrites() {
     if (!leadspaceDomain) return [];

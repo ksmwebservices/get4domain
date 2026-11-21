@@ -1,19 +1,9 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import Script from 'next/script';
 import { notFound } from 'next/navigation';
-import { Star } from 'lucide-react';
-import { getCategory } from '@/data/demo-site';
-import { resolveCatalog, type CategoryCatalog, type DemoListing } from '@/data/demo-catalog';
-import { getListingFields } from '@/data/listing-fields';
-import DemoSiteNav from '@/components/DemoSiteNav';
-import DemoContactSection from '@/components/DemoContactSection';
-import DemoCatalogGrid from '@/components/DemoCatalogGrid';
-import ChatBot from '@/components/ChatBot';
 import { canonicalIndustryId } from '@/data/demo-site';
 import { getEngineIndustry, renderKitTemplate } from '@/engine/registry';
 import KitRenderer from '@/engine/kit/KitRenderer';
-import { PoweredBy } from '@/engine/components/PoweredBy';
 import { buildPageModel, buildSiteDocModel, jsonLdFor } from '@/engine/sitedoc/build';
 import { templateFromThemeRow, type ThemeRow } from '@/engine/kit/template';
 import { themePages } from '@/engine/raw-html-site';
@@ -21,11 +11,18 @@ import { buildThemeSrcDoc, RawThemeFrame } from '@/engine/raw-theme-frame';
 import type { EngineSiteData } from '@/engine/types';
 import { withShell } from '@/engine/shell/with-shell';
 import ThemeSite,{ fetchThemePackage, themeMetadata } from '@/engine/themepack/site';
-import { vendorCanonical } from '@/lib/site-canonical';
+import FreeSiteView from '@/components/site/FreeSiteView';
+import SiteApp from '@/components/site-kit/SiteApp';
+import { themeForSite } from '@/lib/v3-public/site-kit/resolver';
+import { buildSiteView, categoryLabel } from '@/lib/v3-public/site-kit/view';
+import { buildHead } from '@/lib/v3-public/site-kit/head';
+import SiteBeingSetUp from '@/components/site/SiteBeingSetUp';
+import { fetchSiteState, freeViewOf, isFreeSite, logVendorNotFound, siteApiBase, type VendorNotFoundReason } from '@/lib/v3-public/site-state';
 
 // Pages are fast because the vendor's data is cached for a minute and tagged `site:<subdomain>`; Publish drops that tag (POST /api/revalidate-site) so a change shows
 // within seconds. The vendor's private preview link (?preview=) is never cached.
 
+// The browser-facing address (a theme's forms post to it). The server's own reads use siteApiBase(): the runtime INTERNAL_API_URL first, because NEXT_PUBLIC_API_URL is fixed when the app is built.
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
 
 interface VendorProduct {
@@ -57,7 +54,7 @@ interface SiteData {
 /** Fetch the live site for a subdomain (real, non-sandbox vendors only). */
 async function fetchSite(subdomain: string, preview?: string, design?: string): Promise<SiteData | null> {
   try {
-    const url = `${API_BASE}/cms/site/${encodeURIComponent(subdomain)}${preview ? `?preview=${encodeURIComponent(preview)}${design ? `&design=${encodeURIComponent(design)}` : ''}` : ''}`;
+    const url = `${siteApiBase()}/cms/site/${encodeURIComponent(subdomain)}${preview ? `?preview=${encodeURIComponent(preview)}${design ? `&design=${encodeURIComponent(design)}` : ''}` : ''}`;
     const res = await fetch(url, preview ? { cache: 'no-store' } : { next: { tags: [`site:${subdomain}`], revalidate: 60 } });
     if (!res.ok) return null;
     const json = await res.json();
@@ -67,46 +64,29 @@ async function fetchSite(subdomain: string, preview?: string, design?: string): 
   }
 }
 
-const priceStr = (p: string | null): string | undefined => {
-  if (!p) return undefined;
-  const t = p.trim();
-  if (!t) return undefined;
-  return /^[₹$]/.test(t) ? t : `₹${t}`;
-};
+/** The site-state route: does this address have a site at all (live or draft)? false when it has none or the API cannot say. */
+async function siteExists(subdomain: string): Promise<boolean> {
+  return (await fetchSiteState(siteApiBase(), subdomain))?.exists === true;
+}
 
-/** Build the same CategoryCatalog shape the demo grid renders — from real products. */
-function buildCatalog(site: SiteData): CategoryCatalog {
-  const industry = site.vendor.industry;
-  const base = resolveCatalog(industry);
-  const fieldDefs = getListingFields(industry);
-  const items: DemoListing[] = site.products.map((p) => {
-    const cf = p.customFields ?? {};
-    const fields = fieldDefs
-      .filter((f) => typeof cf[f.key] === 'string' && cf[f.key].trim())
-      .map((f) => ({ label: f.label, value: cf[f.key] }));
-    const tags = typeof cf.tags === 'string' && cf.tags.trim()
-      ? cf.tags.split(',').map((t) => t.trim()).filter(Boolean)
-      : undefined;
-    return {
-      name: p.name,
-      price: priceStr(p.price),
-      desc: p.description ?? undefined,
-      image: p.image ?? undefined,
-      fields: fields.length ? fields : undefined,
-      tags,
-    };
-  });
-  return {
-    flow: base?.flow ?? 'enquire',
-    ctaLabel: base?.ctaLabel ?? 'Enquire Now',
-    catalogNoun: base?.catalogNoun ?? 'services',
-    items,
-  };
+/** The address has no site we can show: log why (one line, subdomain and reason code) and answer the normal not-found page. */
+async function missing(subdomain: string): Promise<never> {
+  const state = await fetchSiteState(siteApiBase(), subdomain);
+  logVendorNotFound(subdomain, state === null ? 'API_UNREACHABLE' : 'API_NOT_FOUND');
+  notFound();
+}
+
+/** A page of a site that exists but has no such page, or no design for it: log the reason and answer the normal not-found page. */
+function noPage(subdomain: string, reason: VendorNotFoundReason): never {
+  logVendorNotFound(subdomain, reason);
+  notFound();
 }
 
 interface Params { subdomain: string; rest?: string[] }
 
 const SITE_BASE = (process.env.NEXT_PUBLIC_SITE_BASE_DOMAIN || 'get4domain.com').toLowerCase();
+/** Links are written relative to the vendor's own host (/about, /p/news): a vendor has no /site/<name> path address (the middleware redirects that to the vendor host). */
+const VENDOR_BASE = '';
 
 type Query = { preview?: string; design?: string; sent?: string; e?: string };
 
@@ -114,36 +94,47 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   const { subdomain, rest = [] } = await params;
   const { preview, design } = await searchParams;
   const site = await fetchSite(subdomain, preview, design);
-  // a site that does not exist or is still a draft answers 404 (the page body is the not-found page), so it can never be indexed
-  if (!site) notFound();
-  if (site.docV2 && site.themeRef) {
-    const pkg = await fetchThemePackage(site.themeRef.id);
-    if (pkg) return themeMetadata(site as unknown as EngineSiteData, pkg, rest, { base: `/site/${subdomain}`, subdomain, preview: !!site.preview });
+  // an address with no site answers 404; an address that has one which cannot be shown yet (a draft, or not ready) says it is being set up. Both stay out of search.
+  if (!site) {
+    if (await siteExists(subdomain)) return { title: 'This site is being set up', robots: { index: false, follow: false } };
+    return missing(subdomain);
   }
-  const name = site.cms?.businessName || site.vendor.businessName;
-  const title = site.cms?.seoTitle || `${name} — ${site.cms?.tagline ?? 'Official Website'}`;
-  const description = site.cms?.seoDesc || site.cms?.about || `${name} — official website.`;
-  const share = site.cms?.ogImage || site.cms?.banner || site.cms?.logo;
-  const canonical = vendorCanonical(subdomain, rest, SITE_BASE);
-  return {
-    // a vendor's own title is used exactly as written (the platform name is not added)
-    title: site.docV2 ? { absolute: title } : title,
-    description,
-    keywords: site.cms?.seoKeywords ?? undefined,
-    ...(site.docV2 && site.cms?.favicon ? { icons: { icon: site.cms.favicon } } : {}),
-    // a preview, a draft, an unclaimed site, or a site that still shows only starter content is not offered to search engines
-    ...(site.preview || (site.docV2 && site.indexable === false) ? { robots: { index: false, follow: false } } : {}),
-    // one self-canonical per page, for every renderer: the vendor's own host plus this page's own path (not the home page, not the /site/<sub> copy)
-    alternates: { canonical },
-    openGraph: { title, description, type: 'website', url: canonical, images: share ? [{ url: share, alt: name }] : [] },
-  };
+  const category = categoryLabel(site.vendor.industry, site.pack?.name ?? null, site.pack?.key ?? null);
+  if (site.docV2 && site.themeRef && !isFreeSite(site)) {
+    const pkg = await fetchThemePackage(site.themeRef.id);
+    if (pkg) return themeMetadata(site as unknown as EngineSiteData, pkg, rest, { base: VENDOR_BASE, subdomain, preview: !!site.preview, category, baseDomain: SITE_BASE });
+  }
+  // the title of the page being shown (empty on the home page): a vendor-written page, an uploaded theme's page, or one of the built-in pages
+  const first = rest[0] ?? 'home';
+  let pageTitleText: string | null = null; let path = '/';
+  if (first === 'p' && rest[1]) {
+    const pg = (site.cms as { pages?: { slug: string; title: string }[] } | null)?.pages?.find((x) => x.slug === rest[1]);
+    pageTitleText = pg?.title ?? null; path = `/p/${rest[1]}`;
+  } else if (first !== 'home') {
+    const themed = themePages(site.theme).find((p) => p.slug === first);
+    pageTitleText = themed?.title ?? (first === 'contact' ? 'Contact' : first === 'listings' ? 'Our listings' : first.replace(/[-_]+/g, ' ').replace(/^./, (c) => c.toUpperCase()));
+    path = `/${first}`;
+  }
+  const meta = buildHead({ site, subdomain, path, pageTitle: pageTitleText, category, baseDomain: SITE_BASE, noindex: !!(site.preview || (site.docV2 && site.indexable === false)) });
+  return meta;
 }
 
 export default async function VendorSitePage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<Query> }) {
   const { subdomain, rest = [] } = await params;
   const { preview, design, sent, e } = await searchParams;
   const site = await fetchSite(subdomain, preview, design);
-  if (!site) notFound();
+  if (!site) {
+    if (await siteExists(subdomain)) return <SiteBeingSetUp />;
+    return missing(subdomain);
+  }
+
+  // A Free site is information only: no contact form, chat widget, button or e-mail, whatever design, industry text or theme it has (or has not).
+  // If its information page cannot even be put together, the site exists, so say it is being set up (and log why), never a bare 404.
+  if (isFreeSite(site)) {
+    let view: ReturnType<typeof freeViewOf> | null = null;
+    try { view = freeViewOf(site); } catch { logVendorNotFound(subdomain, 'FREE_RENDER_FAILED'); }
+    return view ? <FreeSiteView view={view} /> : <SiteBeingSetUp />;
+  }
 
   // Uploaded static-HTML theme wins first (Theme Marketplace): render the vendor's EXACT
   // design in an isolated iframe (pixel-identical, its own CSS/JS), with forms wired to
@@ -181,7 +172,7 @@ export default async function VendorSitePage({ params, searchParams }: { params:
         return (
           <>
             {site.preview ? <div role="status" className="fixed bottom-24 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-full bg-amber-300 px-4 py-2 text-center text-xs font-semibold text-slate-900 shadow-lg md:bottom-5">Preview: this is how your site will look. It is not live until you publish.</div> : null}
-            <ThemeSite site={site as unknown as EngineSiteData} pkg={pkg} rest={rest} subdomain={subdomain} opts={{ base: `/site/${subdomain}`, mode: site.preview ? 'preview' : 'live', shop, checkoutMode, keep, flash: { sent: sent === '1', error: e } }} />
+            <ThemeSite site={site as unknown as EngineSiteData} pkg={pkg} rest={rest} subdomain={subdomain} opts={{ base: VENDOR_BASE, mode: site.preview ? 'preview' : 'live', shop, checkoutMode, keep, flash: { sent: sent === '1', error: e } }} />
           </>
         );
       }
@@ -189,8 +180,8 @@ export default async function VendorSitePage({ params, searchParams }: { params:
     const bar = site.preview ? <div role="status" className="fixed bottom-24 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-full bg-amber-300 px-4 py-2 text-center text-xs font-semibold text-slate-900 shadow-lg md:bottom-5">Preview: this is how your site will look. It is not live until you publish.</div> : null;
     if (rest[0] === 'p' && rest[1]) {
       const pg = (site.cms as { pages?: { slug: string; title: string; body: string }[] } | null)?.pages?.find((x) => x.slug === rest[1]);
-      if (!pg) notFound();
-      return <>{bar}<KitRenderer model={withShell(buildPageModel(site as unknown as EngineSiteData, pg), site as unknown as EngineSiteData, { mode: site.preview ? 'preview' : 'live', cart: shop, base: `/site/${subdomain}`, onHome: false })} mode={mode} shop={shop} checkoutMode={checkoutMode} /></>;
+      if (!pg) return noPage(subdomain, 'INNER_PAGE_NOT_FOUND');
+      return <>{bar}<KitRenderer model={withShell(buildPageModel(site as unknown as EngineSiteData, pg), site as unknown as EngineSiteData, { mode: site.preview ? 'preview' : 'live', cart: shop, base: VENDOR_BASE, onHome: false })} mode={mode} shop={shop} checkoutMode={checkoutMode} /></>;
     }
     if (rest.length === 0 || rest[0] === 'home') {
       const ga = site.cms?.googleAnalyticsId?.trim();
@@ -205,11 +196,11 @@ export default async function VendorSitePage({ params, searchParams }: { params:
               <Script id="ga-init" strategy="afterInteractive">{`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${ga}');`}</Script>
             </>
           ) : null}
-          <KitRenderer model={withShell(buildSiteDocModel(site as unknown as EngineSiteData), site as unknown as EngineSiteData, { mode: site.preview ? 'preview' : 'live', cart: shop, base: `/site/${subdomain}`, onHome: true })} mode={mode} shop={shop} checkoutMode={checkoutMode} />
+          <KitRenderer model={withShell(buildSiteDocModel(site as unknown as EngineSiteData), site as unknown as EngineSiteData, { mode: site.preview ? 'preview' : 'live', cart: shop, base: VENDOR_BASE, onHome: true })} mode={mode} shop={shop} checkoutMode={checkoutMode} />
         </>
       );
     }
-    notFound();
+    return noPage(subdomain, 'NO_DESIGN');
   }
 
   // Industry-switch: if this vendor's industry has a bespoke engine site (Real
@@ -221,131 +212,23 @@ export default async function VendorSitePage({ params, searchParams }: { params:
     return <>{engineIndustry.render(site as unknown as EngineSiteData, { kind: 'live', subdomain })}</>;
   }
 
+  // The generic design (Pro, and any site no bespoke design takes): the theme design kit. The theme is picked from the vendor's category (sub category, category, main
+  // category, closest industry pack, safe default) and drawn as a small web app: bottom navigation on a phone, top navigation on a computer, an Install app button.
   const page = rest[0] ?? 'home';
-  if (!['home', 'listings', 'contact'].includes(page)) notFound();
-
-  const cat = getCategory(site.vendor.industry);
-  const brand = site.cms?.businessName || site.vendor.businessName;
-  const catalog = buildCatalog(site);
-  const coverImage = site.cms?.banner || cat?.coverImage || '';
-  const base = `/site/${subdomain}`;
-  const nounCap = catalog.catalogNoun.charAt(0).toUpperCase() + catalog.catalogNoun.slice(1);
-  const sections = [
-    { slug: 'listings', label: nounCap, type: 'catalog' as const },
-    { slug: 'contact', label: 'Contact', type: 'contact' as const },
-  ];
-  const industryLabel = cat?.name ?? 'business';
-  const hasListings = catalog.items.length > 0;
-
+  if (!['home', 'listings', 'contact'].includes(page)) return noPage(subdomain, 'INNER_PAGE_NOT_FOUND');
+  const { theme, pack } = themeForSite(site);
+  const view = buildSiteView(site, { mode: 'live', pack });
   const jsonLd = {
     '@context': 'https://schema.org', '@type': 'LocalBusiness',
-    name: brand, description: site.cms?.about ?? site.cms?.tagline ?? undefined,
-    image: coverImage || undefined, telephone: site.cms?.phone ?? undefined,
-    address: site.cms?.address ?? undefined, url: `https://get4domain.com${base}`, areaServed: 'IN',
+    name: view.name, description: view.about ?? view.tagline ?? undefined,
+    image: view.banner ?? undefined, telephone: view.phone ?? undefined,
+    address: view.address ?? undefined, url: `https://${subdomain}.${SITE_BASE}`, areaServed: 'IN',
   };
-
   return (
-    <div className="min-h-screen bg-white pb-16 md:pb-0">
+    <>
       {/* eslint-disable-next-line react/no-danger */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <DemoSiteNav business={brand} base={base} sections={sections} />
-
-      {/* Banner */}
-      <section className="relative overflow-hidden">
-        {coverImage && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={coverImage} alt={brand} className="absolute inset-0 h-full w-full object-cover" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-primary-900/70 to-primary-700/60" />
-        <div className="relative mx-auto max-w-5xl px-5 py-14 text-white sm:py-20">
-          {site.cms?.logo && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={site.cms.logo} alt={`${brand} logo`} className="mb-4 h-14 w-14 rounded-xl bg-white/90 object-contain p-1" />
-          )}
-          <h1 className="max-w-2xl text-3xl font-bold leading-tight sm:text-5xl">
-            {page === 'listings' ? nounCap : page === 'contact' ? 'Contact Us' : brand}
-          </h1>
-          <p className="mt-4 max-w-xl text-base text-white/90 sm:text-lg">
-            {page === 'home' ? (site.cms?.tagline ?? `Welcome to ${brand}`) : (site.cms?.tagline ?? '')}
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            {hasListings && (
-              <Link href={`${base}/listings`} className="inline-flex items-center gap-1.5 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary-700 hover:bg-white/90">
-                Browse {catalog.catalogNoun}
-              </Link>
-            )}
-            {site.cms?.whatsapp && (
-              <a href={`https://wa.me/${site.cms.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl bg-success-500 px-5 py-3 text-sm font-bold text-white hover:bg-success-600">
-                Chat on WhatsApp
-              </a>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <main className="mx-auto max-w-5xl px-5 py-12">
-        {page === 'home' && (
-          <div className="space-y-12">
-            {site.cms?.about && (
-              <section>
-                <h2 className="text-2xl font-bold text-slate-900">About {brand}</h2>
-                <p className="mt-3 whitespace-pre-line text-slate-600">{site.cms.about}</p>
-              </section>
-            )}
-            {hasListings ? (
-              <section>
-                <div className="flex items-end justify-between">
-                  <h2 className="text-2xl font-bold text-slate-900">Our {catalog.catalogNoun}</h2>
-                  <Link href={`${base}/listings`} className="text-sm font-semibold text-primary-600 hover:text-primary-700">View all →</Link>
-                </div>
-                <div className="mt-5">
-                  <DemoCatalogGrid catalog={catalog} business={brand} industryLabel={industryLabel} coverImage={coverImage} limit={6} />
-                </div>
-              </section>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-slate-500">
-                <Star className="mx-auto mb-2 h-6 w-6 text-amber-400" />
-                This site is being set up. Please check back soon.
-              </div>
-            )}
-          </div>
-        )}
-
-        {page === 'listings' && (
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">Our {catalog.catalogNoun}</h2>
-            <div className="mt-6">
-              {hasListings ? (
-                <DemoCatalogGrid catalog={catalog} business={brand} industryLabel={industryLabel} coverImage={coverImage} />
-              ) : (
-                <p className="text-slate-500">Nothing listed yet.</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {page === 'contact' && (
-          <div>
-            <h2 className="text-center text-2xl font-bold text-slate-900">Get in touch</h2>
-            {(site.cms?.phone || site.cms?.email || site.cms?.address) && (
-              <div className="mx-auto mt-4 max-w-lg space-y-1 text-center text-sm text-slate-600">
-                {site.cms?.phone && <p>Phone: <span className="font-semibold text-slate-800">{site.cms.phone}</span></p>}
-                {site.cms?.email && <p>Email: <span className="font-semibold text-slate-800">{site.cms.email}</span></p>}
-                {site.cms?.address && <p>{site.cms.address}</p>}
-              </div>
-            )}
-            <div className="mt-6"><DemoContactSection business={brand} industryLabel={industryLabel} /></div>
-          </div>
-        )}
-      </main>
-
-      <footer className="border-t border-slate-200 py-8 text-center text-xs text-slate-400">
-        <p>© {new Date().getFullYear()} {brand}. All rights reserved.</p>
-        <p className="mt-1"><PoweredBy /></p>
-      </footer>
-
-      <ChatBot />
-    </div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\u003c') }} />
+      <SiteApp view={view} theme={theme} />
+    </>
   );
 }

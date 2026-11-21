@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
+import { siteApiBase } from '@/lib/v3-public/site-state';
 
-const API = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
 
 /**
  * A visitor tapped "Buy online" on an item. We count the tap for the vendor (never charged) and send the visitor to the address the vendor saved.
@@ -12,7 +12,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string; 
   const back = new URL(`/ls/${encodeURIComponent(slug)}`, _req.url);
   if (!Number.isInteger(index) || index < 0 || index > 39) return NextResponse.redirect(back, 302);
   try {
-    const res = await fetch(`${API}/leadspace/public/outbound`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, index }), cache: 'no-store' });
+    const res = await fetch(`${siteApiBase()}/leadspace/public/outbound`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, index }), cache: 'no-store' });
     const json = (await res.json().catch(() => ({}))) as { data?: { url?: string } };
     const url = json.data?.url;
     if (res.ok && url && /^https:\/\//i.test(url)) return NextResponse.redirect(url, 302);

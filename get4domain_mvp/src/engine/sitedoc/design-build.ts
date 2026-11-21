@@ -166,7 +166,7 @@ export function buildDesignModel(site: EngineSiteData, pack: PackConfigLite, des
       sections.push({ type: 'contact', id: 'contact', variant: pickVariant(site, 'contact', spec.variant, ['card', 'split', 'minimal']) as 'card', eyebrow: 'Contact', title: 'Find us' });
     }
   }
-  for (const p of cms?.pages ?? []) addNav(`/site/${site.vendor.subdomain ?? ''}/p/${p.slug}`, p.title);
+  for (const p of cms?.pages ?? []) addNav(`/p/${p.slug}`, p.title);
   bottom.push({ label: cta.length > 12 ? 'Contact' : cta, icon: 'book', href: '#enquiry', emphasis: true });
 
   return {

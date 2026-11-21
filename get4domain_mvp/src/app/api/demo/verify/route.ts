@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { DEMO_PASS_COOKIE, DEMO_PASS_TTL_SECONDS, signDemoPass } from '@/lib/demo-access';
+import { siteApiBase } from '@/lib/v3-public/site-state';
 
 // Mints the demo access pass AFTER the client has completed OTP verification.
 //
@@ -11,7 +12,7 @@ import { DEMO_PASS_COOKIE, DEMO_PASS_TTL_SECONDS, signDemoPass } from '@/lib/dem
 // httpOnly pass cookie the middleware trusts.
 export const runtime = 'nodejs';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
+// server-side read: the runtime INTERNAL_API_URL first (siteApiBase), not the address fixed at build time
 
 interface Body { phone?: string; category?: string; sub?: string; to?: string }
 
@@ -27,7 +28,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   // Category-lock + 3-visit cap (DB-backed → instance-independent). Only an EXPLICIT
   // deny diverts to sales; a network hiccup never blocks an already-verified visitor.
   try {
-    const visitRes = await fetch(`${API_BASE}/leads/demo/visit`, {
+    const visitRes = await fetch(`${siteApiBase()}/leads/demo/visit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, category, sub: body.sub }),

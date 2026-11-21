@@ -1,0 +1,124 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import JsonLd from '@/components/directory/JsonLd';
+import AcceptNotice from '@/components/site/AcceptNotice';
+import PageHead from '@/components/portal/PageHead';
+import PortalPricing from '@/components/portal/PortalPricing';
+import { GROWTH } from '@/lib/v3-public/growth-strings';
+import { GROWTH_SERVICES, GROWTH_STATUS_LABEL } from '@/lib/v3-public/growth-config';
+import { PORTAL } from '@/lib/v3-public/portal-strings';
+import { assertV3Public } from '@/lib/v3-public/guard';
+import { ADDON_PACKS, fetchPlans, formatRupees, PUBLIC_TERMS, type PublicPlan } from '@/lib/v3-public/plans';
+import { portalPlanRows } from '@/lib/v3-public/portal-pricing';
+import { faqLd, offersLd } from '@/lib/v3-public/site-jsonld';
+import { siteMetadata } from '@/lib/v3-public/site-metadata';
+import { SITE } from '@/lib/v3-public/site-strings';
+
+export const dynamic = 'force-dynamic';
+
+export function generateMetadata(): Metadata {
+  assertV3Public();
+  return siteMetadata({ title: SITE.pricing.metaTitle, description: SITE.pricing.metaDescription, path: '/pricing' });
+}
+
+/** The text a feature cell shows: words only, never the API's upsell text (which is free text written elsewhere). */
+function featureText(f: PublicPlan['features'][number]): string {
+  const P = SITE.pricing;
+  if (f.state === 'LIMITED') return f.limit !== null ? `${P.featureUpTo} ${f.limit}${f.unit ? ` ${f.unit}` : ''}` : P.featureIncluded;
+  if (f.state === 'LOCKED_PREVIEW') return P.featurePreview;
+  return P.featureIncluded;
+}
+
+export default async function PricingPage() {
+  assertV3Public();
+  const P = SITE.pricing;
+  const r = await fetchPlans();
+  const data = r.kind === 'ok' ? r.data : null;
+  const rows = data ? portalPlanRows(data) : [];
+  // the add-ons the API lists win; the fixed list is only the fallback while the API is unreachable (a price shows only when the API gives one)
+  const addons = data?.addons && data.addons.length ? data.addons : ADDON_PACKS.map((a) => ({ key: a.key, name: a.name, description: null, priceMinor: null }));
+  // the feature comparison: one table, rows are features in the API's order, columns are the plans
+  const keys: Array<{ key: string; name: string }> = [];
+  if (data) for (const p of data.plans) for (const f of p.features) if (!keys.some((k) => k.key === f.key)) keys.push({ key: f.key, name: f.name });
+  return (
+    <>
+      <JsonLd items={[faqLd(P.faq), ...(data ? [offersLd(data, PORTAL.home.terms)] : []).filter((x): x is Record<string, unknown> => x !== null)]} />
+      <PageHead crumbs={[{ name: P.title, path: '/pricing' }]} h1={P.h1} lead={P.intro} />
+
+      <section aria-labelledby="free-title" className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
+        <h2 id="free-title" className="text-2xl font-bold tracking-tight text-ink-900">{data?.free?.name ?? P.free.name}</h2>
+        <p className="mt-1 text-slate-600">{P.free.tagline}</p>
+        <h3 className="mt-4 text-sm font-semibold text-ink-900">{P.free.includedHeading}</h3>
+        <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">{P.free.points.map((x) => <li key={x}>{x}</li>)}</ul>
+        <h3 className="mt-4 text-sm font-semibold text-ink-900">{P.free.unlockHeading}</h3>
+        <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">{P.free.unlock.map((x) => <li key={x}>{x}</li>)}</ul>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link href="/register" className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 bg-brand-600 text-white hover:bg-brand-700">{P.free.cta}</Link>
+          <a href="#plans-title" className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 border border-slate-300 text-ink-900 hover:bg-slate-50">{P.free.ctaPaid}</a>
+        </div>
+      </section>
+
+      <section aria-labelledby="plans-title" className="mt-10">
+        <h2 id="plans-title" className="mb-4 text-2xl font-bold tracking-tight text-ink-900">{P.plansHeading}</h2>
+        {data && rows.length > 0 ? <PortalPricing terms={data.terms.length ? data.terms : [...PUBLIC_TERMS]} plans={rows} registerHref="/register" tracks={{}} /> : <p className="text-slate-600" role="status">{r.kind === 'ok' ? PORTAL.home.pricesPending : P.loadError}</p>}
+      </section>
+      <AcceptNotice className="mt-4 text-sm text-slate-600" />
+
+      <section aria-labelledby="compare-title" className="mt-10">
+        <h2 id="compare-title" className="mb-3 text-2xl font-bold tracking-tight text-ink-900">{P.compareHeading}</h2>
+        <div className="overflow-x-auto"><table className="w-full border-collapse text-left text-sm">
+          <caption className="sr-only">{P.compareCaption}</caption>
+          <thead><tr className="border-b border-slate-300 bg-slate-50"><th scope="col" className="py-2 pr-3" /><th scope="col" className="py-2 pr-3">{P.compareFree}</th><th scope="col" className="py-2">{P.comparePaid}</th></tr></thead>
+          <tbody>
+            {P.compareRows.map((row) => (
+              <tr key={row.label} className="border-b border-slate-200"><th scope="row" className="py-2 pr-3 font-semibold text-ink-900">{row.label}</th><td className="py-2 pr-3 text-slate-700">{row.free}</td><td className="py-2 text-slate-700">{row.paid}</td></tr>
+            ))}
+            <tr className="border-b border-slate-300 bg-slate-50"><th scope="rowgroup" colSpan={3} className="py-2 pr-3 text-ink-900">{GROWTH.compareGrowthHeading}</th></tr>
+            {GROWTH_SERVICES.filter((svc) => svc.key !== 'sub-site').map((svc) => (
+              <tr key={svc.key} className="border-b border-slate-200">
+                <th scope="row" className="py-2 pr-3 font-semibold text-ink-900">{svc.name}</th>
+                <td className="py-2 pr-3 text-slate-700">{svc.free === 'included' ? GROWTH.compareIncludedFree : GROWTH.compareLocked}</td>
+                <td className="py-2 text-slate-700">
+                  {svc.plans === 'ecommerce' ? <span className="block font-medium">{GROWTH.compareEcommerceNote}</span> : null}
+                  {svc.note ? <span className="block font-medium">{svc.note}.</span> : null}
+                  {svc.statuses.map((k) => <span key={k} className="block">{GROWTH_STATUS_LABEL[k]}</span>)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table></div>
+        <p className="mt-3 text-sm text-slate-600">{GROWTH.promotionNote} <Link href="/growth" className="font-semibold text-brand-700 underline underline-offset-2">{GROWTH.footerAll}</Link></p>
+      </section>
+
+      {data && keys.length > 0 ? (
+        <section aria-labelledby="features-title" className="mt-10">
+          <h2 id="features-title" className="mb-3 text-2xl font-bold tracking-tight text-ink-900">{P.featuresHeading}</h2>
+          <div className="overflow-x-auto"><table className="w-full border-collapse text-left text-sm">
+            <thead><tr className="border-b border-slate-300 bg-slate-50"><th scope="col" className="py-2 pr-3"><span className="sr-only">{P.featuresHeading}</span></th>{data.plans.map((p) => <th key={p.key} scope="col" className="py-2 pr-3">{p.name}</th>)}</tr></thead>
+            <tbody>
+              {keys.map((k) => (
+                <tr key={k.key} className="border-b border-slate-200">
+                  <th scope="row" className="py-2 pr-3 font-semibold text-ink-900">{k.name}</th>
+                  {data.plans.map((p) => { const f = p.features.find((x) => x.key === k.key); return <td key={p.key} className="py-2 pr-3 text-slate-700">{f ? featureText(f) : '-'}</td>; })}
+                </tr>
+              ))}
+            </tbody>
+          </table></div>
+        </section>
+      ) : null}
+
+      <section aria-labelledby="addons-title" className="mt-10">
+        <h2 id="addons-title" className="mb-2 text-2xl font-bold tracking-tight text-ink-900">{P.addonsHeading}</h2>
+        <p className="mb-3 text-slate-600">{P.addonsIntro}</p>
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {addons.map((a) => (<li key={a.key} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"><span className="text-slate-900">{a.name}</span><span className="text-slate-600">{a.priceMinor === null ? P.addonsPrice : formatRupees(a.priceMinor)}</span></li>))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="faq-title" className="mt-10">
+        <h2 id="faq-title" className="mb-3 text-2xl font-bold tracking-tight text-ink-900">{P.faqHeading}</h2>
+        <dl className="space-y-4">{P.faq.map((f) => (<div key={f.q}><dt className="font-semibold text-ink-900">{f.q}</dt><dd className="mt-1 text-slate-700">{f.a}</dd></div>))}</dl>
+      </section>
+    </>
+  );
+}

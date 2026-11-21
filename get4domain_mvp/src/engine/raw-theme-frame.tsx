@@ -46,13 +46,13 @@ function injectTokens(html: string, site: FrameSite): string {
     Object.prototype.hasOwnProperty.call(map, k) ? map[k] : full);
 }
 
-/** Rewrite intra-theme page links (about.html / /about) to our /site/<sub>/<slug> routes. */
+/** Rewrite intra-theme page links (about.html / /about) to the vendor host's own /<slug> routes. */
 function rewriteLinks(html: string, base: string, slugs: Set<string>): string {
   return html.replace(/href\s*=\s*"([^"]+)"/g, (full, href: string) => {
     if (/^(https?:|mailto:|tel:|#|data:|\/\/)/i.test(href)) return full;
     const clean = href.replace(/^\.?\//, '').replace(/\.html?$/i, '').replace(/\/$/, '');
     const slug = clean === '' || clean === 'index' || clean === 'home' ? 'home' : clean;
-    if (slug === 'home' || slugs.has(slug)) return `href="${base}/${slug}"`;
+    if (slug === 'home' || slugs.has(slug)) return `href="${slug === 'home' ? (base || '/') : `${base}/${slug}`}"`;
     return full;
   });
 }
@@ -80,7 +80,7 @@ function bridge(apiBase: string, subdomain: string, base: string): string {
   },true);
   // Intra-site links (rewritten to BASE/<slug>) navigate the parent window.
   addEventListener('DOMContentLoaded',function(){
-    document.querySelectorAll('a[href^="'+BASE+'"], a[href^="'+location.origin+BASE+'"]').forEach(function(a){a.setAttribute('target','_top');});
+    document.querySelectorAll(BASE?'a[href^="'+BASE+'"], a[href^="'+location.origin+BASE+'"]':'a[href^="/"]:not([href^="//"])').forEach(function(a){a.setAttribute('target','_top');});
   });
 })();</script>`;
 }
@@ -90,7 +90,7 @@ export function buildThemeSrcDoc(
   bundle: ThemeBundle, site: FrameSite,
   opts: { subdomain: string; rest: string[]; apiBase: string; base?: string },
 ): string {
-  const base = opts.base ?? `/site/${opts.subdomain}`;
+  const base = opts.base ?? '';
   const slugs = new Set(bundle.pages.map((p, i) => (i === 0 ? 'home' : p.slug)));
   const requested = opts.rest[0] || 'home';
   const current = bundle.pages.find((p) => p.slug === requested)

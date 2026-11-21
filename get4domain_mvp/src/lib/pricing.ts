@@ -1,4 +1,5 @@
 // Single source of truth for plan pricing across the marketing pricing card,
+import { siteApiBase } from '@/lib/v3-public/site-state';
 // the /pricing page and the dashboard checkout disclosure.
 //
 // Billing structure (dispatch 01-Oct-2026): DomainApp is now two ANNUAL-ONLY
@@ -97,13 +98,12 @@ export interface LivePricing {
   usage: Record<string, number>;
 }
 
-const PRICING_API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
 
 /** Fetch live pricing. Works in server components (ISR-cached) and the client.
  *  Returns null on any failure so callers fall back to the PLAN_TERMS defaults. */
 export async function fetchLivePricing(): Promise<LivePricing | null> {
   try {
-    const res = await fetch(`${PRICING_API_BASE}/pricing`, { next: { revalidate: 300 } } as RequestInit);
+    const res = await fetch(`${siteApiBase()}/pricing`, { next: { revalidate: 300 } } as RequestInit);
     if (!res.ok) return null;
     const body = (await res.json()) as { data?: LivePricing } & Partial<LivePricing>;
     const live = (body.data ?? body) as LivePricing;

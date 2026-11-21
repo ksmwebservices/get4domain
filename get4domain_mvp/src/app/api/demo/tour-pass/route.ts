@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { DEMO_PASS_COOKIE, DEMO_PASS_TTL_SECONDS, signDemoPass } from '@/lib/demo-access';
 import { canonicalIndustryId } from '@/data/demo-site';
+import { siteApiBase } from '@/lib/v3-public/site-state';
 
 // Mints a demo access pass for an ALREADY-VERIFIED sandbox tour session, WITHOUT a
 // second OTP. A demo/sandbox vendor reached the dashboard only by passing OTP
@@ -14,7 +15,7 @@ import { canonicalIndustryId } from '@/data/demo-site';
 // client-supplied category — so it can't be used to unlock other categories' demos.
 export const runtime = 'nodejs';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
+// server-side read: the runtime INTERNAL_API_URL first (siteApiBase), not the address fixed at build time
 
 export async function POST(req: Request): Promise<NextResponse> {
   const auth = req.headers.get('authorization') ?? '';
@@ -26,7 +27,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   interface Me { industry?: string | null; isSandbox?: boolean }
   let me: Me | null = null;
   try {
-    const res = await fetch(`${API_BASE}/auth/me`, { headers: { Authorization: auth } });
+    const res = await fetch(`${siteApiBase()}/auth/me`, { headers: { Authorization: auth } });
     if (!res.ok) return NextResponse.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
     const j = (await res.json()) as { data?: Me } & Me;
     me = j?.data ?? j;
