@@ -11,7 +11,7 @@ Kit category = the closest of the kit's 41 category ids; the pack lists it in `t
 | 1 | Real estate builder or project developer (big banner, slideshow, ongoing, upcoming and completed projects, a landing page per project) | Real Estate & Property | professional | real-estate-agent | DONE |
 | 2 | Real estate agent and property portal (sale, lease, rent; a landing page per property; local area focus) | Real Estate & Property | professional | real-estate-agent | DONE |
 | 3 | Contractor portfolio (building, civil, electrical) | Construction & Building | professional | mason-contractor | DONE |
-| 4 | Interior designer | Interior Design & Home Decor | professional | interior-designer-architect | QUEUED |
+| 4 | Interior designer | Interior Design & Home Decor | professional | interior-designer-architect | DONE |
 | 5 | Carpenter | Home Services | handyman | carpenter | QUEUED |
 | 6 | Consultant | Business & Management Consultants | professional | it-consultant | QUEUED |
 | 7 | Auditor | Chartered Accountants & Taxation | professional | ca-tax-consultant | QUEUED |
