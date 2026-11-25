@@ -31,6 +31,10 @@ Design rules:
 | Google Map slot | `<g4d-map>` is a platform slot, required in every theme | Placed on home, about and contact, with a CSS rule that reserves its size. |
 | presets | optional, but a theme with any preset needs one for every category it lists | Packs ship no presets (the pack itself is the preset). |
 
+## Added rules
+- The animated hero scene must be visible on the first screen at 360 and at 1280 for every pack (the first-screen preview images `assets/previews/home-360.png` and `home-1280.png` must show the moving subject, not only sky or empty space). Use a split or overlapping hero; a centred hero that pushes the scene below the headline is not allowed. If the headline is long, cap the scene height so the subject sits inside 800px at 1280.
+- The ledger records, for each pack, the wall-clock start (date and HH:MM) and the push time (HH:MM).
+
 ## Pack folder
 ```
 packs/<family-id>/<type-id>/

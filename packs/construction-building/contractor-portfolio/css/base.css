@@ -99,13 +99,15 @@
 .g4d-theme .svc-links li{flex:0 0 auto;scroll-snap-align:start;max-width:78vw}
 .g4d-theme .svc-links a{display:inline-flex;align-items:center;min-height:44px;padding:6px 16px;border-radius:999px;border:1.5px solid rgba(255,255,255,.7);color:#fff;text-decoration:none;font-weight:600;font-size:.88rem;background:rgba(0,0,0,.28)}
 @media(min-width:900px){.g4d-theme .svc-links{flex-wrap:wrap;overflow:visible}}
-.g4d-theme .hero--center{text-align:center}
-.g4d-theme .hero--center .hero-art{position:relative;height:clamp(200px,46vw,340px);order:2}
-.g4d-theme .hero--center{display:flex;flex-direction:column}
-.g4d-theme .hero--center .hero-grid{order:1;padding-block:40px 24px}
-.g4d-theme .hero--center .hero-copy{margin-inline:auto;max-width:760px}
-.g4d-theme .hero--center .hero-cta,.g4d-theme .hero--center .svc-links{justify-content:center}
-.g4d-theme .hero--center .lede{margin-inline:auto}
+.g4d-theme .hero--split .hero-art{position:relative;height:clamp(210px,54vw,300px)}
+.g4d-theme .hero--split .hero-grid{padding-block:28px 40px}
+@media(min-width:900px){
+  .g4d-theme .hero--split{min-height:560px;display:flex;align-items:center}
+  .g4d-theme .hero--split .hero-art{position:absolute;inset:0 0 0 44%;height:auto}
+  .g4d-theme .hero--split .hero-grid{padding-block:56px;position:relative}
+  .g4d-theme .hero--split .hero-copy{max-width:min(540px,52%)}
+  .g4d-theme .hero--split .hero-shade{background:linear-gradient(90deg,var(--tp-deep) 0,rgba(0,0,0,0) 38%)}
+}
 
 .g4d-theme .section{padding:56px 0}
 .g4d-theme .section--white{background:var(--g4d-surface)}
@@ -204,3 +206,4 @@
 .g4d-theme .tile:nth-child(3) .tile-ic{background-image:url(../assets/motif-electrical.svg)}
 .g4d-theme .hero-eyebrow::before{content:"";display:inline-block;width:34px;height:8px;margin-right:10px;vertical-align:middle;background:repeating-linear-gradient(-45deg,var(--g4d-accent) 0 6px,var(--tp-ink) 6px 12px)}
 .g4d-theme .section--tint{background-color:var(--tp-tint)}
+@media(min-width:900px){.g4d-theme .hero--split .hero-art{bottom:auto;height:min(100%,600px)}.g4d-theme .hero--split .hero-copy{max-width:min(520px,50%)}}

@@ -45,7 +45,8 @@ const extraCss = `.g4d-theme .card-art{background-image:url(../assets/pattern-si
 .g4d-theme .tile:nth-child(2) .tile-ic{background-image:url(../assets/motif-civil.svg)}
 .g4d-theme .tile:nth-child(3) .tile-ic{background-image:url(../assets/motif-electrical.svg)}
 .g4d-theme .hero-eyebrow::before{content:"";display:inline-block;width:34px;height:8px;margin-right:10px;vertical-align:middle;background:repeating-linear-gradient(-45deg,var(--g4d-accent) 0 6px,var(--tp-ink) 6px 12px)}
-.g4d-theme .section--tint{background-color:var(--tp-tint)}`;
+.g4d-theme .section--tint{background-color:var(--tp-tint)}
+@media(min-width:900px){.g4d-theme .hero--split .hero-art{bottom:auto;height:min(100%,600px)}.g4d-theme .hero--split .hero-copy{max-width:min(520px,50%)}}`;
 
 const ic = (extra) => `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#23272b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">${extra}</svg>`;
 
@@ -58,7 +59,7 @@ export default {
   marketplace: { packs: ['PROPERTY'], catalogueCategories: ['mason-contractor'], tags: ['portfolio-landing-pages', 'contractor'] },
   previewAlt: ['Foundation home page on a desktop screen: work-site banner with an excavator and project cards', 'Foundation home page on a phone: banner scene, job links and bottom bar', 'Foundation project page: scope, key facts, indicative rate and enquiry'],
   fontHeading: 'Montserrat', fontBody: 'Inter',
-  look: { header: 'center', hero: 'center', card: 'plate', button: 'sharp', ornament: 'rule', radius: '6px', headWeight: 800, headTracking: '-.02em', hue: 'graphite-yellow' },
+  look: { header: 'center', hero: 'split', card: 'plate', button: 'sharp', ornament: 'rule', radius: '6px', headWeight: 800, headTracking: '-.02em', hue: 'graphite-yellow' },
   palette: {
     light: { primary: '#23272b', primaryContrast: '#ffffff', accent: '#8a5a00', onAccent: '#ffffff', bg: '#f4f3ee', surface: '#ffffff', text: '#1d2024', muted: '#4b5057', border: '#d6d4cb', deep: '#181b1e', tint: '#e8e6dc', ink: '#23272b', warm: '#ffc400' },
     dark: { primary: '#ffc400', primaryContrast: '#14161a', accent: '#ffd84d', onAccent: '#14161a', bg: '#14161a', surface: '#1e2126', text: '#f1f1ec', muted: '#b4b7bc', border: '#34383e', deep: '#0e0f12', tint: '#1a1d21', ink: '#f1f1ec', warm: '#ffc400' },
