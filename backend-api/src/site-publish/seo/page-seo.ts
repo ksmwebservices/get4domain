@@ -174,8 +174,9 @@ export function assembleDocument(p: { seo: PageSeo; bodyHtml: string; cssHref: s
     ...Object.entries(s.twitter).map(([k, v]) => `<meta name="${esc(k)}" content="${esc(v)}">`),
     ...(p.favicon && httpUrl(p.favicon) ? [`<link rel="icon" href="${esc(p.favicon)}">`] : []),
     `<link rel="stylesheet" href="${esc(p.cssHref)}">`,
+    ...(p.bodyHtml.includes('data-g4d-install') ? ['<link rel="manifest" href="/assets/manifest.webmanifest">'] : []),
     ...s.jsonLd.map((b) => `<script type="application/ld+json">${ldText(b)}</script>`),
-    '</head>', '<body>', p.bodyHtml, '</body>', '</html>', '',
+    '</head>', '<body>', p.bodyHtml, ...(p.bodyHtml.includes('data-g4d-install') ? ['<script src="/assets/shell.js" defer></script>'] : []), '</body>', '</html>', '',
   ];
   return lines.join('\n');
 }

@@ -181,7 +181,7 @@ export function assertWithinLimitResult(resolved: ResolvedEntitlements, key: str
   return { code: r.reason === 'LIMIT_REACHED' ? 'LIMIT_REACHED' : 'FEATURE_LOCKED', upsellText: r.upsellText, state: r.state, limit: r.limit };
 }
 
-export interface RenderEntitlements { video: boolean; cart: boolean; booking: boolean; customDomain: boolean; callsToAction: boolean }
+export interface RenderEntitlements { video: boolean; cart: boolean; booking: boolean; customDomain: boolean; callsToAction: boolean; /** the chat drawer place of the app shell: a Pro site whose plan has the feature site.chat */ chat: boolean }
 /**
  * The five booleans the theme kit asks the platform for. Pinned by a test:
  *   video = site.video ACTIVE; cart = shop.cart ACTIVE; booking = site.booking ACTIVE;
@@ -192,5 +192,5 @@ export interface RenderEntitlements { video: boolean; cart: boolean; booking: bo
  */
 export function toRenderEntitlements(resolved: ResolvedEntitlements, hasVerifiedDomain = false): RenderEntitlements {
   const on = (key: string): boolean => resolved.features[key]?.state === 'ACTIVE';
-  return { video: on('site.video'), cart: on('shop.cart'), booking: on('site.booking'), customDomain: (on('site.custom_domain') || on('promotion.custom_domain_addon')) && hasVerifiedDomain === true, callsToAction: on('site.cta') };
+  return { video: on('site.video'), cart: on('shop.cart'), booking: on('site.booking'), customDomain: (on('site.custom_domain') || on('promotion.custom_domain_addon')) && hasVerifiedDomain === true, callsToAction: on('site.cta'), chat: on('site.cta') && on('site.chat') };
 }
