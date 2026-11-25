@@ -112,6 +112,21 @@ export class SiteSettingsService {
   }
 
   /**
+   * Staff assign a theme to a business (Website Manager lane A): the plan rules apply to a public theme exactly as in setTheme; a theme made privately for this business is always allowed.
+   * The reason is recorded. When the site is live it is built and published at once, so the visitor sees the new theme.
+   */
+  async assignTheme(vendorId: string, themeId: string, reason: string, actor: Actor): Promise<{ settings: SiteSettingsRow; published: PublicationRow | null }> {
+    const saved = await this.setTheme(vendorId, themeId, actor);
+    await this.repo.recordEvent(vendorId, null, { type: 'THEME_CHANGED', actorType: actor.type, actorId: actor.id, detail: { themeId, assigned: true, reason } }, this.audit.hook(actor, 'site.theme.assign', vendorId, { themeId, reason }));
+    let published: PublicationRow | null = null;
+    if (await this.repo.currentPublication(vendorId)) {
+      const built = await this.build.build(vendorId, { actor });
+      published = built.publication.status === 'DRAFT_PREVIEW' ? await this.publisher.publish(vendorId, built.publication.id, actor) : built.publication;
+    }
+    return { settings: saved, published };
+  }
+
+  /**
    * Staff switch: keep a site out of search whatever the indexing rule says. When a site is live this builds and publishes a new version at once, so what is
    * served matches the switch (the served page carries its robots tag, and the stored snapshot is not edited).
    */

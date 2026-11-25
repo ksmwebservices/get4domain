@@ -10,7 +10,7 @@ import { SiteProvisionFacts } from '../publish/site-provision-facts.service';
 import { SitePreviewService } from '../publish/site-preview.service';
 import { SiteSettingsService, summarise } from '../publish/site-settings.service';
 import { SiteRepository } from '../publish/site.repository';
-import { BuildSiteDto, NoindexDto, PublishSiteDto, RollbackSiteDto, SetThemeDto } from './dto/site.dto';
+import { AssignThemeDto, BuildSiteDto, NoindexDto, PublishSiteDto, RollbackSiteDto, SetThemeDto } from './dto/site.dto';
 import { previewHeaders, settingsView } from './site-http';
 
 /**
@@ -46,6 +46,13 @@ export class SitesAdminController {
   @ApiOperation({ summary: 'Choose a vendor\'s theme on their behalf (the plan rules still apply)' })
   async theme(@Param('id') id: string, @Body() dto: SetThemeDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
     return settingsView(await this.settings.setTheme(id, dto.themeId, actorOf(user, req)));
+  }
+
+  @Post('vendors/:id/site/theme/assign') @HttpCode(200)
+  @ApiOperation({ summary: 'Assign a theme to a business and publish it when the site is live (a reason is recorded). A theme made privately for that business is always allowed; a public theme follows the plan rules.' })
+  async assignTheme(@Param('id') id: string, @Body() dto: AssignThemeDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
+    const r = await this.settings.assignTheme(id, dto.themeId, dto.reason, actorOf(user, req));
+    return { settings: settingsView(r.settings), published: summarise(r.published) };
   }
 
   @Post('vendors/:id/site/build') @HttpCode(200)

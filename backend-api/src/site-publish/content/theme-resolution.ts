@@ -35,6 +35,8 @@ export function resolveTheme(a: ResolveArgs): Resolved {
     if (!a.strict && a.defaultId) return { themeId: a.defaultId, source: 'default', notes: ['theme-fallback'] };
     throw new BadRequestException(siteError('THEME_INVALID', 'That theme is not available.'));
   }
+  // a theme made privately for this one business (listThemes only offers it to its own business) is theirs whatever the plan: staff built or assigned it for them
+  if (theme.visibility === 'PRIVATE') return { themeId: theme.id, source: 'stored', notes: [] };
   const entitled = a.entitlement !== null && a.entitlement.state === 'ACTIVE' && a.entitlement.enumValue === 'library';
   if (!entitled) {
     if (!a.strict && a.defaultId) return { themeId: a.defaultId, source: 'default', notes: ['theme-fallback'] };

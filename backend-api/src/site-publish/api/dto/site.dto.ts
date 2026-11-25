@@ -1,9 +1,13 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString, Matches, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, Matches, MaxLength, Min, MinLength } from 'class-validator';
 
 /** Theme ids are the kit's: lower case words joined by dashes. */
 export class SetThemeDto {
   @IsString() @MaxLength(40) @Matches(/^[a-z0-9]+(-[a-z0-9]+)*$/, { message: 'themeId must be a theme id such as free-practice' }) themeId!: string;
+}
+export class AssignThemeDto {
+  @IsString() @MaxLength(40) @Matches(/^[a-z0-9]+(-[a-z0-9]+)*$/, { message: 'themeId must be a theme id such as free-practice' }) themeId!: string;
+  @IsString() @MinLength(5) @MaxLength(300) reason!: string;
 }
 export class BuildSiteDto {
   @IsOptional() @IsString() @MaxLength(40) @Matches(/^[a-z0-9]+(-[a-z0-9]+)*$/, { message: 'themeId must be a theme id such as free-practice' }) themeId?: string;
