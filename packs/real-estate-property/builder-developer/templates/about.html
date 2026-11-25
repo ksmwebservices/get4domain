@@ -1,0 +1,56 @@
+<a class="skip-link" href="#main">{{ui.skip}}</a>
+<g4d-claim-banner></g4d-claim-banner>
+<header class="site-header h-bar">
+  <div class="wrap head-row">
+    <a class="brand" href="/">
+      <img data-g4d-if="site.logo" src="{{site.logo}}" alt="{{site.logoAlt}}" width="160" height="48" loading="lazy" decoding="async">
+      <svg class="brand-mark" data-g4d-if-not="site.logo" aria-hidden="true" focusable="false" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="8" fill="#12304A"/><path d="M12 52V30h14v22M26 52V18h14v34M40 52V26h12v26" fill="none" stroke="#F4B56A" stroke-width="3" stroke-linejoin="round"/><path d="M8 52h48" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M33 8v10M24 11h18" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+      <span class="brand-name">{{site.name}}</span>
+    </a>
+    <g4d-header-nav label="Main"></g4d-header-nav>
+    <g4d-action class="btn btn--go btn--sm"></g4d-action>
+  </div>
+</header>
+<main id="main">
+  <section class="page-hero"><div class="wrap"><h1>{{page.title}}</h1><p data-g4d-if="page.intro">{{page.intro}}</p></div></section>
+  <section class="section" data-g4d-section="about" data-g4d-label="About" data-g4d-optional="false">
+<div class="wrap split">
+    <div class="prose"><h2>{{about.title}}</h2><p>{{about.text}}</p>
+      <ul class="creds creds--cols" data-g4d-if="credentials"><template data-g4d-each="credentials"><li><b>{{credential.title}}</b><span>{{credential.detail}}</span></li></template></ul>
+    </div>
+    <aside class="aside-card"><p class="aside-label">Find us</p>
+      <ul class="contact-list">
+        <li data-g4d-if="contact.address"><b>{{ui.directions}}</b><address>{{contact.address}}</address></li>
+        <li data-g4d-if="contact.phone"><b>{{ui.call}}</b><a href="{{contact.phoneHref}}">{{contact.phone}}</a></li>
+      </ul>
+      <g4d-map></g4d-map>
+    </aside>
+  </div>
+</section>
+  <section class="section section--white" data-g4d-section="team" data-g4d-label="Our team" data-g4d-optional="true" data-g4d-if="team">
+<div class="wrap">
+  <div class="sec-head"><h2>{{terms.team}}</h2></div>
+  <ul class="team"><template data-g4d-each="team"><li class="member"><span class="avatar" aria-hidden="true">{{member.initial}}</span><div><b>{{member.name}}</b><span>{{member.role}}</span><small data-g4d-if="member.note">{{member.note}}</small></div></li></template></ul>
+</div>
+</section>
+  <section class="section" data-g4d-section="trust-list" data-g4d-label="Why choose us" data-g4d-optional="true" data-g4d-if="trust">
+<div class="wrap"><div class="sec-head"><h2>{{ui.why}}</h2></div><ul class="why"><template data-g4d-each="trust"><li>{{point.text}}</li></template></ul></div>
+</section>
+  <section class="section section--white" data-g4d-section="areas" data-g4d-label="Where we build" data-g4d-optional="true" data-g4d-if="areas">
+<div class="wrap"><div class="sec-head"><h2>{{contact.city}}</h2></div><ul class="chips"><template data-g4d-each="areas"><li>{{area.name}}</li></template></ul></div>
+</section>
+  <section class="section section--white" data-g4d-section="stats" data-g4d-label="Numbers" data-g4d-optional="true" data-g4d-if="stats">
+<div class="wrap"><ul class="stats"><template data-g4d-each="stats"><li><b>{{stat.value}}</b><span>{{stat.label}}</span></li></template></ul></div>
+</section>
+  <section class="cta-band" data-g4d-section="cta" data-g4d-label="Call to action" data-g4d-optional="true">
+  <div class="wrap">
+    <div><h2>{{cta.label}}</h2><p data-g4d-if="site.tagline">{{site.tagline}}</p></div>
+    <div class="cta-actions"><g4d-action class="btn btn--go"></g4d-action><a class="btn" data-g4d-if="contact.phone" href="{{contact.phoneHref}}">{{ui.call}} {{contact.phone}}</a></div>
+  </div>
+</section>
+</main>
+<g4d-footer variant="columns"></g4d-footer>
+<g4d-listed-on-badge></g4d-listed-on-badge>
+<g4d-share-qr></g4d-share-qr>
+<g4d-bottom-nav></g4d-bottom-nav>
+<g4d-whatsapp-float></g4d-whatsapp-float>

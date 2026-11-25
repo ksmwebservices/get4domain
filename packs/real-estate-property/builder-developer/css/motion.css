@@ -1,0 +1,18 @@
+/* Motion: transform and opacity only. Off and reduced motion are static. */
+@keyframes bd-drift{from{transform:translateX(-50px)}to{transform:translateX(70px)}}
+@keyframes bd-trolley{from{transform:translateX(0)}to{transform:translateX(190px)}}
+@keyframes bd-lift{from{transform:translateY(0)}to{transform:translateY(-52px)}}
+@keyframes bd-blink{from{opacity:.25}to{opacity:1}}
+@keyframes bd-truck{from{transform:translateX(0)}to{transform:translateX(1520px)}}
+.g4d-theme:not([data-motion="Off"]) .sc-cloud--a{animation:bd-drift calc(46s / var(--g4d-motion-speed)) ease-in-out infinite alternate}
+.g4d-theme:not([data-motion="Off"]) .sc-cloud--b{animation:bd-drift calc(58s / var(--g4d-motion-speed)) ease-in-out infinite alternate-reverse}
+.g4d-theme:not([data-motion="Off"]) .sc-trolley{animation:bd-trolley calc(14s / var(--g4d-motion-speed)) ease-in-out infinite alternate}
+.g4d-theme:not([data-motion="Off"]) .sc-load{animation:bd-lift calc(5s / var(--g4d-motion-speed)) ease-in-out infinite alternate}
+.g4d-theme:not([data-motion="Off"]) .sc-win--1{animation:bd-blink 2.6s ease-in-out infinite alternate}
+.g4d-theme:not([data-motion="Off"]) .sc-win--3{animation:bd-blink 3.4s ease-in-out infinite alternate-reverse}
+.g4d-theme[data-motion="Medium"] .sc-truck,.g4d-theme[data-motion="Rich"] .sc-truck{animation:bd-truck calc(26s / var(--g4d-motion-speed)) linear infinite}
+.g4d-theme[data-motion="Medium"] .card,.g4d-theme[data-motion="Rich"] .card,.g4d-theme[data-motion="Medium"] .slide-link,.g4d-theme[data-motion="Rich"] .slide-link{transition:transform .25s var(--g4d-motion-ease)}
+.g4d-theme[data-motion="Medium"] .card:hover,.g4d-theme[data-motion="Rich"] .card:hover,.g4d-theme[data-motion="Medium"] .slide-link:hover,.g4d-theme[data-motion="Rich"] .slide-link:hover{transform:translateY(calc(var(--g4d-motion-distance) * -.5))}
+@media (prefers-reduced-motion: reduce){
+  .g4d-theme .sc-cloud--a,.g4d-theme .sc-cloud--b,.g4d-theme .sc-trolley,.g4d-theme .sc-load,.g4d-theme .sc-win--1,.g4d-theme .sc-win--3,.g4d-theme .sc-truck,.g4d-theme .card,.g4d-theme .slide-link{animation:none;transition:none}
+}

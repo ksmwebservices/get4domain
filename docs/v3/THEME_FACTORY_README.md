@@ -25,6 +25,7 @@ Design rules:
 |---|---|---|
 | content.json inside the pack folder | a package may only hold `theme.json`, `templates/`, `css/`, `presets/`, `assets/`; `validate-package` refuses any other file (`unknown-file`) | `content.json` lives in the pack folder (`packs/<family>/<type>/content.json`) but is left out of the zip. `packs/_tools/stage.mjs` copies the theme files to a staging folder, and lint, pack and validate-package run on that copy. |
 | install button | no script, no form or input; no install slot exists | The theme styles the platform's `g4d-bottom-nav` and `g4d-action` slots. The install button itself is a platform feature, not something a theme can draw. Recorded in the ledger notes as "install: platform". |
+| five-item bottom nav | the `g4d-bottom-nav` slot is drawn by the platform with three items (call, WhatsApp, directions); a theme only styles it | The theme styles the bar as a fixed app bar with 64px targets. Five items need a platform change. Recorded in the ledger notes as "bottom nav: platform, 3 items". |
 | list page per item kind | extra page templates are limited to `menu packages properties courses doctors portfolio` | The list page for each kind uses the closest of those names (for example `portfolio` for projects, `properties` for property listings, `packages` for plans). |
 | per-item gallery, FAQ, related items | the `item` template binds one `item.*`; `faqs`, `steps`, `gallery` and `items` are page-level lists | The item template draws the item's own fields plus the page-level lists; related items are the other items of the same group. |
 | Google Map slot | `<g4d-map>` is a platform slot, required in every theme | Placed on home, about and contact, with a CSS rule that reserves its size. |
@@ -69,6 +70,8 @@ Plain JSON, UTF-8, no comments. Kept simple so an importer can be written later.
   "faqs": [ { "q": "...", "a": [v1, v2, v3] } ],
   "trust": ["..."],
   "steps": [ { "title": "...", "desc": "..." } ],
+  "team": [ { "name": "...", "role": "...", "note": "..." } ],
+  "credentials": [ { "title": "...", "detail": "..." } ],
   "areas": ["[[area]]"],
   "contact": { "hours": "...", "areaServed": "...", "branches": "[[branches]]" },
   "notes": "free text for admins"

@@ -1,0 +1,39 @@
+/* Blueprint: builders and project developers tokens */
+.g4d-theme{
+  --g4d-primary:#12304a;
+  --g4d-primary-contrast:#ffffff;
+  --g4d-accent:#b8400a;
+  --g4d-bg:#f5f2ea;
+  --g4d-surface:#ffffff;
+  --g4d-text:#16222e;
+  --g4d-muted:#4a5a68;
+  --g4d-border:#d9d3c5;
+  --g4d-radius:4px;
+  --g4d-font-heading:"Montserrat","Noto Sans Tamil",system-ui,sans-serif;
+  --g4d-font-body:"Work Sans","Noto Sans Tamil",system-ui,sans-serif;
+  --g4d-motion-speed:1;
+  --g4d-motion-ease:cubic-bezier(.2,.8,.2,1);
+  --g4d-motion-distance:8px;
+  --tp-on-accent:#ffffff;
+  --tp-deep:#0e2438;
+  --tp-tint:#ebe6d8;
+  --tp-ink:#12304a;
+  --tp-warm:#f4b56a;
+}
+@media (prefers-color-scheme: dark){
+  .g4d-theme{
+    --g4d-primary:#6aa8dc;
+    --g4d-primary-contrast:#0f1a25;
+    --g4d-accent:#ff9a5c;
+    --g4d-bg:#0f1a25;
+    --g4d-surface:#172635;
+    --g4d-text:#eef2f6;
+    --g4d-muted:#a9b9c8;
+    --g4d-border:#2a3d50;
+    --tp-on-accent:#0f1a25;
+    --tp-deep:#0a1722;
+    --tp-tint:#162636;
+    --tp-ink:#eef2f6;
+    --tp-warm:#f4b56a;
+  }
+}
