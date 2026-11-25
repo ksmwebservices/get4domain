@@ -268,7 +268,7 @@ function stripCtas(html) {
  * passed to the renderer (plan, entitlement, vendor setting, theme option) can switch it off. The link text is the brand name only. The React renderer's twin is get4domain_mvp/src/engine/components/PoweredBy.tsx
  * (a test keeps the two in step).
  */
-export const POWERED_BY_HREF = 'https://get4domain.com';
+export const POWERED_BY_HREF = 'https://get4domain.com/';
 export const POWERED_BY_BRAND = 'Get4Domain';
 function poweredByHtml() {
   return `<p class="g4d-footer__powered" data-g4d-powered-by>Powered by <a href="${POWERED_BY_HREF}" target="_blank" rel="noopener">${POWERED_BY_BRAND}</a></p>`;

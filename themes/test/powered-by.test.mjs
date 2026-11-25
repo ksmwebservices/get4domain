@@ -9,7 +9,7 @@ const MARK = /<p class="g4d-footer__powered" data-g4d-powered-by>Powered by <a h
 const page = (id, slug, entitlements, extra = {}) => renderPage({ theme: loadTheme(id), page: { slug }, content: sampleContent('plumber'), settings: {}, vendor: { id: 'v' }, host: { siteUrl: 'https://x.get4domain.com' }, entitlements, ...extra });
 
 test('the mark: the words, the brand name alone as the link text, the address https://get4domain.com', () => {
-  assert.equal(POWERED_BY_HREF, 'https://get4domain.com'); assert.equal(POWERED_BY_BRAND, 'Get4Domain');
+  assert.equal(POWERED_BY_HREF, 'https://get4domain.com/'); assert.equal(POWERED_BY_BRAND, 'Get4Domain');
 });
 
 test('every library theme, Free (listing-only) and Pro, home and a second page: exactly one mark inside the footer', () => {
