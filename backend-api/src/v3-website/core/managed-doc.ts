@@ -6,6 +6,7 @@ import { buildDirectionsUrl, composeAddress, Location, parseMapLink, validateLoc
 import { validateReviewUrl } from './review-link-core';
 import { TESTIMONIAL_LABEL, Testimonial, validateTestimonials } from './testimonial-core';
 import { isPageKey, PageSeoEdit, validatePageSeo } from './seo-core';
+import { itemDetailProblem } from './item-detail-core';
 
 /**
  * The managed content document (slice 5.5a), pure. It holds ONLY what a vendor wrote in the Website manager, as typed fields: anything not in it falls back to the
@@ -53,7 +54,7 @@ export const FIELD_DEFS: Readonly<Record<string, FieldDef>> = {
 
 export interface ListFieldDef { type: FieldType; max: number; required?: boolean }
 export interface ListDef { label: string; fields: Readonly<Record<string, ListFieldDef>> }
-export type ListName = 'faqs' | 'gallery' | 'steps' | 'trust' | 'stats' | 'team' | 'credentials' | 'pages' | 'groups' | 'areas' | 'offers' | 'blocks';
+export type ListName = 'faqs' | 'gallery' | 'steps' | 'trust' | 'stats' | 'team' | 'credentials' | 'pages' | 'groups' | 'areas' | 'offers' | 'blocks' | 'itemDetails';
 export const LIST_DEFS: Readonly<Record<ListName, ListDef>> = {
   faqs: { label: 'Questions and answers', fields: { q: { type: 'text', max: 200, required: true }, a: { type: 'longtext', max: 1500, required: true } } },
   gallery: { label: 'Gallery', fields: { src: { type: 'image', max: 500, required: true }, alt: { type: 'text', max: 160, required: true }, title: { type: 'text', max: 120 } } },
@@ -66,6 +67,9 @@ export const LIST_DEFS: Readonly<Record<ListName, ListDef>> = {
   areas: { label: 'Areas we serve', fields: { name: { type: 'text', max: 60, required: true } } },
   offers: { label: 'Offers', fields: { title: { type: 'text', max: 80, required: true }, detail: { type: 'text', max: 200 } } },
   blocks: { label: 'Extra sections', fields: { key: { type: 'text', max: 40, required: true }, title: { type: 'text', max: 80, required: true }, entries: { type: 'longtext', max: 2000 } } },
+  itemDetails: { label: 'Item pages', fields: {
+    itemId: { type: 'text', max: 40, required: true }, title: { type: 'text', max: 120 }, summary: { type: 'text', max: 300 }, details: { type: 'longtext', max: 4000 }, price: { type: 'text', max: 40 },
+    images: { type: 'longtext', max: 1500 }, faqs: { type: 'longtext', max: 3000 }, status: { type: 'text', max: 12 }, area: { type: 'text', max: 100 } } },
   pages: { label: 'Extra pages', fields: { slug: { type: 'text', max: 48, required: true }, title: { type: 'text', max: 120, required: true }, intro: { type: 'text', max: 300 }, body: { type: 'longtext', max: 8000, required: true } } },
 };
 /** the plan feature that limits a list, where the plan has one (the others use the payload ceiling only) */
@@ -187,6 +191,13 @@ export function validateList(name: ListName, items: unknown): Ok<{ items: ListIt
       if (!c.ok) return c;
       if (fd.required && c.value === '') return fail(name === 'gallery' && fk === 'alt' ? 'ALT_REQUIRED' : fk === 'slug' ? 'SLUG_INVALID' : 'FIELD_INVALID', `${fk} is required.`, `${name}[${i}].${fk}`);
       clean[fk] = c.value;
+    }
+    if (name === 'itemDetails') {
+      const id = String(clean.itemId);
+      if (slugs.has(id)) return fail('FIELD_INVALID', 'Each item can have only one page of details.', `itemDetails[${i}].itemId`);
+      slugs.add(id);
+      const p = itemDetailProblem(clean);
+      if (p) return fail('FIELD_INVALID', p.message, `itemDetails[${i}].${p.field}`);
     }
     if (name === 'blocks') {
       const key = String(clean.key);
@@ -355,6 +366,7 @@ export function applyToSource(src: SourceDocument, doc: ManagedDoc): SourceDocum
     if (L.areas) extras.areas = L.areas.map((a) => ({ name: String(a.name) }));
     if (L.offers) extras.offers = L.offers.map((o) => ({ title: String(o.title), detail: String(o.detail ?? '') }));
     if (L.blocks) extras.blocks = L.blocks.map((b) => ({ key: String(b.key), title: String(b.title), entries: String(b.entries ?? '') }));
+    if (L.itemDetails) extras.itemDetails = L.itemDetails.map((d) => ({ itemId: String(d.itemId), title: String(d.title ?? ''), summary: String(d.summary ?? ''), details: String(d.details ?? ''), price: String(d.price ?? ''), images: String(d.images ?? ''), faqs: String(d.faqs ?? ''), status: String(d.status ?? ''), area: String(d.area ?? '') }));
     if (L.credentials) extras.credentials = L.credentials.map((c) => ({ title: String(c.title), detail: String(c.detail ?? '') }));
     if (d.location) {
       const l = d.location; const address = composeAddress(l); const maps = buildDirectionsUrl(l);

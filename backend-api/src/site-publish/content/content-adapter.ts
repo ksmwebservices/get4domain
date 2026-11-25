@@ -1,6 +1,7 @@
 import { kitCategoryFor } from '../../directory/core/listable-categories';
 import { ResolvedEntitlements } from '../../plans/entitlements/entitlement-engine';
 import { Kit, loadKit } from '../renderer/renderer-loader';
+import { parseFaqLines, parseImageLines } from '../../v3-website/core/item-detail-core';
 import { SiteLimits, SourceDocument } from './content-types';
 
 /**
@@ -95,9 +96,12 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
   const waDigits = str(cms?.whatsapp || phone).replace(/\D/g, '');
   const lim = o.limits ?? { pages: null, services: null, gallery: null, faqs: null };
 
+  const detailOf = new Map((ex.itemDetails ?? []).map((d) => [d.itemId, d]));
   const itemsAll = doc.items.filter((i) => i.active).map((i) => {
     const slug = `${slugify(i.name)}-${slugify(i.id).slice(-6)}`;
-    return { id: i.id, slug, name: i.name, description: str(i.description), price: i.samplePrice ? '' : str(i.price), image: str(i.image), href: `/services/${slug}`, badge: '', category: str(i.category), duration: '', tags: '', includes: '', location: '', area: '', bedrooms: '', veg: '' };
+    const d = detailOf.get(i.id);
+    const gallery = parseImageLines(d?.images); const faqs = parseFaqLines(d?.faqs);
+    return { id: i.id, slug, name: str(d?.title) || i.name, description: str(d?.summary) || str(i.description), summary: str(d?.summary), details: str(d?.details), gallery: gallery.ok ? gallery.rows : [], faqs: faqs.ok ? faqs.rows : [], status: str(d?.status), price: str(d?.price) || (i.samplePrice ? '' : str(i.price)), image: str(i.image), href: `/services/${slug}`, badge: '', category: str(i.category), duration: '', tags: '', includes: '', location: '', area: str(d?.area), bedrooms: '', veg: '' };
   });
   const items = cut(itemsAll, lim.services, 'services', notes);
   const gallery = cut((cms?.portfolio ?? []).map((g) => ({ src: str(g.src), alt: str(g.alt) || name, title: str(g.title) })), lim.gallery, 'gallery', notes);
