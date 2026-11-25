@@ -17,7 +17,7 @@ export const maskEmail = (e: string): string => { const [u, d] = e.split('@'); r
  */
 @Injectable()
 export class StaffPasswordResetService {
-  constructor(private readonly prisma: PrismaService, private readonly passwords: Pick<PasswordService, 'requestReset'>) {}
+  constructor(private readonly prisma: PrismaService, private readonly passwords: PasswordService) {}
 
   async send(vendorId: string, ip?: string): Promise<StaffResetAnswer> {
     const vendor = await this.prisma.vendor.findUnique({ where: { id: String(vendorId).slice(0, 64) }, select: { email: true } });

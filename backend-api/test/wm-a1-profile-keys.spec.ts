@@ -22,13 +22,12 @@ describe('the four new profile keys', () => {
   });
 
   it('the year must be four digits, not before 1800 and not in the future; empty removes it', () => {
-    const now = new Date('2026-11-25T00:00:00Z');
-    expect(validYear('2012', now)).toBe(true);
-    expect(validYear('1800', now)).toBe(true);
-    expect(validYear('2026', now)).toBe(true);
-    for (const v of ['2027', '1799', '12', 'abcd', '20 12', '02012']) expect(validYear(v, now)).toBe(false);
+    expect(validYear('2012', 2026)).toBe(true);
+    expect(validYear('1800', 2026)).toBe(true);
+    expect(validYear('2026', 2026)).toBe(true);
+    for (const v of ['2027', '1799', '12', 'abcd', '20 12', '02012']) expect(validYear(v, 2026)).toBe(false);
     expect(writeField(emptyDoc(), 'about.established', 'twenty').ok).toBe(false);
-    expect(writeField(emptyDoc(), 'about.established', '2999').ok).toBe(false);
+    expect(writeField(emptyDoc(), 'about.established', '2999', 2026).ok).toBe(false);
     const ok = writeField(emptyDoc(), 'about.established', '2012');
     expect(ok.ok && ok.doc.fields['about.established']).toBe('2012');
     const cleared = writeField(ok.ok ? ok.doc : emptyDoc(), 'about.established', '');

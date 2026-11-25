@@ -159,16 +159,18 @@ export function cleanValue(type: FieldType, max: number, value: unknown, field: 
   return { ok: true, value: v };
 }
 
-/** A four-digit year from 1800 to the current year (a business cannot have started in the future). */
-export const validYear = (v: string, now: Date = new Date()): boolean => /^\d{4}$/.test(v) && Number(v) >= 1800 && Number(v) <= now.getUTCFullYear();
+/** The latest year accepted when the caller gives no clock (this core has none). */
+export const YEAR_CEILING = 2100;
+/** A four-digit year from 1800 to maxYear (the caller passes the current year: a business cannot have started in the future). */
+export const validYear = (v: string, maxYear: number = YEAR_CEILING): boolean => /^\d{4}$/.test(v) && Number(v) >= 1800 && Number(v) <= maxYear;
 
 /** Set one editable field. An empty value removes the override (the legacy text shows again). */
-export function writeField(doc: ManagedDoc, key: string, value: unknown): Ok<{ doc: ManagedDoc }> | Fail {
+export function writeField(doc: ManagedDoc, key: string, value: unknown, maxYear?: number): Ok<{ doc: ManagedDoc }> | Fail {
   if (!has(FIELD_DEFS, key)) return fail('FIELD_LOCKED', 'That field is not editable.', key);
   const def = FIELD_DEFS[key];
   const c = cleanValue(def.type, def.max, value, key);
   if (!c.ok) return c;
-  if (key === 'about.established' && c.value !== '' && !validYear(c.value)) return fail('FIELD_INVALID', 'Enter the four-digit year the business started, for example 2012.', key);
+  if (key === 'about.established' && c.value !== '' && !validYear(c.value, maxYear)) return fail('FIELD_INVALID', 'Enter the four-digit year the business started, for example 2012.', key);
   const fields = { ...doc.fields };
   if (c.value === '') delete fields[key]; else fields[key] = c.value;
   return { ok: true, doc: { ...doc, fields } };

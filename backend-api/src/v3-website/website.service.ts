@@ -177,7 +177,7 @@ export class WebsiteService {
     switch (change.kind) {
       case 'field': {
         if (FIELD_DEFS[change.key]?.proOnly && !c.pro) throw locked('site.cta', c.ent.features['site.cta']?.upsellText ?? null);
-        const r = writeField(doc, change.key, change.value);
+        const r = writeField(doc, change.key, change.value, this.clock().getUTCFullYear());
         if (!r.ok) throw fieldProblem(r.code, r.message, r.field);
         return r.doc;
       }

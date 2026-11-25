@@ -6,7 +6,7 @@ import { rolesFor } from '../src/auth/guards/admin-role-matrix';
 const make = (vendor: { email: string } | null) => {
   const requestReset = jest.fn();
   const prisma = { vendor: { findUnique: jest.fn(async () => vendor) } };
-  return { svc: new StaffPasswordResetService(prisma as never, { requestReset }), requestReset, prisma };
+  return { svc: new StaffPasswordResetService(prisma as never, { requestReset } as never), requestReset, prisma };
 };
 
 describe('staff send a password reset link', () => {
