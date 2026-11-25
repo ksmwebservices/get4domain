@@ -7,7 +7,7 @@ import type { ReactElement } from 'react';
  * Every footer of every design, theme and industry renders THIS component instead of typing the words, so the text, the link text (the brand name only) and the address cannot drift apart.
  * Do not add a "hide" option here: the contract (and its tests) is that the mark is always present.
  */
-export const POWERED_BY_HREF = 'https://get4domain.com';
+export const POWERED_BY_HREF = 'https://get4domain.com/';
 export const POWERED_BY_BRAND = 'Get4Domain';
 
 export function PoweredBy({ className }: { className?: string }): ReactElement {

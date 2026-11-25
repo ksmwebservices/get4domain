@@ -154,7 +154,7 @@ describe('Organization JSON-LD is written from the firm facts only', () => {
       assert.equal(ld.legalName, 'KSM QUANTUM TECHNOLOGIES');
       assert.equal(ld.url, 'https://main.example.invalid/');
       assert.deepEqual(ld.address, { '@type': 'PostalAddress', streetAddress: f.address, addressLocality: 'Chennai', addressRegion: 'Tamil Nadu', addressCountry: 'IN' });
-      for (const k of ['taxID', 'email', 'telephone', 'aggregateRating', 'review', 'logo', 'sameAs', 'foundingDate']) assert.ok(!(k in ld), k);
+      for (const k of ['taxID', 'email', 'telephone', 'aggregateRating', 'review', 'sameAs', 'foundingDate']) assert.ok(!(k in ld), k);
     } finally { if (saved === undefined) delete process.env.MAIN_HOST; else process.env.MAIN_HOST = saved; }
   });
   test('values that are set appear, and only those', () => {

@@ -15,7 +15,7 @@ const ABOUT_FAQ = [
 
 export const metadata: Metadata = createPageMetadata({
   title: 'About Us',
-  description: 'Get4Domain is built by KSM Quantum Technologies — founded in Chennai in 2015 by K.S. Murugavel. Your complete digital business partner for Indian SMBs.',
+  description: 'Get4Domain is built by KSM QUANTUM TECHNOLOGIES — founded in Chennai in 2015 by K.S. Murugavel. Your complete digital business partner for Indian SMBs.',
   path: '/about',
 });
 

@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   },
   description:
     'Get4Domain is your online visible partner: a professional website for your business, built fast, with the tools to capture leads, take bookings and grow.',
-  authors: [{ name: 'KSM Quantum Technologies' }],
-  creator: 'KSM Quantum Technologies',
-  publisher: 'KSM Quantum Technologies',
+  authors: [{ name: 'KSM QUANTUM TECHNOLOGIES' }],
+  creator: 'KSM QUANTUM TECHNOLOGIES',
+  publisher: 'KSM QUANTUM TECHNOLOGIES',
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, title: 'Get4Domain', statusBarStyle: 'default' },
   icons: {

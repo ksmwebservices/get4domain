@@ -22,7 +22,7 @@ export default function Footer({ links, main }: { links: HeaderLinks; main: (pat
       <div className={`${CONTAINER} py-12`}>
         <nav aria-label={F.label} className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <div className="lg:col-span-1">
-            <p className="text-lg font-bold text-white">{PORTAL.brand}</p>
+            <p className="text-lg font-bold text-white"><Link href={links.home} className="hover:underline">{PORTAL.brand}</Link></p>
             <p className="mt-2 text-sm text-ink-300">{F.blurb}</p>
           </div>
           <div>

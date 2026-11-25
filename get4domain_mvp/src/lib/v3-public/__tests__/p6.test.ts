@@ -143,7 +143,7 @@ describe('P6.2 titles and metadata', () => {
 describe('P6.3 hero', () => {
   test('kicker, headline and sub line are the owner wording', () => {
     assert.equal(PORTAL.home.eyebrow.toUpperCase(), 'LOCAL BUSINESS DIRECTORY, DOMAIN SEARCH AND WEB APP');
-    assert.equal(PORTAL.home.h1, 'Get your business online, found and getting enquiries.');
+    assert.equal(PORTAL.home.h1, 'Get4Domain: get your business online, found and getting enquiries.');
     assert.equal(PORTAL.home.lead, 'Search local businesses and domain names on the Get4Domain directory. Every business gets a website, business tools and promotion run by our team, in one Pro plan.');
   });
 });
