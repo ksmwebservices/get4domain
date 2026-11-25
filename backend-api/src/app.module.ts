@@ -95,6 +95,7 @@ import { DuplicateCheckModule } from './v3-duplicates/duplicate-check.module';
 import { RequestsOrdersModule } from './requests-orders/requests-orders.module';
 import { TermsModule } from './terms/terms.module';
 import { SiteLifecycleModule } from './seeded-sites/prisma-site-lifecycle';
+import { SiteRebuildSchedulerModule } from './site-domains/site-rebuild-scheduler';
 import { PlanBillingModule } from './plan-billing/plan-billing.module';
 import { PaymentsOpenModule } from './plan-billing/payments-open.module';
 import { ActivityBusModule } from './common/activity-bus';
@@ -186,6 +187,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     B3SettingsModule,
     VendorLifecycleModule,
     SiteLifecycleModule,
+    SiteRebuildSchedulerModule,
     SeededSitesModule,
     DuplicateCheckModule,   // D1: the one duplicate check every creation path calls (global)
     RequestsOrdersModule,
