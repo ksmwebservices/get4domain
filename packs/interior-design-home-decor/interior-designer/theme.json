@@ -1,0 +1,68 @@
+{
+  "id": "atelier-interior-designers",
+  "version": 1,
+  "name": "Atelier: interior designers",
+  "tier": "Standard",
+  "author": "Claude (Get4Domain design)",
+  "description": "Plum, blush and brass for interior designers: a split banner with an animated living room (swaying curtain, swinging pendant, glowing lamp, moving plant), soft cards, and a landing page for every design service from living rooms and kitchens to offices and shops.",
+  "tracks": [
+    "professional"
+  ],
+  "families": [
+    "creative-consulting"
+  ],
+  "categories": [
+    "interior-designer-architect"
+  ],
+  "layoutVariantRules": {
+    "creative-consulting": "portfolio-first"
+  },
+  "motion": {
+    "default": "Low",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "Lora",
+    "DM Sans",
+    "Noto Sans Tamil",
+    "Noto Serif Tamil"
+  ],
+  "marketplace": {
+    "packs": [
+      "PROPERTY"
+    ],
+    "catalogueCategories": [
+      "interior-designer-architect"
+    ],
+    "tags": [
+      "portfolio-landing-pages",
+      "interiors"
+    ],
+    "licence": "Theme code: for use by Get4Domain vendors on their vendor websites. Illustrations are original vector art made for this theme. Fonts: SIL OFL 1.1, self-hosted by the platform.",
+    "previews": [
+      {
+        "path": "assets/previews/home-1280.png",
+        "alt": "Atelier home page on a desktop screen: animated living-room banner and design service cards",
+        "page": "home"
+      },
+      {
+        "path": "assets/previews/home-360.png",
+        "alt": "Atelier home page on a phone: living-room scene, service links and bottom bar",
+        "page": "home"
+      },
+      {
+        "path": "assets/previews/item-1280.png",
+        "alt": "Atelier service page: key facts, what is included, indicative price and enquiry",
+        "page": "item"
+      }
+    ]
+  }
+}

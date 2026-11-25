@@ -1,0 +1,39 @@
+/* Atelier: interior designers tokens */
+.g4d-theme{
+  --g4d-primary:#5b2145;
+  --g4d-primary-contrast:#ffffff;
+  --g4d-accent:#8f5a12;
+  --g4d-bg:#fbf5f1;
+  --g4d-surface:#ffffff;
+  --g4d-text:#2a1a24;
+  --g4d-muted:#5d4a56;
+  --g4d-border:#e6d5cc;
+  --g4d-radius:20px;
+  --g4d-font-heading:"Lora","Noto Serif Tamil",Georgia,serif;
+  --g4d-font-body:"DM Sans","Noto Sans Tamil",system-ui,sans-serif;
+  --g4d-motion-speed:1;
+  --g4d-motion-ease:cubic-bezier(.2,.8,.2,1);
+  --g4d-motion-distance:8px;
+  --tp-on-accent:#ffffff;
+  --tp-deep:#3a1230;
+  --tp-tint:#f3e6df;
+  --tp-ink:#5b2145;
+  --tp-warm:#e8c38a;
+}
+@media (prefers-color-scheme: dark){
+  .g4d-theme{
+    --g4d-primary:#e7b3d0;
+    --g4d-primary-contrast:#2a0f20;
+    --g4d-accent:#e8c38a;
+    --g4d-bg:#1d1119;
+    --g4d-surface:#2a1a25;
+    --g4d-text:#f6ecf1;
+    --g4d-muted:#c9b2c0;
+    --g4d-border:#46303f;
+    --tp-on-accent:#201408;
+    --tp-deep:#150b11;
+    --tp-tint:#241520;
+    --tp-ink:#f6ecf1;
+    --tp-warm:#e8c38a;
+  }
+}
