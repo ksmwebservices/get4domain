@@ -1,0 +1,67 @@
+{
+  "id": "foundation-contractors",
+  "version": 1,
+  "name": "Foundation: contractors and civil works",
+  "tier": "Standard",
+  "author": "Claude (Get4Domain design)",
+  "description": "Graphite and safety yellow for building, civil and electrical contractors: a centred banner with an animated work site (excavator, rising brick wall, power line), plated project cards and a full landing page for every job in the portfolio.",
+  "tracks": [
+    "handyman"
+  ],
+  "families": [
+    "home-services"
+  ],
+  "categories": [
+    "mason-contractor"
+  ],
+  "layoutVariantRules": {
+    "home-services": "bold-split"
+  },
+  "motion": {
+    "default": "Low",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "Montserrat",
+    "Inter",
+    "Noto Sans Tamil"
+  ],
+  "marketplace": {
+    "packs": [
+      "PROPERTY"
+    ],
+    "catalogueCategories": [
+      "mason-contractor"
+    ],
+    "tags": [
+      "portfolio-landing-pages",
+      "contractor"
+    ],
+    "licence": "Theme code: for use by Get4Domain vendors on their vendor websites. Illustrations are original vector art made for this theme. Fonts: SIL OFL 1.1, self-hosted by the platform.",
+    "previews": [
+      {
+        "path": "assets/previews/home-1280.png",
+        "alt": "Foundation home page on a desktop screen: work-site banner with an excavator and project cards",
+        "page": "home"
+      },
+      {
+        "path": "assets/previews/home-360.png",
+        "alt": "Foundation home page on a phone: banner scene, job links and bottom bar",
+        "page": "home"
+      },
+      {
+        "path": "assets/previews/item-1280.png",
+        "alt": "Foundation project page: scope, key facts, indicative rate and enquiry",
+        "page": "item"
+      }
+    ]
+  }
+}

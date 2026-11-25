@@ -1,0 +1,858 @@
+{
+  "schema": "g4d-pack-content/1",
+  "type": "contractor-portfolio",
+  "family": "construction-building",
+  "kitCategories": [
+    "mason-contractor"
+  ],
+  "language": "en",
+  "placeholders": {
+    "vendor_name": "Your company name",
+    "owner": "Owner or proprietor",
+    "town": "Your town",
+    "area": "Main locality",
+    "branches": "Other towns you work in",
+    "phone": "Phone number",
+    "licence_no": "Contractor registration number, if you have one"
+  },
+  "seo": {
+    "title": [
+      "[[vendor_name]]: building and civil contractors in [[town]]",
+      "House construction, renovation and electrical work in [[town]] by [[vendor_name]]",
+      "[[vendor_name]] | Contractor portfolio in [[area]], [[town]]"
+    ],
+    "description": [
+      "[[vendor_name]] builds houses and commercial buildings, does civil works and electrical contracting in [[town]] and [[area]]. See our work and ask for a site visit and quote.",
+      "Need a contractor in [[town]]? [[vendor_name]] handles construction, renovation, compound walls, sheds and electrical work. Browse jobs and send an enquiry.",
+      "Building, civil and electrical contractor in [[area]], [[town]]. Look at the kinds of work we do, with indicative rates, then book a free site visit."
+    ]
+  },
+  "hero": {
+    "title": [
+      "[[vendor_name]]: building, civil and electrical contractors in [[town]]",
+      "House construction and civil works in [[town]] by [[vendor_name]]",
+      "[[vendor_name]] builds and repairs in [[area]], [[town]]"
+    ],
+    "subtitle": [
+      "Houses, commercial buildings, civil works and electrical contracting, with a site visit and a written quote.",
+      "Tell us what you want built or repaired. We visit the site, give a clear estimate and keep you informed until handover.",
+      "See the kinds of work we do, check the scope and indicative rates, then ask for a quote."
+    ],
+    "bannerText": [
+      "Solid work and clear estimates in [[town]]",
+      "Built to plan, handed over on time",
+      "Your site, our crew, a written quote"
+    ],
+    "serviceLinks": [
+      "house-construction",
+      "commercial-building",
+      "renovation-extension",
+      "road-drainage-works",
+      "electrical-wiring"
+    ]
+  },
+  "cta": {
+    "label": "Get a site visit and quote",
+    "secondary": "See our work"
+  },
+  "about": {
+    "title": "About [[vendor_name]]",
+    "text": [
+      "[[vendor_name]] is a contractor based in [[town]]. [[owner]] leads the crew. We build houses and commercial buildings, carry out civil works such as roads, drains and walls, and do electrical contracting in [[area]] and nearby places.\n\nEvery job page lists the scope, a typical duration and an indicative rate, so you know what to expect before the site visit.",
+      "[[vendor_name]] takes building, civil and electrical jobs across [[town]]. Under [[owner]], our masons, supervisors and electricians work to a plan and a written estimate.\n\nBrowse the kinds of work we do and send an enquiry for the one you need.",
+      "We are [[vendor_name]], contractors in [[area]]. [[owner]] visits every site, explains the work in plain words and gives a quote in writing.\n\nLook through the jobs below, then ask us for a free site visit."
+    ]
+  },
+  "groups": [
+    {
+      "slug": "building-work",
+      "name": "Building work"
+    },
+    {
+      "slug": "civil-work",
+      "name": "Civil works"
+    },
+    {
+      "slug": "electrical-work",
+      "name": "Electrical contracting"
+    }
+  ],
+  "items": [
+    {
+      "slug": "house-construction",
+      "name": "House construction",
+      "group": "building-work",
+      "badge": "Building",
+      "summary": [
+        "Independent houses built to your plan, from foundation to finishing.",
+        "New homes in [[town]] with a written estimate and stage-wise payments.",
+        "Build your house in [[area]] with a crew that explains each stage."
+      ],
+      "description": [
+        "House construction in [[area]], [[town]]. Replace this text with how the vendor builds: the stages, the materials, the supervision and the typical size of houses.\n\nThe rate is indicative per square foot and depends on the specification you choose. A written estimate follows the site visit.",
+        "We build homes from the foundation to the final coat of paint. Describe the process, the materials you use and how you share progress with the owner.\n\nThe figure on this page is a guide. The final rate depends on the plan, the materials and the site.",
+        "Planning a new house in [[town]]? Use this page to explain what is included, from excavation to electrical and plumbing points, and what is not.\n\nAsk [[vendor_name]] for a quote after a site visit."
+      ],
+      "priceFrom": {
+        "amount": 1800,
+        "unit": "per sq ft onwards (labour and material)",
+        "currency": "INR",
+        "indicative": true
+      },
+      "highlights": [
+        "Written estimate before work starts",
+        "Stage-wise payment plan",
+        "Site supervised by a named person",
+        "Regular progress photos on request"
+      ],
+      "details": [
+        {
+          "label": "Type",
+          "value": "New residential construction"
+        },
+        {
+          "label": "Location",
+          "value": "[[area]], [[town]]"
+        },
+        {
+          "label": "Size",
+          "value": "Add the typical built-up area"
+        },
+        {
+          "label": "Configuration",
+          "value": "Foundation, structure, masonry, finishing"
+        },
+        {
+          "label": "Timeline",
+          "value": "Add the typical duration in months"
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Is the rate per square foot final?",
+          "a": [
+            "No. It is an indicative starting rate. The final figure depends on the plan, the materials and the site, and is given in writing after a visit.",
+            "It is a guide for comparing contractors. You receive a written estimate after we see the site and the plan.",
+            "The rate changes with the specification. Ask for a quote for your exact plan."
+          ]
+        },
+        {
+          "q": "Do you help with plan approval?",
+          "a": [
+            "We can guide you on the steps and point you to licensed designers. The approvals are in your name.",
+            "Ask us; we explain what is needed and who to approach. Approvals must come from the authority.",
+            "We help you understand the process, but approvals are obtained through the authorities."
+          ]
+        },
+        {
+          "q": "How are payments made?",
+          "a": [
+            "Payments are linked to stages of work and written in the agreement.",
+            "We agree a stage-wise schedule before work starts, so you pay as the work progresses.",
+            "We write a payment schedule into the agreement; you pay stage by stage."
+          ]
+        }
+      ],
+      "related": [
+        "renovation-extension",
+        "commercial-building"
+      ]
+    },
+    {
+      "slug": "commercial-building",
+      "name": "Commercial buildings and shops",
+      "group": "building-work",
+      "badge": "Building",
+      "summary": [
+        "Shops, offices and small commercial buildings, built to a clear schedule.",
+        "Commercial construction in [[town]] with a fixed scope and timeline.",
+        "Build your business premises in [[area]]."
+      ],
+      "description": [
+        "Commercial buildings and shops in [[area]], [[town]]. Describe the types of buildings you build, the structure, the shutters and the finishing.\n\nThe rate is indicative and depends on the design and the site.",
+        "We build shops, offices and small commercial blocks. Explain how you plan the work around the owner's opening date.\n\nAsk [[vendor_name]] for a written quote after a site visit.",
+        "Need premises for your business in [[town]]? Use this page for the scope of work, the structure and the finishing you offer.\n\nThe figure shown is a guide only."
+      ],
+      "priceFrom": {
+        "amount": 2200,
+        "unit": "per sq ft onwards",
+        "currency": "INR",
+        "indicative": true
+      },
+      "highlights": [
+        "Structure designed with your engineer",
+        "Shutters, flooring and finishing included as agreed",
+        "Schedule planned around your opening date",
+        "Electrical and plumbing coordinated by one team"
+      ],
+      "details": [
+        {
+          "label": "Type",
+          "value": "Commercial construction"
+        },
+        {
+          "label": "Location",
+          "value": "[[area]], [[town]]"
+        },
+        {
+          "label": "Size",
+          "value": "Add the typical built-up area"
+        },
+        {
+          "label": "Configuration",
+          "value": "Structure, masonry, shutters, finishing"
+        },
+        {
+          "label": "Timeline",
+          "value": "Add the typical duration in months"
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Can you work from my architect's drawings?",
+          "a": [
+            "Yes. Share the drawings and we will quote against them.",
+            "We build to your architect's plan and structural drawings.",
+            "Please send the drawings with your enquiry; we will quote from them."
+          ]
+        },
+        {
+          "q": "Can the work be done in phases?",
+          "a": [
+            "Yes, if the plan allows. Tell us your priorities and we will plan the phases.",
+            "Phased work is possible; we agree the scope of each phase in writing.",
+            "Ask us; we can often split the job to match your cash flow."
+          ]
+        }
+      ],
+      "related": [
+        "house-construction",
+        "industrial-shed"
+      ]
+    },
+    {
+      "slug": "renovation-extension",
+      "name": "Renovation and extension",
+      "group": "building-work",
+      "badge": "Building",
+      "summary": [
+        "Repairs, extra floors, bathrooms and kitchens for existing buildings.",
+        "Renovate or extend your home in [[town]] with minimum disturbance.",
+        "Add a room or a floor in [[area]], or refresh an old home."
+      ],
+      "description": [
+        "Renovation and extension work in [[area]], [[town]]. Describe the jobs you take: extra floors, new rooms, waterproofing, flooring, plastering and painting.\n\nRates vary a lot with the condition of the building, so an indicative figure is only a start.",
+        "We repair and extend existing buildings. Explain how you protect the occupants and keep the site clean.\n\nAsk [[vendor_name]] for an estimate after a visit.",
+        "Give your building new life. Use this page to list the renovation jobs you do and add before and after photographs.\n\nThe price here is a guide only."
+      ],
+      "priceFrom": {
+        "amount": 900,
+        "unit": "per sq ft onwards",
+        "currency": "INR",
+        "indicative": true
+      },
+      "highlights": [
+        "Site visit to check the existing structure",
+        "Work planned to keep disturbance low",
+        "Structural checks with your engineer",
+        "Clean-up and debris removal included"
+      ],
+      "details": [
+        {
+          "label": "Type",
+          "value": "Renovation and extension"
+        },
+        {
+          "label": "Location",
+          "value": "[[area]], [[town]]"
+        },
+        {
+          "label": "Size",
+          "value": "Depends on the job"
+        },
+        {
+          "label": "Configuration",
+          "value": "Repairs, extra floors, flooring, plastering"
+        },
+        {
+          "label": "Timeline",
+          "value": "Add the typical duration in weeks"
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Can I live in the house during the work?",
+          "a": [
+            "Often yes, for smaller jobs. We plan the work room by room. Larger jobs may need you to move out.",
+            "It depends on the job. We tell you after the site visit.",
+            "For small repairs, yes. Extensions and big changes may need a temporary move."
+          ]
+        },
+        {
+          "q": "Can you add another floor to my house?",
+          "a": [
+            "Only if the foundation and structure allow it. We check with your engineer first.",
+            "It depends on the existing structure; we visit and advise.",
+            "We assess the building before we promise anything."
+          ]
+        }
+      ],
+      "related": [
+        "house-construction",
+        "compound-wall-retaining"
+      ]
+    },
+    {
+      "slug": "road-drainage-works",
+      "name": "Roads, drains and paving",
+      "group": "civil-work",
+      "badge": "Civil",
+      "summary": [
+        "Concrete and paver roads, storm drains and culverts for layouts and campuses.",
+        "Civil works in [[town]]: roads, drains and paving, built to level.",
+        "Lay roads and drains in [[area]] with a crew that follows the levels."
+      ],
+      "description": [
+        "Roads, drains and paving in [[area]], [[town]]. Describe the types of civil work you take, the equipment you have and the sizes of jobs.\n\nRates are indicative per square metre or running metre and depend on the site.",
+        "We build concrete roads, paver blocks and drainage. Explain your method and how you manage traffic and safety on site.\n\nAsk [[vendor_name]] for a quote after a visit.",
+        "Civil works for layouts, factories and institutions. Use this page for the scope and add photographs of finished roads and drains.\n\nThe rate on this page is a guide."
+      ],
+      "priceFrom": {
+        "amount": 650,
+        "unit": "per sq m onwards",
+        "currency": "INR",
+        "indicative": true
+      },
+      "highlights": [
+        "Levels set out before the work starts",
+        "Concrete and paver options",
+        "Drains and culverts built to slope",
+        "Site barricading and safety signs"
+      ],
+      "details": [
+        {
+          "label": "Type",
+          "value": "Civil works"
+        },
+        {
+          "label": "Location",
+          "value": "[[area]], [[town]]"
+        },
+        {
+          "label": "Size",
+          "value": "Add the typical length and width"
+        },
+        {
+          "label": "Configuration",
+          "value": "Roads, drains, culverts, paving"
+        },
+        {
+          "label": "Timeline",
+          "value": "Add the typical duration in weeks"
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Do you take government and tender work?",
+          "a": [
+            "Tell us what you need and we will explain what we can take on.",
+            "Please enquire with the details; eligibility depends on the tender.",
+            "Ask us; we will tell you whether we can quote."
+          ]
+        },
+        {
+          "q": "How is the work measured and paid?",
+          "a": [
+            "We measure the completed work and bill against the agreed rate.",
+            "Measurement and payment terms are written into the quote.",
+            "We agree the measurement method up front and bill on completion of each stage."
+          ]
+        }
+      ],
+      "related": [
+        "compound-wall-retaining",
+        "industrial-shed"
+      ]
+    },
+    {
+      "slug": "compound-wall-retaining",
+      "name": "Compound walls and retaining walls",
+      "group": "civil-work",
+      "badge": "Civil",
+      "summary": [
+        "Boundary walls, gates and retaining walls built straight and strong.",
+        "Compound walls in [[town]] with proper footings and finishing.",
+        "Secure your plot in [[area]] with a compound or retaining wall."
+      ],
+      "description": [
+        "Compound walls and retaining walls in [[area]], [[town]]. Describe the types: brick, block, stone or precast, the heights and the finishing.\n\nThe rate is indicative per running foot and depends on height and soil.",
+        "We build boundary walls, gates and retaining walls. Explain how you set out the line, the footing depth and the drainage behind retaining walls.\n\nAsk [[vendor_name]] for a quote after a site visit.",
+        "Protect your land with a wall built to last. Use this page for the options, and add photographs of finished walls.\n\nThe figure is a guide only."
+      ],
+      "priceFrom": {
+        "amount": 1400,
+        "unit": "per running foot onwards",
+        "currency": "INR",
+        "indicative": true
+      },
+      "highlights": [
+        "Footing depth set for your soil",
+        "Straight lines and uniform height",
+        "Plaster and paint or exposed finish",
+        "Gate pillars and fabrication on request"
+      ],
+      "details": [
+        {
+          "label": "Type",
+          "value": "Boundary and retaining walls"
+        },
+        {
+          "label": "Location",
+          "value": "[[area]], [[town]]"
+        },
+        {
+          "label": "Size",
+          "value": "Priced per running foot"
+        },
+        {
+          "label": "Configuration",
+          "value": "Brick, block or stone; plastered or exposed"
+        },
+        {
+          "label": "Timeline",
+          "value": "Add the typical duration in days"
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Is the gate included?",
+          "a": [
+            "Gates are quoted separately. We can arrange fabrication with the wall.",
+            "Tell us the gate size and style and we will add it to the quote.",
+            "Gates are extra; we can supply and fit them if you wish."
+          ]
+        },
+        {
+          "q": "Will you check my plot boundary?",
+          "a": [
+            "Please share the survey sketch. We build to the boundary you point out and the documents show.",
+            "We mark the line from your documents; boundary disputes need a surveyor.",
+            "Have the boundary confirmed by a surveyor, and we will build to it."
+          ]
+        }
+      ],
+      "related": [
+        "road-drainage-works",
+        "renovation-extension"
+      ]
+    },
+    {
+      "slug": "industrial-shed",
+      "name": "Industrial sheds and warehouses",
+      "group": "civil-work",
+      "badge": "Civil",
+      "summary": [
+        "Steel-frame sheds and warehouses with concrete floors and roofing.",
+        "Industrial sheds in [[town]], built for factories and storage.",
+        "Put up a shed or warehouse in [[area]] with one team for the whole job."
+      ],
+      "description": [
+        "Industrial sheds and warehouses in [[area]], [[town]]. Describe the spans you build, the roofing, the flooring and the loading arrangements.\n\nThe rate is indicative per square foot and depends on span and height.",
+        "We build steel-frame sheds with concrete floors, sheeting and rainwater drainage. Explain your design and fabrication process.\n\nAsk [[vendor_name]] for a quote after a visit.",
+        "A shed for production or storage. Use this page for the size range, the structure and the finish, and add photographs.\n\nThe price shown is a guide."
+      ],
+      "priceFrom": {
+        "amount": 750,
+        "unit": "per sq ft onwards",
+        "currency": "INR",
+        "indicative": true
+      },
+      "highlights": [
+        "Steel frame designed for the span and load",
+        "Concrete floor to the thickness you need",
+        "Roof sheeting with rainwater drainage",
+        "Electrical layout planned with the shed"
+      ],
+      "details": [
+        {
+          "label": "Type",
+          "value": "Industrial shed"
+        },
+        {
+          "label": "Location",
+          "value": "[[area]], [[town]]"
+        },
+        {
+          "label": "Size",
+          "value": "Add the typical span and length"
+        },
+        {
+          "label": "Configuration",
+          "value": "Steel frame, sheeting, flooring"
+        },
+        {
+          "label": "Timeline",
+          "value": "Add the typical duration in weeks"
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Can you design the shed?",
+          "a": [
+            "We work with structural engineers; the design is checked before fabrication.",
+            "Yes, with a structural engineer. Tell us your span and load needs.",
+            "Share your requirement and we will arrange the design and quote."
+          ]
+        },
+        {
+          "q": "Can the shed be extended later?",
+          "a": [
+            "If planned for it. Tell us now and we will design for a future extension.",
+            "Yes, with the right foundation and frame. Mention it in your enquiry.",
+            "We can design for expansion if you tell us in advance."
+          ]
+        }
+      ],
+      "related": [
+        "commercial-building",
+        "electrical-industrial-panel"
+      ]
+    },
+    {
+      "slug": "electrical-wiring",
+      "name": "House and shop electrical wiring",
+      "group": "electrical-work",
+      "badge": "Electrical",
+      "summary": [
+        "Concealed wiring, switchboards and earthing for new and existing buildings.",
+        "Electrical contracting in [[town]] for homes and shops, tested before handover.",
+        "Safe wiring in [[area]], with a clear point-wise quote."
+      ],
+      "description": [
+        "House and shop wiring in [[area]], [[town]]. Describe the work: concealed conduit wiring, switchboards, earthing, lighting and fan points.\n\nThe rate is indicative per point and depends on the cable and fittings.",
+        "We wire new buildings and rewire old ones. Explain the brands of cable and switches you use and how you test the installation.\n\nAsk [[vendor_name]] for a point-wise quote after a visit.",
+        "Safe, tidy wiring for your home or shop. Use this page for what you include and add photographs of finished boards.\n\nThe figure is a guide."
+      ],
+      "priceFrom": {
+        "amount": 750,
+        "unit": "per point onwards",
+        "currency": "INR",
+        "indicative": true
+      },
+      "highlights": [
+        "Concealed conduit wiring with proper earthing",
+        "Point-wise quote before work starts",
+        "Testing and a handover check",
+        "Neat distribution boards with labels"
+      ],
+      "details": [
+        {
+          "label": "Type",
+          "value": "Electrical wiring"
+        },
+        {
+          "label": "Location",
+          "value": "[[area]], [[town]]"
+        },
+        {
+          "label": "Size",
+          "value": "Priced per point"
+        },
+        {
+          "label": "Configuration",
+          "value": "Wiring, switchboards, earthing, lighting"
+        },
+        {
+          "label": "Timeline",
+          "value": "Add the typical duration in days"
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Which cable and switches do you use?",
+          "a": [
+            "You choose the brand and grade. We quote for the one you pick and tell you the difference.",
+            "We offer a few grades of cable and switches and explain each so you can choose.",
+            "Tell us your budget and we will suggest options and quote for your choice."
+          ]
+        },
+        {
+          "q": "Do you give a completion certificate?",
+          "a": [
+            "We test the installation and hand over a check report. Utility certificates come from the licensed authority.",
+            "We provide a test report; official certificates are issued by the authority.",
+            "Ask us; we test and report, and help you with the utility formalities."
+          ]
+        }
+      ],
+      "related": [
+        "electrical-industrial-panel",
+        "house-construction"
+      ]
+    },
+    {
+      "slug": "electrical-industrial-panel",
+      "name": "Industrial electrical and panels",
+      "group": "electrical-work",
+      "badge": "Electrical",
+      "summary": [
+        "Panels, cabling and lighting for factories, sheds and workshops.",
+        "Industrial electrical work in [[town]], planned for load and safety.",
+        "Power your unit in [[area]] with a planned electrical layout."
+      ],
+      "description": [
+        "Industrial electrical work in [[area]], [[town]]. Describe the work: panels, cable trays, motors, lighting and earthing pits.\n\nThe rate is indicative and depends on the load and the equipment.",
+        "We lay out power for factories and workshops. Explain how you plan the load and how you keep the work safe and tidy.\n\nAsk [[vendor_name]] for a quote after a visit.",
+        "Reliable power for production. Use this page for what you cover and add photographs of panels and cabling.\n\nThe price here is a guide only."
+      ],
+      "priceFrom": null,
+      "highlights": [
+        "Load calculation before the layout",
+        "Panels, cable trays and earthing pits",
+        "Lighting for work areas",
+        "Test report at handover"
+      ],
+      "details": [
+        {
+          "label": "Type",
+          "value": "Industrial electrical"
+        },
+        {
+          "label": "Location",
+          "value": "[[area]], [[town]]"
+        },
+        {
+          "label": "Size",
+          "value": "Depends on the load"
+        },
+        {
+          "label": "Configuration",
+          "value": "Panels, cabling, lighting, earthing"
+        },
+        {
+          "label": "Timeline",
+          "value": "Add the typical duration in weeks"
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Can you work while the unit is running?",
+          "a": [
+            "Often yes, with planned shutdowns for the connections. We agree the plan with you.",
+            "We plan around production; some connections need a short shutdown.",
+            "Tell us your shifts and we will schedule the work."
+          ]
+        },
+        {
+          "q": "How is the price decided?",
+          "a": [
+            "After a site visit and a load list. We then give a written quote.",
+            "It depends on the load and the equipment, so we quote after seeing the site.",
+            "Send us the load details or let us visit; the quote follows in writing."
+          ]
+        }
+      ],
+      "related": [
+        "electrical-wiring",
+        "industrial-shed"
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "key": "listings",
+      "title": "Indicative rates",
+      "items": [
+        {
+          "title": "House construction",
+          "detail": "Labour and material",
+          "price": "from ₹1,800 per sq ft (indicative)"
+        },
+        {
+          "title": "Renovation",
+          "detail": "Depends on the building",
+          "price": "from ₹900 per sq ft (indicative)"
+        },
+        {
+          "title": "Compound walls",
+          "detail": "Per running foot",
+          "price": "from ₹1,400 (indicative)"
+        },
+        {
+          "title": "Electrical wiring",
+          "detail": "Per point",
+          "price": "from ₹750 (indicative)"
+        }
+      ]
+    },
+    {
+      "key": "areas",
+      "title": "Where we work",
+      "items": [
+        {
+          "title": "[[area]]",
+          "detail": "Main locality",
+          "price": ""
+        },
+        {
+          "title": "[[town]]",
+          "detail": "City and nearby areas",
+          "price": ""
+        },
+        {
+          "title": "[[branches]]",
+          "detail": "Other towns",
+          "price": ""
+        }
+      ]
+    },
+    {
+      "key": "process",
+      "title": "How a job runs",
+      "items": [
+        {
+          "title": "1. Site visit",
+          "detail": "We see the site and listen to what you need.",
+          "price": ""
+        },
+        {
+          "title": "2. Written quote",
+          "detail": "Scope, rate and schedule on paper.",
+          "price": ""
+        },
+        {
+          "title": "3. Work and updates",
+          "detail": "Supervised work with progress updates.",
+          "price": ""
+        },
+        {
+          "title": "4. Handover",
+          "detail": "A final check and clean-up before handover.",
+          "price": ""
+        }
+      ]
+    }
+  ],
+  "faqs": [
+    {
+      "q": "Do you give a free site visit?",
+      "a": [
+        "Yes. Call [[phone]] or send an enquiry and we will fix a time.",
+        "We visit sites in [[town]] to give an estimate. Contact [[vendor_name]] on [[phone]].",
+        "Please ask; we visit, measure and quote in writing."
+      ]
+    },
+    {
+      "q": "Are the rates on this website final?",
+      "a": [
+        "No. They are indicative. The final price is in the written quote after a site visit.",
+        "They help you compare. Your exact job is priced after we see the site.",
+        "Treat them as a guide; the quote is what counts."
+      ]
+    },
+    {
+      "q": "Do you supply the material?",
+      "a": [
+        "We can quote with or without material. You choose.",
+        "Both options are possible: labour only, or labour and material.",
+        "Tell us which you prefer; we will quote for each."
+      ]
+    },
+    {
+      "q": "How long will my job take?",
+      "a": [
+        "It depends on the size and the weather. We give a schedule in the quote.",
+        "The job page shows a typical duration; your quote gives the real one.",
+        "We agree a schedule in writing before the work starts."
+      ]
+    },
+    {
+      "q": "Which areas do you work in?",
+      "a": [
+        "We work in [[area]], [[town]] and nearby places. See the areas section.",
+        "Mainly [[area]] and across [[town]]. Other towns: [[branches]].",
+        "Our sites are in [[area]] and around [[town]]."
+      ]
+    },
+    {
+      "q": "Do you give a warranty or guarantee?",
+      "a": [
+        "We explain what we stand behind in the quote and agreement. Please read it before you sign.",
+        "Warranty terms are written into the agreement for each job.",
+        "Ask us; any guarantee is stated in writing, job by job."
+      ]
+    }
+  ],
+  "trust": [
+    "Free site visit and written quote",
+    "Stage-wise payments written in the agreement",
+    "Supervised work with progress updates",
+    "Clean-up and a final check at handover"
+  ],
+  "steps": [
+    {
+      "title": "Site visit",
+      "desc": "We see the site and listen to what you need."
+    },
+    {
+      "title": "Written quote",
+      "desc": "You get the scope, rate and schedule on paper."
+    },
+    {
+      "title": "Work and updates",
+      "desc": "Supervised work with regular progress updates."
+    },
+    {
+      "title": "Handover",
+      "desc": "A final check and clean-up before you take over."
+    }
+  ],
+  "team": [
+    {
+      "name": "[[owner]]",
+      "role": "Owner or proprietor",
+      "note": "Add a line about experience."
+    },
+    {
+      "name": "Name to be added",
+      "role": "Site supervisor",
+      "note": ""
+    },
+    {
+      "name": "Name to be added",
+      "role": "Electrical lead",
+      "note": ""
+    }
+  ],
+  "credentials": [
+    {
+      "title": "Contractor registration",
+      "detail": "[[licence_no]]"
+    },
+    {
+      "title": "Office",
+      "detail": "[[area]], [[town]]"
+    },
+    {
+      "title": "Areas served",
+      "detail": "[[area]], [[town]] and [[branches]]"
+    }
+  ],
+  "areas": [
+    "[[area]]",
+    "[[town]]",
+    "[[branches]]"
+  ],
+  "contact": {
+    "hours": "Monday to Saturday, 8:30 am to 6:30 pm. Site visits by appointment.",
+    "areaServed": "[[area]], [[town]] and nearby places",
+    "branches": "[[branches]]"
+  },
+  "terms": {
+    "items": "Our work",
+    "itemOne": "Job",
+    "groups": "What we build"
+  },
+  "listPageTitle": "Our work",
+  "notes": "Replace the generic job types with the vendor's own completed jobs: name, place, size, scope, duration, photographs and an indicative rate (or leave the rate empty to show \"quote after site visit\"). Add the contractor registration number only if the vendor has given one; never invent one."
+}

@@ -1,0 +1,39 @@
+/* Foundation: contractors and civil works tokens */
+.g4d-theme{
+  --g4d-primary:#23272b;
+  --g4d-primary-contrast:#ffffff;
+  --g4d-accent:#8a5a00;
+  --g4d-bg:#f4f3ee;
+  --g4d-surface:#ffffff;
+  --g4d-text:#1d2024;
+  --g4d-muted:#4b5057;
+  --g4d-border:#d6d4cb;
+  --g4d-radius:6px;
+  --g4d-font-heading:"Montserrat","Noto Sans Tamil",system-ui,sans-serif;
+  --g4d-font-body:"Inter","Noto Sans Tamil",system-ui,sans-serif;
+  --g4d-motion-speed:1;
+  --g4d-motion-ease:cubic-bezier(.2,.8,.2,1);
+  --g4d-motion-distance:8px;
+  --tp-on-accent:#ffffff;
+  --tp-deep:#181b1e;
+  --tp-tint:#e8e6dc;
+  --tp-ink:#23272b;
+  --tp-warm:#ffc400;
+}
+@media (prefers-color-scheme: dark){
+  .g4d-theme{
+    --g4d-primary:#ffc400;
+    --g4d-primary-contrast:#14161a;
+    --g4d-accent:#ffd84d;
+    --g4d-bg:#14161a;
+    --g4d-surface:#1e2126;
+    --g4d-text:#f1f1ec;
+    --g4d-muted:#b4b7bc;
+    --g4d-border:#34383e;
+    --tp-on-accent:#14161a;
+    --tp-deep:#0e0f12;
+    --tp-tint:#1a1d21;
+    --tp-ink:#f1f1ec;
+    --tp-warm:#ffc400;
+  }
+}
