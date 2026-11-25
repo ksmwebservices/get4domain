@@ -163,7 +163,7 @@ describe('P11 the app shell', () => {
     const bottom = /<nav class="sk-bnav"[\s\S]*?<\/nav>/.exec(html)![0];
     for (const label of ['Home', 'Services', 'Call']) assert.ok(bottom.includes(`<span>${label}</span>`), label);
     assert.ok(bottom.includes('href="tel:+919876543210"') || bottom.includes('href="tel:+91'), 'Call is a tel link in live mode');
-    assert.match(html, /<footer class="sk-foot"><small>Powered by Get4Domain\.com<\/small><\/footer>/);
+    assert.match(html, /<footer class="sk-foot"><small><span data-g4d-powered-by="">Powered by <a href="https:\/\/get4domain\.com"[^>]*>Get4Domain<\/a><\/span><\/small><\/footer>/);
     assert.equal((html.match(/Powered by/g) ?? []).length, 1);
     assert.match(src('lib/v3-public/site-kit/css.ts'), /@media\(min-width:768px\)\{[\s\S]*\.sk-bnav\{display:none\}[\s\S]*\.sk-dnav\{display:flex\}/, 'the bottom bar is for phones only, the top bar for computers');
     assert.match(src('lib/v3-public/site-kit/css.ts'), /\.sk-bnav\{position:fixed;/);
@@ -239,7 +239,9 @@ describe('P11 Free mode: information only', () => {
     assert.ok(!/mailto:|tel:|wa\.me|whatsapp|chatbot/i.test(html), 'a forbidden link');
     assert.ok(!html.includes('owner@example.com') && !html.includes('919876543210'));
     assert.ok(html.includes('+91 98765 43210'), 'the phone is shown');
-    assert.ok(!/href="(https?:|mailto:|tel:)/i.test(html), 'only in-page anchors remain');
+    // the one shared "Powered by Get4Domain" mark (engine/components/PoweredBy) is the platform's own link and is on every site; nothing else may link out
+    const withoutMark = html.replace(/<span data-g4d-powered-by="">[\s\S]*?<\/span>/, '');
+    assert.ok(!/href="(https?:|mailto:|tel:)/i.test(withoutMark), 'only in-page anchors remain');
     assert.ok(!/class="sk-btn/.test(html), 'no call-to-action button');
     assert.ok(!/<a [^>]*class="sk-btn/.test(html));
   });

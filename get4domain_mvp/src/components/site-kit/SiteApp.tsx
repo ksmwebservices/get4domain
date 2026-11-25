@@ -3,6 +3,7 @@ import { KIT_CSS, heroArt, themeVars } from '@/lib/v3-public/site-kit/css';
 import { enquiryHref, navItems, telHref, visibleSections, type NavItem } from '@/lib/v3-public/site-kit/nav';
 import type { KitTheme, SectionKey } from '@/lib/v3-public/site-kit/themes';
 import type { SiteView } from '@/lib/v3-public/site-kit/view';
+import { PoweredBy } from '@/engine/components/PoweredBy';
 import InstallButton from './InstallButton';
 
 /**
@@ -170,7 +171,7 @@ export default function SiteApp({ view, theme }: { view: SiteView; theme: KitThe
         {view.about ? <section className="sk-sec" id="about"><div className="sk-wrap"><h2>About us</h2><p className="sk-muted" style={{ whiteSpace: 'pre-line', maxWidth: '44rem' }}>{view.about}</p></div></section> : null}
         {mainSections.map((s) => section(s))}
       </main>
-      <footer className="sk-foot"><small>Powered by Get4Domain.com</small></footer>
+      <footer className="sk-foot"><small><PoweredBy /></small></footer>
       <nav className="sk-bnav" aria-label="App" data-testid="bottom-nav">
         {nav.map((n) => (
           <a key={n.key} href={n.href} {...(n.kind === 'enquire' && n.href.startsWith('https://') ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className={n.key === 'home' ? 'act' : undefined}><Icon k={n.key} /><span>{n.label}</span></a>

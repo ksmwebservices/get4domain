@@ -98,7 +98,7 @@ describe('the contract in the source', () => {
     expect(offenders).toEqual([]);
   });
   it('every footer file renders the shared component', () => {
-    for (const f of ['engine/shell/ShellFooter.tsx', 'engine/kit/design-sections.tsx', 'engine/kit/KitRenderer.tsx', 'engine/industries/retail/RetailSite.tsx', 'engine/industries/real-estate/sections/blocks.tsx', 'app/site/[subdomain]/[[...rest]]/page.tsx', 'app/go/[slug]/LegacyCampaignPage.tsx', 'engine/raw-theme-frame.tsx']) {
+    for (const f of ['engine/shell/ShellFooter.tsx', 'engine/kit/design-sections.tsx', 'engine/kit/KitRenderer.tsx', 'engine/industries/retail/RetailSite.tsx', 'engine/industries/real-estate/sections/blocks.tsx', 'components/site-kit/SiteApp.tsx', 'app/go/[slug]/LegacyCampaignPage.tsx', 'engine/raw-theme-frame.tsx']) {
       const text = src(join(WEB, f));
       expect(text).toMatch(/import \{[^}]*PoweredBy[^}]*\} from '[^']*components\/PoweredBy'/); expect(text).toMatch(/<PoweredBy(Bar)?[ />]/);
     }
@@ -107,7 +107,8 @@ describe('the contract in the source', () => {
     expect(src(join(WEB, 'engine/kit/design-sections.tsx')).match(/<PoweredBy /g)).toHaveLength(2);
   });
   it('the legacy site page no longer links to "/" (which on a vendor host is the vendor\'s own site)', () => {
-    const page = src(join(WEB, 'app/site/[subdomain]/[[...rest]]/page.tsx'));
+    // the page now hands every generic and Free site to SiteApp (the theme design kit), which carries the mark
+    const page = src(join(WEB, 'components/site-kit/SiteApp.tsx'));
     expect(page).not.toMatch(/Powered by[\s\S]{0,80}href="\/"/); expect(page).toContain('<PoweredBy />');
   });
   it('the component has no plan, vendor, theme or setting input: its only prop is className', () => {
