@@ -163,6 +163,7 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // Block 4b slice 11: the recorded mail lanes and promotion rules (read: OPERATIONS + SUPER_ADMIN) and confirming a mailbox price (SUPER_ADMIN only)
   'GET /v3/admin/mail-rules': OPS_AND_SUPER, 'POST /v3/admin/mailbox-prices/:id/confirm': SUPER_ONLY,
   // Block 4b slice 9: staff actions on a business (A1 plan change with a date, A2 business name, the visit report) are OPERATIONS + SUPER_ADMIN; merging listings (A4) is SUPER_ADMIN only
+  'POST /v3/admin/vendors/:id/content-pack/import': OPS_AND_SUPER,   // E5: staff load a content pack into a business draft
   'POST /v3/admin/vendors/:id/send-password-reset': OPS_AND_SUPER,   // Website Manager lane A: staff e-mail the owner a reset link (never set a password)
   'PUT /v3/admin/vendors/:id/business-name': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/business-name-history': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/plan-change': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/plan-changes': OPS_AND_SUPER, 'POST /v3/admin/plan-changes/:id/cancel': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/visits': OPS_AND_SUPER,
   'POST /v3/admin/listing-merges/plan': SUPER_ONLY, 'POST /v3/admin/listing-merges': SUPER_ONLY, 'GET /v3/admin/listing-merges': SUPER_ONLY, 'POST /v3/admin/listing-merges/:id/reverse': SUPER_ONLY,

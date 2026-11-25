@@ -64,6 +64,7 @@ import { ClaimSetupModule } from './claim-setup/claim-setup.module';
 import { ProvisioningModule } from './provisioning/provisioning.module';
 import { SitePublishModule } from './site-publish/site-publish.module';
 import { WebsiteModule } from './v3-website/website.module';
+import { ContentPackModule } from './v3-content-pack/content-pack.module';
 import { SiteDomainsModule } from './site-domains/site-domains.module';
 import { V3DomainAutomationModule } from './v3-domain-automation/domain-automation.module';
 import { V3RegistrarModule } from './v3-registrar/registrar.module';
@@ -159,6 +160,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     ProvisioningModule,
     SitePublishModule,
     WebsiteModule,
+    ContentPackModule,
     SiteDomainsModule,
     V3DomainAutomationModule,
     V3RegistrarModule,
