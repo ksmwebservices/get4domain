@@ -8,7 +8,7 @@ Kit category = the closest of the kit's 41 category ids; the pack lists it in `t
 
 | # | Type | Family | Kind | Kit category | Status |
 |---|---|---|---|---|---|
-| 1 | Real estate builder or project developer (big banner, slideshow, ongoing, upcoming and completed projects, a landing page per project) | Real Estate & Property | professional | real-estate-agent | QUEUED |
+| 1 | Real estate builder or project developer (big banner, slideshow, ongoing, upcoming and completed projects, a landing page per project) | Real Estate & Property | professional | real-estate-agent | DONE |
 | 2 | Real estate agent and property portal (sale, lease, rent; a landing page per property; local area focus) | Real Estate & Property | professional | real-estate-agent | QUEUED |
 | 3 | Contractor portfolio (building, civil, electrical) | Construction & Building | professional | mason-contractor | QUEUED |
 | 4 | Interior designer | Interior Design & Home Decor | professional | interior-designer-architect | QUEUED |
