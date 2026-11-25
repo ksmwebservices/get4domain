@@ -53,7 +53,7 @@ export const FIELD_DEFS: Readonly<Record<string, FieldDef>> = {
 
 export interface ListFieldDef { type: FieldType; max: number; required?: boolean }
 export interface ListDef { label: string; fields: Readonly<Record<string, ListFieldDef>> }
-export type ListName = 'faqs' | 'gallery' | 'steps' | 'trust' | 'stats' | 'team' | 'credentials' | 'pages';
+export type ListName = 'faqs' | 'gallery' | 'steps' | 'trust' | 'stats' | 'team' | 'credentials' | 'pages' | 'groups' | 'areas' | 'offers' | 'blocks';
 export const LIST_DEFS: Readonly<Record<ListName, ListDef>> = {
   faqs: { label: 'Questions and answers', fields: { q: { type: 'text', max: 200, required: true }, a: { type: 'longtext', max: 1500, required: true } } },
   gallery: { label: 'Gallery', fields: { src: { type: 'image', max: 500, required: true }, alt: { type: 'text', max: 160, required: true }, title: { type: 'text', max: 120 } } },
@@ -62,6 +62,10 @@ export const LIST_DEFS: Readonly<Record<ListName, ListDef>> = {
   stats: { label: 'Numbers', fields: { value: { type: 'text', max: 20, required: true }, label: { type: 'text', max: 60, required: true } } },
   team: { label: 'Team', fields: { name: { type: 'text', max: 80, required: true }, role: { type: 'text', max: 80 }, note: { type: 'text', max: 200 }, image: { type: 'image', max: 500 } } },
   credentials: { label: 'Credentials', fields: { title: { type: 'text', max: 80, required: true }, detail: { type: 'text', max: 200 } } },
+  groups: { label: 'Service groups', fields: { name: { type: 'text', max: 60, required: true } } },
+  areas: { label: 'Areas we serve', fields: { name: { type: 'text', max: 60, required: true } } },
+  offers: { label: 'Offers', fields: { title: { type: 'text', max: 80, required: true }, detail: { type: 'text', max: 200 } } },
+  blocks: { label: 'Extra sections', fields: { key: { type: 'text', max: 40, required: true }, title: { type: 'text', max: 80, required: true }, entries: { type: 'longtext', max: 2000 } } },
   pages: { label: 'Extra pages', fields: { slug: { type: 'text', max: 48, required: true }, title: { type: 'text', max: 120, required: true }, intro: { type: 'text', max: 300 }, body: { type: 'longtext', max: 8000, required: true } } },
 };
 /** the plan feature that limits a list, where the plan has one (the others use the payload ceiling only) */
@@ -183,6 +187,11 @@ export function validateList(name: ListName, items: unknown): Ok<{ items: ListIt
       if (!c.ok) return c;
       if (fd.required && c.value === '') return fail(name === 'gallery' && fk === 'alt' ? 'ALT_REQUIRED' : fk === 'slug' ? 'SLUG_INVALID' : 'FIELD_INVALID', `${fk} is required.`, `${name}[${i}].${fk}`);
       clean[fk] = c.value;
+    }
+    if (name === 'blocks') {
+      const key = String(clean.key);
+      if (!SLUG.test(key) || slugs.has(key)) return fail('SLUG_INVALID', 'Use lower-case letters, digits and hyphens; each section needs its own name.', `blocks[${i}].key`);
+      slugs.add(key);
     }
     if (name === 'pages') {
       const slug = String(clean.slug);
@@ -342,6 +351,10 @@ export function applyToSource(src: SourceDocument, doc: ManagedDoc): SourceDocum
     if (L.trust) extras.trust = L.trust.map((t) => String(t.text));
     if (L.stats) extras.stats = L.stats.map((s) => ({ value: String(s.value), label: String(s.label) }));
     if (L.team) extras.team = L.team.map((t) => ({ name: String(t.name), role: String(t.role ?? ''), note: String(t.note ?? ''), image: String(t.image ?? '') }));
+    if (L.groups) extras.groups = L.groups.map((g) => ({ name: String(g.name) }));
+    if (L.areas) extras.areas = L.areas.map((a) => ({ name: String(a.name) }));
+    if (L.offers) extras.offers = L.offers.map((o) => ({ title: String(o.title), detail: String(o.detail ?? '') }));
+    if (L.blocks) extras.blocks = L.blocks.map((b) => ({ key: String(b.key), title: String(b.title), entries: String(b.entries ?? '') }));
     if (L.credentials) extras.credentials = L.credentials.map((c) => ({ title: String(c.title), detail: String(c.detail ?? '') }));
     if (d.location) {
       const l = d.location; const address = composeAddress(l); const maps = buildDirectionsUrl(l);

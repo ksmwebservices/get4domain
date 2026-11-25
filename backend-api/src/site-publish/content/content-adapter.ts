@@ -28,6 +28,10 @@ export interface PlannedPage {
 
 export const RESERVED_PAGE_SLUGS = new Set(['book', 'enquire', 'order', 'legal', 'p', 'api', 'about', 'services', 'gallery', 'contact', 'home', 'ta']);
 const str = (v: unknown): string => (v === null || v === undefined ? '' : String(v));
+/** One line per entry: `title | price | detail` (price and detail optional). At most 40 lines; a line with no title is dropped. */
+export function blockEntries(text: string | undefined): Array<{ title: string; price: string; detail: string }> {
+  return String(text ?? '').split('\n').map((l) => l.split('|').map((p) => p.trim())).filter((p) => p[0]).slice(0, 40).map((p) => ({ title: p[0], price: p[1] ?? '', detail: p[2] ?? '' }));
+}
 const slugify = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48) || 'item';
 
 /** The kit category for a vendor: its industry or pack key if that is a kit category, else the first category of the legacy pack with that key. */
@@ -118,13 +122,13 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
     social: { googleBusiness: str(ex.googleBusiness), instagram: str(cms?.instagram), facebook: str(cms?.facebook), youtube: str(cms?.youtube), linkedin: str(cms?.linkedin), x: str(ex.social?.x), custom: str(ex.social?.customUrl), customLabel: str(ex.social?.customLabel), maps: o.directions === false ? '' : str(cms?.googleMaps), whatsapp: waDigits.length >= 10 ? `https://wa.me/${waDigits}` : '' },
     cta: { label: str(ex.ctaLabel) || cat.ctaPrimary, href: phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : '/contact', secondaryLabel: '', secondaryHref: '' },
     ...(kitTerms ? { terms: kitTerms } : {}),
-    items, groups: [], team: (ex.team ?? []).map((t) => ({ id: slugify(t.name), name: str(t.name), role: str(t.role), note: str(t.note), image: str(t.image) })),
+    items, groups: (ex.groups ?? []).map((g) => ({ id: slugify(g.name), name: str(g.name) })), offers: (ex.offers ?? []).map((x) => ({ title: str(x.title), detail: str(x.detail) })), team: (ex.team ?? []).map((t) => ({ id: slugify(t.name), name: str(t.name), role: str(t.role), note: str(t.note), image: str(t.image) })),
     testimonials: (cms?.testimonials ?? []).filter((t) => !t.sample && !(t.proOnly && o.directions === false)).map((t) => ({ quote: str(t.quote), author: str(t.author), note: str(t.note) })),
     faqs, gallery,
     steps: (ex.steps ?? []).map((s, i) => ({ n: i + 1, title: str(s.title), desc: str(s.desc) })),
     trust: (ex.trust ?? []).map((t) => ({ text: str(t) })),
     stats: (ex.stats ?? []).map((s) => ({ value: str(s.value), label: str(s.label) })),
-    areas: [], credentials: (ex.credentials ?? []).map((c) => ({ title: str(c.title), detail: str(c.detail) })), blocks: [], videos: [],
+    areas: (ex.areas ?? []).map((a) => ({ id: slugify(a.name), name: str(a.name) })), credentials: (ex.credentials ?? []).map((c) => ({ title: str(c.title), detail: str(c.detail) })), blocks: (ex.blocks ?? []).map((b) => ({ key: slugify(b.key), title: str(b.title), items: blockEntries(b.entries) })), videos: [],
     products: cat.track === 'ecommerce' ? items : [],
     pages,
     ...(doc.reviewUrl && o.directions !== false ? { reviews: { writeUrl: doc.reviewUrl } } : {}),   // slice B3: the kit's Write a review button, Pro only

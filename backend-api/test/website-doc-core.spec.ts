@@ -70,7 +70,7 @@ describe('writing a list', () => {
     expect(code(writeList(emptyDoc(), 'pages', [page('warranty'), page('warranty')]))).toBe('SLUG_INVALID');
     expect(code(writeList(emptyDoc(), 'pages', [page('warranty', { enabled: 'yes' })]))).toBe('FIELD_INVALID');
   });
-  it('the list definitions name every list the renderer reads', () => { expect(Object.keys(LIST_DEFS).sort()).toEqual(['credentials', 'faqs', 'gallery', 'pages', 'stats', 'steps', 'team', 'trust']); });
+  it('the list definitions name every list the renderer reads', () => { expect(Object.keys(LIST_DEFS).sort()).toEqual(['areas', 'blocks', 'credentials', 'faqs', 'gallery', 'groups', 'offers', 'pages', 'stats', 'steps', 'team', 'trust']); });
   it('an item count above the payload ceiling is refused', () => {
     expect(code(writeList(emptyDoc(), 'trust', Array.from({ length: 201 }, (_, i) => ({ text: `p${i}` }))))).toBe('LIST_TOO_LONG');
   });

@@ -20,6 +20,7 @@ import type { ManagedDoc } from '../../v3-website/core/managed-doc';
 
 export interface SourceExtras {
   headline?: string; subline?: string; ctaLabel?: string; announcement?: string;
+  groups?: Array<{ name: string }>; areas?: Array<{ name: string }>; offers?: Array<{ title: string; detail?: string }>; blocks?: Array<{ key: string; title: string; entries: string }>;
   trust?: string[]; faq?: Array<{ q: string; a: string }>; steps?: Array<{ title: string; desc?: string }>;
   stats?: Array<{ value: string; label: string }>; team?: Array<{ name: string; role?: string; note?: string; image?: string }>;
   social?: { x?: string; customLabel?: string; customUrl?: string };
