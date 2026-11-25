@@ -5,7 +5,7 @@ import type { NextConfig } from 'next';
 const leadspaceDomain = (process.env.LEADSPACE_BASE_DOMAIN ?? '').trim().toLowerCase();
 
 const NOINDEX_PATHS = [
-  '/dashboard/:path*', '/admin/:path*', '/customer/:path*', '/login', '/register', '/admin-team/:path*', '/d/:path*', '/quote/:path*', '/pay/:path*',
+  '/dashboard/:path*', '/admin/:path*', '/customer/:path*', '/account/:path*', '/login', '/register', '/admin-team/:path*', '/d/:path*', '/quote/:path*', '/pay/:path*',
   '/theme-preview/:path*', '/theme-local-test', '/offline', '/cart', '/order-success',
 ];
 

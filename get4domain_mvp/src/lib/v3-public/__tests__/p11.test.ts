@@ -163,7 +163,7 @@ describe('P11 the app shell', () => {
     const bottom = /<nav class="sk-bnav"[\s\S]*?<\/nav>/.exec(html)![0];
     for (const label of ['Home', 'Services', 'Call']) assert.ok(bottom.includes(`<span>${label}</span>`), label);
     assert.ok(bottom.includes('href="tel:+919876543210"') || bottom.includes('href="tel:+91'), 'Call is a tel link in live mode');
-    assert.match(html, /<footer class="sk-foot"><small><span data-g4d-powered-by="">Powered by <a href="https:\/\/get4domain\.com"[^>]*>Get4Domain<\/a><\/span><\/small><\/footer>/);
+    assert.match(html, /<footer class="sk-foot"><small><span data-g4d-powered-by="">Powered by <a href="https:\/\/get4domain\.com\/"[^>]*>Get4Domain<\/a><\/span><\/small><\/footer>/);
     assert.equal((html.match(/Powered by/g) ?? []).length, 1);
     assert.match(src('lib/v3-public/site-kit/css.ts'), /@media\(min-width:768px\)\{[\s\S]*\.sk-bnav\{display:none\}[\s\S]*\.sk-dnav\{display:flex\}/, 'the bottom bar is for phones only, the top bar for computers');
     assert.match(src('lib/v3-public/site-kit/css.ts'), /\.sk-bnav\{position:fixed;/);

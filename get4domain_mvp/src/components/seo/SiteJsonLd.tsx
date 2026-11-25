@@ -11,7 +11,7 @@ const ORGANIZATION = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'Get4Domain',
-  legalName: 'KSM Quantum Technologies',
+  legalName: 'KSM QUANTUM TECHNOLOGIES',
   url: 'https://get4domain.com',
   logo: 'https://get4domain.com/logo.png',
   description: "India's complete digital business platform for SMBs",

@@ -1,27 +1,50 @@
 import { netAmountPaise, PUBLIC_TERMS, type PublicPlans } from './plans';
 import { SITE } from './site-strings';
 import { directoryOrigin, mainOrigin } from './site-metadata';
+import { getFirm } from './firm';
+import { organizationSameAs } from '../structured-data';
 
 const ORG_DESCRIPTION = 'A local business and domain directory, a domain search, and a business web app that puts every business online, makes it visible and captures enquiries.';
 
-/** JSON-LD of the commercial pages, as data (serialised and escaped by the JsonLd component). Prices only through offersLd, from the public price route; no ratings, no review markup. */
-export function organizationLd(): Record<string, unknown> {
+/** The @id of the one Organization of the main site: the home page, About and Contact all describe THIS entity, so a crawler merges them instead of seeing three. null when MAIN_HOST is not set. */
+export function organizationId(): string | null {
   const origin = mainOrigin();
-  return { '@context': 'https://schema.org', '@type': 'Organization', name: SITE.brand, description: ORG_DESCRIPTION, ...(origin ? { url: `${origin}/` } : {}) };
+  return origin ? `${origin}/#organization` : null;
 }
 
 /**
- * The Organization block of the About and Contact pages, written only from the firm facts: legal name, registered office, and the GSTIN, email or phone only when they are set.
- * The country, state and city are the decided location (Chennai, Tamil Nadu, India). Nothing else is added: no logo, no founding date, no sameAs, no rating.
+ * The Organization facts every page repeats: @id, name "Get4Domain", url, logo, the legal name (the firm), and sameAs from siteConfig.social (real http(s) URLs only: "#" and empty entries
+ * are dropped, nothing is invented). Every address-dependent field is written only when MAIN_HOST is set.
  */
-export function firmOrganizationLd(f: { legalName: string; address: string; gstin: string; supportEmail: string; supportPhone: string }): Record<string, unknown> {
+function organizationCore(): Record<string, unknown> {
   const origin = mainOrigin();
+  const id = organizationId();
+  const sameAs = organizationSameAs();
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    ...(id ? { '@id': id } : {}),
     name: SITE.brand,
+    legalName: getFirm().name,
+    alternateName: `${SITE.brand}.com`,
+    ...(origin ? { url: `${origin}/`, logo: `${origin}/logo.png` } : {}),
+    ...(sameAs.length ? { sameAs } : {}),
+  };
+}
+
+/** JSON-LD of the commercial pages, as data (serialised and escaped by the JsonLd component). Prices only through offersLd, from the public price route; no ratings, no review markup. */
+export function organizationLd(): Record<string, unknown> {
+  return { ...organizationCore(), description: ORG_DESCRIPTION };
+}
+
+/**
+ * The Organization block of the About and Contact pages: the same core as the home page (same @id) plus the firm facts: registered office, and the GSTIN, email or phone only when they are set.
+ * The country, state and city are the decided location (Chennai, Tamil Nadu, India). Nothing else is added: no founding date, no rating.
+ */
+export function firmOrganizationLd(f: { legalName: string; address: string; gstin: string; supportEmail: string; supportPhone: string }): Record<string, unknown> {
+  return {
+    ...organizationCore(),
     legalName: f.legalName,
-    ...(origin ? { url: `${origin}/` } : {}),
     address: { '@type': 'PostalAddress', streetAddress: f.address, addressLocality: 'Chennai', addressRegion: 'Tamil Nadu', addressCountry: 'IN' },
     ...(f.gstin ? { taxID: f.gstin } : {}),
     ...(f.supportEmail ? { email: f.supportEmail } : {}),
@@ -36,7 +59,10 @@ export function webSiteLd(): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    ...(origin ? { '@id': `${origin}/#website` } : {}),
     name: SITE.brand,
+    alternateName: `${SITE.brand}.com`,
+    ...(organizationId() ? { publisher: { '@id': organizationId() } } : {}),
     description: ORG_DESCRIPTION,
     ...(origin ? { url: `${origin}/` } : {}),
     ...(dir ? { potentialAction: { '@type': 'SearchAction', target: { '@type': 'EntryPoint', urlTemplate: `${dir}/search?q={search_term_string}` }, 'query-input': 'required name=search_term_string' } } : {}),

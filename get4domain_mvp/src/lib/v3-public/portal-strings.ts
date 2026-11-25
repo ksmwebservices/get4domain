@@ -107,7 +107,7 @@ export const PORTAL = {
 
   home: {
     eyebrow: 'Local business directory, domain search and web app',
-    h1: 'Get your business online, found and getting enquiries.',
+    h1: 'Get4Domain: get your business online, found and getting enquiries.',
     lead: 'Search local businesses and domain names on the Get4Domain directory. Every business gets a website, business tools and promotion run by our team, in one Pro plan.',
     popularHeading: 'Popular searches',
     popularLabel: 'Popular searches',
@@ -217,7 +217,7 @@ export const PORTAL = {
 
   footer: {
     label: 'Footer',
-    blurb: 'A local business directory and search, with a web app for every business, made by KSM Quantum Technologies.',
+    blurb: 'A local business directory and search, with a web app for every business, made by KSM QUANTUM TECHNOLOGIES.',
     find: 'Find',
     business: 'For businesses',
     learn: 'Learn',
