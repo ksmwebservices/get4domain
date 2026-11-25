@@ -1,0 +1,39 @@
+/* Doorstep: property agents and portals tokens */
+.g4d-theme{
+  --g4d-primary:#0e5a57;
+  --g4d-primary-contrast:#ffffff;
+  --g4d-accent:#9a5b06;
+  --g4d-bg:#f3f8f6;
+  --g4d-surface:#ffffff;
+  --g4d-text:#14262a;
+  --g4d-muted:#46595c;
+  --g4d-border:#cfe0da;
+  --g4d-radius:14px;
+  --g4d-font-heading:"Playfair Display","Noto Serif Tamil",Georgia,serif;
+  --g4d-font-body:"Manrope","Noto Sans Tamil",system-ui,sans-serif;
+  --g4d-motion-speed:1;
+  --g4d-motion-ease:cubic-bezier(.2,.8,.2,1);
+  --g4d-motion-distance:8px;
+  --tp-on-accent:#ffffff;
+  --tp-deep:#0a3b39;
+  --tp-tint:#e2efeb;
+  --tp-ink:#0e5a57;
+  --tp-warm:#f2c46b;
+}
+@media (prefers-color-scheme: dark){
+  .g4d-theme{
+    --g4d-primary:#6fd0c8;
+    --g4d-primary-contrast:#062a29;
+    --g4d-accent:#f2c46b;
+    --g4d-bg:#0b1f20;
+    --g4d-surface:#122b2d;
+    --g4d-text:#eaf4f2;
+    --g4d-muted:#a6c0bd;
+    --g4d-border:#244244;
+    --tp-on-accent:#1b1405;
+    --tp-deep:#071819;
+    --tp-tint:#10282a;
+    --tp-ink:#eaf4f2;
+    --tp-warm:#f2c46b;
+  }
+}

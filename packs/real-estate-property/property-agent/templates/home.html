@@ -1,0 +1,154 @@
+<a class="skip-link" href="#main">{{ui.skip}}</a>
+<g4d-claim-banner></g4d-claim-banner>
+<header class="site-header h-dark">
+  <div class="wrap head-row">
+    <a class="brand" href="/">
+      <img data-g4d-if="site.logo" src="{{site.logo}}" alt="{{site.logoAlt}}" width="160" height="48" loading="lazy" decoding="async">
+      <svg class="brand-mark" data-g4d-if-not="site.logo" aria-hidden="true" focusable="false" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#0e5a57"/><path d="M12 32L32 14l20 18" fill="none" stroke="#f2c46b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 30v20h28V30" fill="none" stroke="#fff" stroke-width="3.5" stroke-linejoin="round"/><circle cx="32" cy="38" r="4" fill="#f2c46b"/><path d="M32 42v6" stroke="#f2c46b" stroke-width="3" stroke-linecap="round"/></svg>
+      <span class="brand-name">{{site.name}}</span>
+    </a>
+    <g4d-header-nav label="Main"></g4d-header-nav>
+    <g4d-action class="btn btn--go btn--sm"></g4d-action>
+  </div>
+</header>
+<main id="main">
+<section class="hero hero--split" data-g4d-section="hero" data-g4d-label="Hero banner" data-g4d-optional="false">
+  <div class="hero-art" aria-hidden="false">
+    <img class="hero-photo" data-g4d-if="hero.image" src="{{hero.image}}" alt="{{hero.imageAlt}}" width="1600" height="800" fetchpriority="high">
+    <div class="hero-shade" data-g4d-if="hero.image" aria-hidden="true"></div>
+    <div class="scene" data-g4d-if-not="hero.image" aria-hidden="true"><svg viewBox="0 0 1200 600" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg" focusable="false">
+<defs><linearGradient id="dp-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fd3cf"/><stop offset=".7" stop-color="#d8f0e6"/><stop offset="1" stop-color="#fbf0cf"/></linearGradient></defs>
+<rect width="1200" height="600" fill="url(#dp-sky)"/>
+<circle cx="1010" cy="120" r="54" fill="#ffe18a"/><circle cx="1010" cy="120" r="84" fill="#ffe18a" opacity=".25"/>
+<g class="sc-cloud sc-cloud--a" fill="#fff" opacity=".85"><ellipse cx="240" cy="110" rx="80" ry="22"/><ellipse cx="290" cy="96" rx="48" ry="18"/></g>
+<g class="sc-cloud sc-cloud--b" fill="#fff" opacity=".7"><ellipse cx="700" cy="170" rx="90" ry="20"/><ellipse cx="750" cy="158" rx="46" ry="16"/></g>
+<path d="M0 400q150-70 300-20t300-10 300 30 300-20v90H0z" fill="#b6dccb"/>
+<g><rect x="56" y="423.2" width="8" height="36" fill="#5a3d24"/><circle cx="60" cy="401.2" r="31.2" fill="#2f8f68"/><circle cx="40.8" cy="418.4" r="21.599999999999998" fill="#3aa57a"/><circle cx="79.2" cy="418.4" r="21.599999999999998" fill="#3aa57a"/></g><g><rect x="110" y="350" width="150" height="120" fill="#f6e3c1"/><path d="M100 350L185 304L270 350z" fill="#c4572f"/><rect x="173" y="426" width="24" height="44" rx="2" fill="#0a3b39"/><rect x="122" y="372" width="20" height="22" fill="#ffe3a3" class="sc-win"/><rect x="228" y="372" width="20" height="22" fill="#ffe3a3" class="sc-win sc-win--2"/></g><g><rect x="300" y="320" width="130" height="150" fill="#fff6e4"/><path d="M290 320L365 274L440 320z" fill="#0e5a57"/><rect x="353" y="426" width="24" height="44" rx="2" fill="#0a3b39"/><rect x="312" y="342" width="20" height="22" fill="#ffe3a3" class="sc-win"/><rect x="398" y="342" width="20" height="22" fill="#ffe3a3" class="sc-win sc-win--2"/></g><g><rect x="466" y="426" width="8" height="30" fill="#5a3d24"/><circle cx="470" cy="406" r="26" fill="#2f8f68"/><circle cx="454" cy="422" r="18" fill="#3aa57a"/><circle cx="486" cy="422" r="18" fill="#3aa57a"/></g>
+<g><rect x="520" y="280" width="170" height="190" fill="#e8f1ee"/><path d="M510 280L605 234L700 280z" fill="#8a4b1e"/><rect x="593" y="426" width="24" height="44" rx="2" fill="#0a3b39"/><rect x="532" y="302" width="20" height="22" fill="#ffe3a3" class="sc-win"/><rect x="658" y="302" width="20" height="22" fill="#ffe3a3" class="sc-win sc-win--2"/></g><g><rect x="730" y="340" width="140" height="130" fill="#f9e6c9"/><path d="M720 340L800 294L880 340z" fill="#0e5a57"/><rect x="788" y="426" width="24" height="44" rx="2" fill="#0a3b39"/><rect x="742" y="362" width="20" height="22" fill="#ffe3a3" class="sc-win"/><rect x="838" y="362" width="20" height="22" fill="#ffe3a3" class="sc-win sc-win--2"/></g><g><rect x="906" y="421.8" width="8" height="39" fill="#5a3d24"/><circle cx="910" cy="398.8" r="33.800000000000004" fill="#2f8f68"/><circle cx="889.2" cy="416.6" r="23.400000000000002" fill="#3aa57a"/><circle cx="930.8" cy="416.6" r="23.400000000000002" fill="#3aa57a"/></g><g><rect x="960" y="310" width="150" height="160" fill="#fff1d6"/><path d="M950 310L1035 264L1120 310z" fill="#b5482a"/><rect x="1023" y="426" width="24" height="44" rx="2" fill="#0a3b39"/><rect x="972" y="332" width="20" height="22" fill="#ffe3a3" class="sc-win"/><rect x="1078" y="332" width="20" height="22" fill="#ffe3a3" class="sc-win sc-win--2"/></g><g><rect x="1146" y="426" width="8" height="30" fill="#5a3d24"/><circle cx="1150" cy="406" r="26" fill="#2f8f68"/><circle cx="1134" cy="422" r="18" fill="#3aa57a"/><circle cx="1166" cy="422" r="18" fill="#3aa57a"/></g>
+<g><path d="M690 470V368" stroke="#5a3d24" stroke-width="6"/><path d="M690 372h70" stroke="#5a3d24" stroke-width="5"/><g class="sc-board"><rect x="700" y="372" width="86" height="46" rx="5" fill="#fff" stroke="#0e5a57" stroke-width="3"/><rect x="700" y="372" width="86" height="16" rx="3" fill="#c2410c"/><text x="743" y="385" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">FOR SALE</text><path d="M712 404h62M712 411h40" stroke="#0e5a57" stroke-width="3" stroke-linecap="round"/></g></g>
+<rect y="470" width="1200" height="130" fill="#5f7b78"/><rect y="470" width="1200" height="8" fill="#9db8b3"/><path d="M0 538h1200" stroke="#f2c46b" stroke-width="4" stroke-dasharray="46 32"/>
+<g class="sc-car"><rect x="-260" y="500" width="110" height="30" rx="8" fill="#0e5a57"/><path d="M-244 500l14-22h52l16 22z" fill="#14766f"/><rect x="-232" y="484" width="18" height="14" fill="#cdeee9"/><rect x="-206" y="484" width="22" height="14" fill="#cdeee9"/><circle cx="-232" cy="532" r="10" fill="#10282a"/><circle cx="-180" cy="532" r="10" fill="#10282a"/></g>
+<g class="sc-key"><circle cx="1090" cy="260" r="20" fill="none" stroke="#c98a14" stroke-width="7"/><path d="M1090 280v58M1090 316h16M1090 332h12" stroke="#c98a14" stroke-width="7" stroke-linecap="round"/></g>
+</svg></div>
+  </div>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="hero-eyebrow" data-g4d-if="hero.badge">{{hero.badge}}</p>
+      <p class="hero-eyebrow" data-g4d-if-not="hero.badge"><span data-g4d-if="site.tagline">{{site.tagline}}</span></p>
+      <h1>{{hero.title}}</h1>
+      <p class="lede" data-g4d-if="hero.subtitle">{{hero.subtitle}}</p>
+      <div class="hero-cta"><g4d-action class="btn btn--go"></g4d-action><a class="btn btn--wa" data-g4d-if="contact.whatsappHref" href="{{contact.whatsappHref}}">{{ui.whatsapp}}</a><g4d-open-now></g4d-open-now></div>
+      <div class="svc-row" data-g4d-if="items"><p class="svc-label">Find a property</p><ul class="svc-links"><template data-g4d-each="items"><li data-g4d-if="item.shown"><a href="{{item.href}}">{{item.name}}</a></li></template></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="trust" data-g4d-section="trust" data-g4d-label="Trust points" data-g4d-optional="true" data-g4d-if="trust"><div class="wrap"><ul class="trust-strip" data-g4d-if="trust"><template data-g4d-each="trust"><li>{{point.text}}</li></template></ul></div></section>
+
+<section class="section" data-g4d-section="groups" data-g4d-label="Browse by listing type" data-g4d-optional="true" data-g4d-if="groups">
+<div class="wrap">
+  <div class="sec-head"><h2>{{terms.groups}}</h2></div>
+  <div class="tiles"><template data-g4d-each="groups"><a class="tile" href="/properties#group-{{group.slug}}"><span class="tile-ic" aria-hidden="true"></span><b>{{group.name}}</b><small>{{group.count}}</small></a></template></div>
+</div>
+</section>
+
+<section class="section section--white" data-g4d-section="services" data-g4d-label="Properties" data-g4d-optional="true" data-g4d-if="items">
+<div class="wrap">
+  <div class="sec-head"><h2>{{terms.items}}</h2><a class="btn btn--sm" href="/properties">{{ui.viewAll}}</a></div>
+  <div class="cards"><template data-g4d-each="items"><article class="card c-tile" data-g4d-if="item.shown">
+  <div class="card-art" aria-hidden="false"><span class="badge" data-g4d-if="item.badge">{{item.badge}}</span><img data-g4d-if="item.featured" src="{{item.image}}" alt="{{item.name}}" width="640" height="400" loading="lazy"></div>
+  <div class="card-body">
+    <h3><a href="{{item.href}}">{{item.name}}</a></h3>
+    <p class="card-desc">{{item.description}}</p>
+    <p class="meta"><span data-g4d-if="item.location">{{item.location}}</span><span data-g4d-if="item.area">{{item.area}}</span><span data-g4d-if="item.bedrooms">{{item.bedrooms}}</span></p>
+    <div class="card-foot"><span class="price" data-g4d-if="item.price">{{item.price}}</span><a class="btn btn--sm" href="{{item.href}}">{{ui.readMore}}</a></div>
+  </div>
+</article></template></div>
+</div>
+</section>
+
+<section class="section section--tint" data-g4d-section="highlights" data-g4d-label="Rates and localities" data-g4d-optional="true" data-g4d-if="blocks">
+<div class="wrap blocks">
+  <template data-g4d-each="blocks"><section class="block" data-block="{{block.key}}">
+    <div class="sec-head"><h2>{{block.title}}</h2></div>
+    <ul class="stones"><template data-g4d-each="block.items"><li class="stone"><div class="top">{{entry.title}}</div><div class="body"><b>{{entry.detail}}</b><span data-g4d-if="entry.price">{{entry.price}}</span></div></li></template></ul>
+  </section></template>
+</div>
+</section>
+
+<section class="section section--band" data-g4d-section="about" data-g4d-label="About us" data-g4d-optional="true">
+<div class="wrap split">
+  <div><h2>{{about.title}}</h2><p class="lede" data-g4d-if="about.text">{{about.text}}</p><div class="hero-cta"><a class="btn btn--sm" href="/about">{{ui.about}}</a><g4d-action class="btn btn--go btn--sm"></g4d-action></div></div>
+  <div>
+    <ul class="creds" data-g4d-if="credentials"><template data-g4d-each="credentials"><li><b>{{credential.title}}</b><span>{{credential.detail}}</span></li></template></ul>
+    <ul class="offers" data-g4d-if="offers"><template data-g4d-each="offers"><li><div><b>{{offer.title}}</b><span>{{offer.detail}}</span></div><span class="p" data-g4d-if="offer.price">{{offer.price}}</span></li></template></ul>
+  </div>
+</div>
+</section>
+
+<section class="section" data-g4d-section="process" data-g4d-label="How we help you" data-g4d-optional="true" data-g4d-if="steps">
+<div class="wrap">
+  <div class="sec-head"><h2>{{ui.process}}</h2></div>
+  <ol class="steps"><template data-g4d-each="steps"><li><span class="n"><i>{{step.n}}</i></span><h3>{{step.title}}</h3><p>{{step.desc}}</p></li></template></ol>
+</div>
+</section>
+
+<section class="section" data-g4d-section="gallery" data-g4d-label="Gallery" data-g4d-optional="true" data-g4d-if="gallery" id="gallery">
+<div class="wrap">
+  <div class="sec-head"><h2>{{ui.gallery}}</h2></div>
+  <ul class="gal"><template data-g4d-each="gallery"><li data-g4d-if="image.shown"><figure><img src="{{image.src}}" alt="{{image.alt}}" width="640" height="480" loading="lazy"><figcaption>{{image.caption}}</figcaption></figure></li></template></ul>
+</div>
+</section>
+
+<section class="section section--white" data-g4d-section="team" data-g4d-label="Our team" data-g4d-optional="true" data-g4d-if="team">
+<div class="wrap">
+  <div class="sec-head"><h2>{{terms.team}}</h2></div>
+  <ul class="team"><template data-g4d-each="team"><li class="member"><span class="avatar" aria-hidden="true">{{member.initial}}</span><div><b>{{member.name}}</b><span>{{member.role}}</span><small data-g4d-if="member.note">{{member.note}}</small></div></li></template></ul>
+</div>
+</section>
+
+<section class="section section--white" data-g4d-section="reviews" data-g4d-label="Reviews" data-g4d-optional="true">
+<div class="wrap"><g4d-reviews></g4d-reviews></div>
+</section>
+
+<section class="section" data-g4d-section="faq" data-g4d-label="Questions" data-g4d-optional="true" data-g4d-if="faqs">
+<div class="wrap split">
+  <div><h2>{{ui.faq}}</h2></div>
+  <div class="faq"><template data-g4d-each="faqs"><details><summary>{{faq.q}}</summary><p>{{faq.a}}</p></details></template></div>
+</div>
+</section>
+
+<section class="section section--white" data-g4d-section="areas" data-g4d-label="Localities we cover" data-g4d-optional="true" data-g4d-if="areas">
+<div class="wrap"><div class="sec-head"><h2>{{contact.city}}</h2></div><ul class="chips"><template data-g4d-each="areas"><li>{{area.name}}</li></template></ul></div>
+</section>
+
+<section class="section" data-g4d-section="contact" data-g4d-label="Visit our office" data-g4d-optional="true" id="contact">
+<div class="wrap"><div class="sec-head"><h2>{{ui.contact}}</h2></div></div>
+<div class="wrap split">
+  <div>
+    <ul class="contact-list">
+      <li data-g4d-if="contact.address"><b>{{ui.directions}}</b><address>{{contact.address}}</address></li>
+      <li data-g4d-if="contact.phone"><b>{{ui.call}}</b><a href="{{contact.phoneHref}}">{{contact.phone}}</a></li>
+      <li data-g4d-if="contact.whatsappHref"><b>{{ui.whatsapp}}</b><a href="{{contact.whatsappHref}}">{{contact.whatsapp}}</a></li>
+      <li data-g4d-if="contact.email"><a href="mailto:{{contact.email}}">{{contact.email}}</a></li>
+    </ul>
+    <g4d-hours variant="table"></g4d-hours>
+    <g4d-social></g4d-social>
+  </div>
+  <div><g4d-map></g4d-map></div>
+</div>
+<div class="wrap form-wrap"><g4d-enquiry-form></g4d-enquiry-form></div>
+</section>
+
+<section class="cta-band" data-g4d-section="cta" data-g4d-label="Call to action" data-g4d-optional="true">
+  <div class="wrap">
+    <div><h2>{{cta.label}}</h2><p data-g4d-if="site.tagline">{{site.tagline}}</p></div>
+    <div class="cta-actions"><g4d-action class="btn btn--go"></g4d-action><a class="btn" data-g4d-if="contact.phone" href="{{contact.phoneHref}}">{{ui.call}} {{contact.phone}}</a></div>
+  </div>
+</section>
+</main>
+<g4d-footer variant="columns"></g4d-footer>
+<g4d-listed-on-badge></g4d-listed-on-badge>
+<g4d-share-qr></g4d-share-qr>
+<g4d-bottom-nav></g4d-bottom-nav>
+<g4d-whatsapp-float></g4d-whatsapp-float>

@@ -1,0 +1,8 @@
+@media print{
+  .g4d-theme{background:#fff;color:#000;padding-bottom:0}
+  .g4d-theme .g4d-slot--bottom-nav,.g4d-theme .g4d-slot--whatsapp-float,.g4d-theme .g4d-slot--share-qr,.g4d-theme .g4d-slot--header-nav,.g4d-theme .g4d-slot--enquiry-form,.g4d-theme .g4d-slot--booking,.g4d-theme .scene,.g4d-theme .hero-art,.g4d-theme .svc-row{display:none}
+  .g4d-theme .site-header,.g4d-theme .hero,.g4d-theme .section,.g4d-theme .page-hero{background:#fff;color:#000;padding:8px 0}
+  .g4d-theme .hero h1,.g4d-theme .page-hero h1{color:#000}
+  .g4d-theme a{color:#000;text-decoration:none}
+  .g4d-theme .card,.g4d-theme .stone{border:1px solid #000;box-shadow:none}
+}

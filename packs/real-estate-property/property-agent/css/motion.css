@@ -1,0 +1,17 @@
+/* Motion: transform and opacity only. Off and reduced motion are static. */
+@keyframes dp-drift{from{transform:translateX(-40px)}to{transform:translateX(60px)}}
+@keyframes dp-swing{from{transform:rotate(-5deg)}to{transform:rotate(5deg)}}
+@keyframes dp-car{from{transform:translateX(0)}to{transform:translateX(1500px)}}
+@keyframes dp-bob{from{transform:translateY(0) rotate(-6deg)}to{transform:translateY(-14px) rotate(6deg)}}
+@keyframes dp-glow{from{opacity:.55}to{opacity:1}}
+.g4d-theme:not([data-motion="Off"]) .sc-cloud--a{animation:dp-drift calc(40s / var(--g4d-motion-speed)) ease-in-out infinite alternate}
+.g4d-theme:not([data-motion="Off"]) .sc-cloud--b{animation:dp-drift calc(52s / var(--g4d-motion-speed)) ease-in-out infinite alternate-reverse}
+.g4d-theme:not([data-motion="Off"]) .sc-board{transform-box:fill-box;transform-origin:0 0;animation:dp-swing calc(3.4s / var(--g4d-motion-speed)) ease-in-out infinite alternate}
+.g4d-theme:not([data-motion="Off"]) .sc-key{transform-box:fill-box;transform-origin:50% 0;animation:dp-bob calc(4s / var(--g4d-motion-speed)) ease-in-out infinite alternate}
+.g4d-theme:not([data-motion="Off"]) .sc-win--2{animation:dp-glow 3.6s ease-in-out infinite alternate}
+.g4d-theme[data-motion="Medium"] .sc-car,.g4d-theme[data-motion="Rich"] .sc-car{animation:dp-car calc(24s / var(--g4d-motion-speed)) linear infinite}
+.g4d-theme[data-motion="Medium"] .card,.g4d-theme[data-motion="Rich"] .card{transition:transform .25s var(--g4d-motion-ease)}
+.g4d-theme[data-motion="Medium"] .card:hover,.g4d-theme[data-motion="Rich"] .card:hover{transform:translateY(calc(var(--g4d-motion-distance) * -.5))}
+@media (prefers-reduced-motion: reduce){
+  .g4d-theme .sc-cloud--a,.g4d-theme .sc-cloud--b,.g4d-theme .sc-board,.g4d-theme .sc-key,.g4d-theme .sc-win--2,.g4d-theme .sc-car,.g4d-theme .card{animation:none;transition:none}
+}
