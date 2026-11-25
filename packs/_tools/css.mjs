@@ -202,7 +202,7 @@ ${heroCss}
 .g4d-theme .sec-head small{color:var(--g4d-muted);font-weight:700}
 ${orn}
 .g4d-theme .split{display:grid;gap:28px}
-@media(min-width:900px){.g4d-theme .split{grid-template-columns:1fr 1fr;gap:56px;align-items:start}}
+@media(min-width:720px){.g4d-theme .split{grid-template-columns:1fr 1fr;gap:40px;align-items:start}}
 .g4d-theme .trust{padding:0;background:var(--tp-tint);border-bottom:1.5px solid var(--g4d-border)}
 .g4d-theme .trust-strip{display:flex;flex-wrap:wrap;gap:6px 22px;padding:14px 0}
 .g4d-theme .trust-strip li{font-weight:700;font-size:.9rem;display:flex;align-items:center;min-height:32px}
