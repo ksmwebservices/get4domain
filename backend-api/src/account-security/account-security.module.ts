@@ -12,9 +12,11 @@ import { PasswordService } from './password.service';
 import { PublicPasswordResetController } from './public-password-reset.controller';
 import { PublicPasswordResetService, RESET_PUBLIC_URL } from './public-password-reset.service';
 import { SessionService } from './session.service';
+import { StaffPasswordResetService } from './staff-password-reset';
+import { StaffPasswordResetController } from './staff-password-reset.controller';
 
 /** Everything the controller needs apart from AuthService / EmailService / JwtService (the integration tests mount exactly this list). */
-export const ACCOUNT_SECURITY_PROVIDERS = [AccountDirectory, SessionService, PasswordService, LoginHandoffService, PublicPasswordResetService];
+export const ACCOUNT_SECURITY_PROVIDERS = [AccountDirectory, SessionService, PasswordService, LoginHandoffService, PublicPasswordResetService, StaffPasswordResetService];
 
 /** G14: the public site's address for the reset link, from the same setting the claim links use. */
 const RESET_URL_PROVIDER = { provide: RESET_PUBLIC_URL, useFactory: (prisma: PrismaService) => async (): Promise<string> => (await new ProvisioningSettingsService(prisma).get()).publicAppUrl, inject: [PrismaService] };
@@ -22,7 +24,7 @@ const RESET_URL_PROVIDER = { provide: RESET_PUBLIC_URL, useFactory: (prisma: Pri
 /** S13: password reset / change and rotating refresh tokens. Additive: it does not change AuthModule, AuthService or the existing /auth routes. */
 @Module({
   imports: [AuthModule, EmailModule, JwtModule.register({ secret: process.env.JWT_SECRET })],
-  controllers: [AccountSecurityController, LoginHandoffController, PublicPasswordResetController],
+  controllers: [AccountSecurityController, LoginHandoffController, PublicPasswordResetController, StaffPasswordResetController],
   providers: [...ACCOUNT_SECURITY_PROVIDERS, RESET_URL_PROVIDER],
   exports: [SessionService],
 })
