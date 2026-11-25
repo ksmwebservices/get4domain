@@ -255,6 +255,9 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // Part B (B13): pausing and resuming a vendor's paid plan: OPERATIONS and SUPER_ADMIN (ADMIN inherits OPERATIONS; SUPPORT and MARKETING refused)
   'POST /v3/admin/pack-engine/vendors/:vendorId/plan-pause': OPS_AND_SUPER, 'POST /v3/admin/pack-engine/vendors/:vendorId/plan-resume': OPS_AND_SUPER,
   // Wave 3 Part A: referral partners. Reading is OPERATIONS, ADMIN (inherits) and SUPER_ADMIN; creating and editing is ADMIN and SUPER_ADMIN (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow). SALES, SUPPORT and every label are refused.
+  // E6 telecallers: creating an account is SUPER_ADMIN; the monitor of all telecallers is OPERATIONS and SUPER_ADMIN; a telecaller's own routes are open to every staff role (the service refuses a login that is not set up as a telecaller)
+  'POST /v3/admin/telecallers': SUPER_ONLY, 'GET /v3/admin/telecallers/monitor': OPS_AND_SUPER,
+  'GET /v3/admin/telecaller/monitor': ALL_STAFF, 'POST /v3/admin/telecaller/vendors': ALL_STAFF, 'POST /v3/admin/telecaller/vendors/:id/collections': ALL_STAFF,
   'GET /v3/admin/partners': OPS_AND_SUPER, 'GET /v3/admin/partners/:id': OPS_AND_SUPER, 'POST /v3/admin/partners': SUPER_ONLY, 'PUT /v3/admin/partners/:id': SUPER_ONLY,
   // Wave 3 Part C: the payment gateway setting. Reading is OPERATIONS, ADMIN (inherits) and SUPER_ADMIN; choosing the gateway and its mode is ADMIN and SUPER_ADMIN (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow).
   'GET /v3/admin/payment-gateway': OPS_AND_SUPER, 'PUT /v3/admin/payment-gateway': SUPER_ONLY,
