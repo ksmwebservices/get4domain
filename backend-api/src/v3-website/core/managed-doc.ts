@@ -33,6 +33,9 @@ export const FIELD_DEFS: Readonly<Record<string, FieldDef>> = {
   'about.text': { type: 'longtext', max: 4000, label: 'About text' },
   'about.image': { type: 'image', max: 500, label: 'About image' },
   'about.imageAlt': { type: 'text', max: 160, label: 'About image description' },
+  'about.ownerName': { type: 'text', max: 80, label: 'Owner name' },
+  'about.organisation': { type: 'text', max: 120, label: 'Organisation name' },
+  'about.established': { type: 'text', max: 4, label: 'Year established' },
   'cta.label': { type: 'text', max: 40, label: 'Button wording', proOnly: true },
   'contact.phone': { type: 'phone', max: 24, label: 'Phone' },
   'contact.email': { type: 'email', max: 120, label: 'Email' },
@@ -45,6 +48,7 @@ export const FIELD_DEFS: Readonly<Record<string, FieldDef>> = {
   'social.x': { type: 'url', max: 300, label: 'X link' },
   'social.custom': { type: 'url', max: 300, label: 'Your own link' },
   'social.customLabel': { type: 'text', max: 40, label: 'Your own link label' },
+  'social.googleBusiness': { type: 'url', max: 300, label: 'Google Business Profile link' },
 };
 
 export interface ListFieldDef { type: FieldType; max: number; required?: boolean }
@@ -143,12 +147,16 @@ export function cleanValue(type: FieldType, max: number, value: unknown, field: 
   return { ok: true, value: v };
 }
 
+/** A four-digit year from 1800 to the current year (a business cannot have started in the future). */
+export const validYear = (v: string, now: Date = new Date()): boolean => /^\d{4}$/.test(v) && Number(v) >= 1800 && Number(v) <= now.getUTCFullYear();
+
 /** Set one editable field. An empty value removes the override (the legacy text shows again). */
 export function writeField(doc: ManagedDoc, key: string, value: unknown): Ok<{ doc: ManagedDoc }> | Fail {
   if (!has(FIELD_DEFS, key)) return fail('FIELD_LOCKED', 'That field is not editable.', key);
   const def = FIELD_DEFS[key];
   const c = cleanValue(def.type, def.max, value, key);
   if (!c.ok) return c;
+  if (key === 'about.established' && c.value !== '' && !validYear(c.value)) return fail('FIELD_INVALID', 'Enter the four-digit year the business started, for example 2012.', key);
   const fields = { ...doc.fields };
   if (c.value === '') delete fields[key]; else fields[key] = c.value;
   return { ok: true, doc: { ...doc, fields } };
@@ -306,6 +314,7 @@ const CMS_FIELD: Readonly<Record<string, keyof SourceCms>> = {
 };
 const EXTRAS_FIELD: Readonly<Record<string, keyof SourceExtras>> = {
   'hero.title': 'headline', 'hero.subtitle': 'subline', 'hero.badge': 'announcement', 'cta.label': 'ctaLabel', 'hero.imageAlt': 'heroImageAlt', 'about.image': 'aboutImage', 'about.imageAlt': 'aboutImageAlt',
+  'about.ownerName': 'ownerName', 'about.organisation': 'organisation', 'about.established': 'established', 'social.googleBusiness': 'googleBusiness',
 };
 
 /**
