@@ -1,0 +1,39 @@
+/* Sawdust: door-step carpenters tokens */
+.g4d-theme{
+  --g4d-primary:#1f4d3a;
+  --g4d-primary-contrast:#ffffff;
+  --g4d-accent:#8a5a1a;
+  --g4d-bg:#faf5ea;
+  --g4d-surface:#ffffff;
+  --g4d-text:#22201a;
+  --g4d-muted:#554f43;
+  --g4d-border:#e2d6bb;
+  --g4d-radius:8px;
+  --g4d-font-heading:"Merriweather","Noto Serif Tamil",Georgia,serif;
+  --g4d-font-body:"Nunito","Noto Sans Tamil",system-ui,sans-serif;
+  --g4d-motion-speed:1;
+  --g4d-motion-ease:cubic-bezier(.2,.8,.2,1);
+  --g4d-motion-distance:8px;
+  --tp-on-accent:#ffffff;
+  --tp-deep:#14352a;
+  --tp-tint:#f0e5cc;
+  --tp-ink:#1f4d3a;
+  --tp-warm:#e3b66b;
+}
+@media (prefers-color-scheme: dark){
+  .g4d-theme{
+    --g4d-primary:#8fd1ae;
+    --g4d-primary-contrast:#0d2218;
+    --g4d-accent:#e3b66b;
+    --g4d-bg:#13201a;
+    --g4d-surface:#1c2d25;
+    --g4d-text:#f3efe3;
+    --g4d-muted:#b9c4b8;
+    --g4d-border:#33493d;
+    --tp-on-accent:#1d1408;
+    --tp-deep:#0b1711;
+    --tp-tint:#182720;
+    --tp-ink:#f3efe3;
+    --tp-warm:#e3b66b;
+  }
+}

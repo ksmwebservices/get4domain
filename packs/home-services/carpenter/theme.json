@@ -1,0 +1,68 @@
+{
+  "id": "sawdust-carpenters",
+  "version": 1,
+  "name": "Sawdust: door-step carpenters",
+  "tier": "Standard",
+  "author": "Claude (Get4Domain design)",
+  "description": "Forest green and oak tan for door-step carpenters: a split banner with an animated workshop bench (hand saw, falling wood curls, swinging lamp), call-first layout with areas served and a quick quote, and a page for every job from wardrobes and doors to repairs.",
+  "tracks": [
+    "handyman"
+  ],
+  "families": [
+    "home-services"
+  ],
+  "categories": [
+    "carpenter"
+  ],
+  "layoutVariantRules": {
+    "home-services": "bold-split"
+  },
+  "motion": {
+    "default": "Low",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "Merriweather",
+    "Nunito",
+    "Noto Sans Tamil",
+    "Noto Serif Tamil"
+  ],
+  "marketplace": {
+    "packs": [
+      "SERVICES"
+    ],
+    "catalogueCategories": [
+      "carpenter"
+    ],
+    "tags": [
+      "call-first",
+      "door-step"
+    ],
+    "licence": "Theme code: for use by Get4Domain vendors on their vendor websites. Illustrations are original vector art made for this theme. Fonts: SIL OFL 1.1, self-hosted by the platform.",
+    "previews": [
+      {
+        "path": "assets/previews/home-1280.png",
+        "alt": "Sawdust home page on a desktop screen: animated carpenter workshop banner and job cards",
+        "page": "home"
+      },
+      {
+        "path": "assets/previews/home-360.png",
+        "alt": "Sawdust home page on a phone: workshop scene, job links and call bar",
+        "page": "home"
+      },
+      {
+        "path": "assets/previews/item-1280.png",
+        "alt": "Sawdust job page: what is included, key facts, indicative price and quick quote",
+        "page": "item"
+      }
+    ]
+  }
+}

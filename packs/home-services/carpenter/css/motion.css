@@ -1,0 +1,14 @@
+/* Motion: transform and opacity only. Off and reduced motion are static. */
+@keyframes sd-saw{from{transform:translate(-26px,-8px)}to{transform:translate(26px,8px)}}
+@keyframes sd-curl{from{opacity:1;transform:translateY(-14px)}to{opacity:.15;transform:translateY(56px)}}
+@keyframes sd-lamp{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}
+.g4d-theme:not([data-motion="Off"]) .sc-saw{animation:sd-saw calc(1.3s / var(--g4d-motion-speed)) ease-in-out infinite alternate}
+.g4d-theme:not([data-motion="Off"]) .sc-curl{animation:sd-curl calc(3s / var(--g4d-motion-speed)) ease-in infinite}
+.g4d-theme:not([data-motion="Off"]) .sc-curl--b{animation-delay:1s}
+.g4d-theme:not([data-motion="Off"]) .sc-curl--c{animation-delay:2s}
+.g4d-theme:not([data-motion="Off"]) .sc-lamp{transform-box:fill-box;transform-origin:50% 0;animation:sd-lamp calc(4s / var(--g4d-motion-speed)) ease-in-out infinite alternate}
+.g4d-theme[data-motion="Medium"] .card,.g4d-theme[data-motion="Rich"] .card{transition:transform .25s var(--g4d-motion-ease)}
+.g4d-theme[data-motion="Medium"] .card:hover,.g4d-theme[data-motion="Rich"] .card:hover{transform:translateY(calc(var(--g4d-motion-distance) * -.5))}
+@media (prefers-reduced-motion: reduce){
+  .g4d-theme .sc-saw,.g4d-theme .sc-curl,.g4d-theme .sc-lamp,.g4d-theme .card{animation:none;transition:none}
+}
