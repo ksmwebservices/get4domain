@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://unicatherapy.get4domain.com/sitemap.xml
