@@ -17,6 +17,21 @@ export function isForbiddenInSession(method: string, routePattern: string): bool
 /** The staff roles that may end a session that is not their own. A list, not an inline role check: who may do what stays in data (the role matrix decides who may reach the route at all). */
 export const MAY_END_ANY_SESSION: readonly string[] = ['SUPER_ADMIN'];
 
+/**
+ * E9a: the one staff role whose reach is narrowed to its own businesses, and the label that may use that reach. The role matrix lets SALES onto the session and draft-edit routes only so that a
+ * TELECALLER (a label folded into SALES) can reach them; this rule then keeps every other SALES login out, and keeps a telecaller on the businesses that telecaller created.
+ */
+export const OWN_BUSINESS_ONLY = { role: 'MARKETING', label: 'TELECALLER' } as const;
+
+export type ActDecision = 'ALLOWED' | 'ROLE_REFUSED' | 'NOT_THEIR_BUSINESS';
+
+/** May this staff member act for this business? `createdByStaffId` is who registered the business (null: nobody on the staff, or no such business). Roles other than SALES are decided by the matrix alone. */
+export function mayActForVendor(staff: { id: string; role: string; label?: string | null }, createdByStaffId: string | null): ActDecision {
+  if (staff.role !== OWN_BUSINESS_ONLY.role) return 'ALLOWED';
+  if (staff.label !== OWN_BUSINESS_ONLY.label) return 'ROLE_REFUSED';
+  return createdByStaffId !== null && createdByStaffId === staff.id ? 'ALLOWED' : 'NOT_THEIR_BUSINESS';
+}
+
 export type SessionState = 'ACTIVE' | 'ENDED' | 'EXPIRED';
 
 /** ENDED once someone ended it; EXPIRED from the moment its time is up (the moment itself counts as expired); else ACTIVE. */

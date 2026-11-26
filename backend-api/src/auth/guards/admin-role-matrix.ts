@@ -163,6 +163,10 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // Block 4b slice 11: the recorded mail lanes and promotion rules (read: OPERATIONS + SUPER_ADMIN) and confirming a mailbox price (SUPER_ADMIN only)
   'GET /v3/admin/mail-rules': OPS_AND_SUPER, 'POST /v3/admin/mailbox-prices/:id/confirm': SUPER_ONLY,
   // Block 4b slice 9: staff actions on a business (A1 plan change with a date, A2 business name, the visit report) are OPERATIONS + SUPER_ADMIN; merging listings (A4) is SUPER_ADMIN only
+  // E9a: staff edit the draft of a business; the same rule as the session routes above
+  'GET /v3/admin/vendors/:id/site/draft': ALL_STAFF, 'GET /v3/admin/vendors/:id/site/editor/map': ALL_STAFF,
+  'PUT /v3/admin/vendors/:id/site/draft/field': ALL_STAFF, 'PUT /v3/admin/vendors/:id/site/draft/list/:name': ALL_STAFF, 'PUT /v3/admin/vendors/:id/site/draft/sections': ALL_STAFF, 'PUT /v3/admin/vendors/:id/site/draft/brand': ALL_STAFF, 'PUT /v3/admin/vendors/:id/site/draft/navigation': ALL_STAFF, 'PUT /v3/admin/vendors/:id/site/draft/seo/:pageKey': ALL_STAFF,
+  'PUT /v3/admin/vendors/:id/site/draft/location': ALL_STAFF, 'PUT /v3/admin/vendors/:id/site/draft/review-link': ALL_STAFF, 'PUT /v3/admin/vendors/:id/site/draft/testimonials': ALL_STAFF, 'PUT /v3/admin/vendors/:id/site/draft/hours': ALL_STAFF, 'PUT /v3/admin/vendors/:id/site/draft/profile': ALL_STAFF,
   'POST /v3/admin/vendors/:id/content-pack/import': OPS_AND_SUPER,   // E5: staff load a content pack into a business draft
   'POST /v3/admin/vendors/:id/send-password-reset': OPS_AND_SUPER,   // Website Manager lane A: staff e-mail the owner a reset link (never set a password)
   'PUT /v3/admin/vendors/:id/business-name': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/business-name-history': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/plan-change': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/plan-changes': OPS_AND_SUPER, 'POST /v3/admin/plan-changes/:id/cancel': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/visits': OPS_AND_SUPER,
@@ -215,7 +219,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/sites': ALL_STAFF, 'GET /v3/admin/vendors/:id/site': ALL_STAFF,
   'PUT /v3/admin/vendors/:id/site/theme': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/theme/assign': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/build': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/publish': OPS_AND_SUPER,
   // 5.13b: act on behalf and the onboarding queue (the stage file's Website Developer and Customer Support roles do not exist: OPERATIONS and SUPER_ADMIN; MARKETING never)
-  'POST /v3/admin/vendors/:id/act-on-behalf': OPS_AND_SUPER, 'POST /v3/admin/act-on-behalf/:sessionId/end': OPS_AND_SUPER, 'GET /v3/admin/act-on-behalf': OPS_AND_SUPER, 'GET /v3/admin/onboarding-queue': OPS_AND_SUPER,
+  // E9a: start and end are ALL_STAFF at the door so that a TELECALLER reaches them; the service refuses every other SALES login, and a telecaller on a business they did not create (act-on-behalf-core). SUPPORT is refused here.
+  'POST /v3/admin/vendors/:id/act-on-behalf': ALL_STAFF, 'POST /v3/admin/act-on-behalf/:sessionId/end': ALL_STAFF, 'GET /v3/admin/act-on-behalf': OPS_AND_SUPER, 'GET /v3/admin/onboarding-queue': OPS_AND_SUPER,
   // 5.6c: own-domain automation and the per-vendor domain log (owner answer Q12 names Support; that role does not exist here: OPERATIONS and SUPER_ADMIN, MARKETING denied)
   'GET /v3/admin/domain-connections': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/domains/:domainId/connection/retry': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/domain-log': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/subdomain-log': OPS_AND_SUPER,
   // Wave 2 Part C: the vendors list, the held count and the notes are OPERATIONS and SUPER_ADMIN (ADMIN inherits OPERATIONS; SALES and SUPPORT refused); the permission matrix is for every staff role; the invoice list and the go-live follow the plan orders and the seeded sites

@@ -115,7 +115,7 @@ const MARKETING_DENIED = [
   'PUT /v3/admin/vendors/:id/site/theme', 'POST /v3/admin/vendors/:id/site/theme/assign', 'POST /v3/admin/vendors/:id/site/build', 'POST /v3/admin/vendors/:id/site/publish', 'POST /v3/admin/vendors/:id/site/rollback',
   'GET /v3/admin/vendors/:id/site/preview/:publicationId/:path', 'PUT /v3/admin/vendors/:id/site/noindex',
   // 5.13b: act on behalf and the onboarding queue
-  'POST /v3/admin/vendors/:id/act-on-behalf', 'POST /v3/admin/act-on-behalf/:sessionId/end', 'GET /v3/admin/act-on-behalf', 'GET /v3/admin/onboarding-queue',
+  'GET /v3/admin/act-on-behalf', 'GET /v3/admin/onboarding-queue',
   // 5.6d: domain sales and identity checks
   'GET /v3/admin/domain-orders', 'POST /v3/admin/vendors/:id/domains/register', 'GET /v3/admin/domain-margins', 'POST /v3/admin/registrar/recover', 'POST /v3/admin/registrar/reconcile', 'GET /v3/admin/registrar/runs',
   'GET /v3/admin/identity-checks', 'GET /v3/admin/vendors/:id/identity', 'POST /v3/admin/vendors/:id/identity/document', 'POST /v3/admin/vendors/:id/identity/approve', 'POST /v3/admin/vendors/:id/identity/reject',
@@ -229,10 +229,15 @@ SUPER_ONLY_ROUTES.push('POST /v3/admin/theme-market/themes', 'POST /v3/admin/the
 MARKETING_DENIED.push('GET /v3/admin/duplicates/reviews', 'POST /v3/admin/duplicates/reviews/:id/clear', 'POST /v3/admin/duplicates/reviews/:id/reject');
 MARKETING_DENIED.push('GET /v3/admin/theme-market/themes', 'GET /v3/admin/theme-market/themes/:id', 'GET /v3/admin/theme-market/themes/:id/preview', 'POST /v3/admin/theme-market/validate');
 
+ALL_STAFF_ROUTES.push(   // E9a: open at the door so a TELECALLER can reach them; the service narrows SALES to the telecaller who created the business (test/e9-admin-draft.spec.ts)
+  'POST /v3/admin/vendors/:id/act-on-behalf', 'POST /v3/admin/act-on-behalf/:sessionId/end', 'GET /v3/admin/vendors/:id/site/draft', 'GET /v3/admin/vendors/:id/site/editor/map',
+  ...['field', 'list/:name', 'sections', 'brand', 'navigation', 'seo/:pageKey', 'location', 'review-link', 'testimonials', 'hours', 'profile'].map((p) => `PUT /v3/admin/vendors/:id/site/draft/${p}`),
+);
+
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(452);
+    expect(oracle).toHaveLength(465);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

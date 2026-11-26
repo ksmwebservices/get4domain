@@ -12,6 +12,9 @@ import { RecordingNotifier } from './website-world';
 export class MemoryActOnBehalfStore extends ActOnBehalfStore {
   vendors = new Set<string>(['v1', 'v2']); rows: SessionRow[] = []; private n = 0;
   async vendorExists(id: string) { return this.vendors.has(id); }
+  /** vendor id -> the staff login that registered it */
+  createdBy = new Map<string, string>();
+  async registeredBy(id: string) { return this.createdBy.get(id) ?? null; }
   async createIfNoneActive(s: NewSession) {
     if (this.rows.some((r) => r.staffId === s.staffId && r.endedAt === null)) return null;
     const row: SessionRow = { ...s, id: `aob${++this.n}`, endedAt: null, endedBy: null, vendorNotifiedAt: null }; this.rows.push(row); return { ...row };
