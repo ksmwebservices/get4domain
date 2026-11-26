@@ -1,7 +1,9 @@
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Vendor } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { assertAnotherSuperAdmin, isPlatformAdminAccount, underSuperAdminLock } from '../admin-team/last-super-admin';
+import { domainError } from '../site-domains/site-domains.errors';
+import { SUBDOMAIN_HARD_MAX } from '../site-domains/settings/domain-settings';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { WalletService } from '../wallet/wallet.service';
@@ -13,6 +15,11 @@ import { UpdateVendorDto } from './dto/update-vendor.dto';
 
 // Default free wallet credit (paise) if the Trial tier amount isn't set in Pricing Manager.
 const TRIAL_CREDIT_FALLBACK_PAISE = 10000; // ₹100
+
+/** E11d: the staff vendor routes follow the same hard limit as registration and the address change. */
+function assertSubdomainLength(subdomain: string | null | undefined): void {
+  if (typeof subdomain === 'string' && subdomain.length > SUBDOMAIN_HARD_MAX) throw new BadRequestException(domainError('SUBDOMAIN_INVALID', `A site address can be at most ${SUBDOMAIN_HARD_MAX} characters.`));
+}
 
 @Injectable()
 export class VendorsService {
@@ -49,6 +56,8 @@ export class VendorsService {
     if (existing) {
       throw new ConflictException('A vendor with this email already exists');
     }
+
+    assertSubdomainLength(dto.subdomain);
 
     const selfService = opts.selfService === true;
     const decision = await this.duplicates.enforce(
@@ -144,7 +153,8 @@ export class VendorsService {
   }
 
   async update(id: string, dto: UpdateVendorDto): Promise<Vendor> {
-    await this.findOne(id);
+    const current = await this.findOne(id);
+    if (dto.subdomain !== current.subdomain) assertSubdomainLength(dto.subdomain);   // a form that sends the stored address back unchanged is not refused
     return this.prisma.vendor.update({ where: { id }, data: 'phone' in dto ? { ...dto, phoneKey: phoneKeyOf(dto.phone) } : dto });
   }
 

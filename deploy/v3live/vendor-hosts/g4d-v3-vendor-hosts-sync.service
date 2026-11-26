@@ -1,0 +1,13 @@
+# Runs on the web server HOST. Installed by hand: docs/v3/ROUTING_INSTALL_STEPS.md. Started by the timer of the same name.
+[Unit]
+Description=Get4Domain V3 vendor host names for nginx
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/sbin/g4d-v3-vendor-hosts-sync
+TimeoutStartSec=180
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true

@@ -19,7 +19,7 @@ describe('domain settings', () => {
     expect(DEFAULT_DOMAIN_SETTINGS.verificationTxtPrefix).toBe('_g4d-verify');
   });
   it.each([
-    ['subdomainMinLength', 3, true], ['subdomainMinLength', 0, false], ['subdomainMinLength', 2.5, false], ['subdomainMaxLength', 63, true], ['subdomainMaxLength', 64, false],
+    ['subdomainMinLength', 3, true], ['subdomainMinLength', 0, false], ['subdomainMinLength', 2.5, false], ['subdomainMaxLength', 40, true], ['subdomainMaxLength', 41, false], ['subdomainMaxLength', 63, false],
     ['subdomainChangeLimitPerPeriod', 0, true], ['subdomainChangeLimitPerPeriod', 51, false], ['subdomainChangePeriodDays', 365, true], ['subdomainChangePeriodDays', 0, false],
     ['wwwPolicy', 'apex', true], ['wwwPolicy', 'www', true], ['wwwPolicy', 'both', false], ['domainDnsLiveChecks', true, true], ['domainDnsLiveChecks', 'yes', false],
     ['baseDomain', 'get4domain.com', true], ['baseDomain', 'Get4Domain.com', false], ['baseDomain', 'localhost', false], ['baseDomain', 'a/b.com', false],

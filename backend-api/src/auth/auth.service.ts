@@ -12,6 +12,8 @@ import { packError } from '../v3-packs/pack.errors';
 import { RegistrationHook, SiteAnswer } from '../plans/registration/registration.hook';
 import { TermsSessionFlag } from '../terms/terms-ports';
 import { TrialSignupPolicy } from '../v3-trial/trial-signup.policy';
+import { candidateSlug } from '../v3-trial/core/trial-core';
+import { SUBDOMAIN_HARD_MAX } from '../site-domains/settings/domain-settings';
 import { ReferralAttributionPort } from '../plans/registration/referral-attribution.port';
 import { effectiveStaffRole, PARTNER_ROLE, staffLabelOf } from './guards/admin-role-matrix';
 
@@ -129,7 +131,7 @@ export class AuthService {
       businessName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40) || 'site';
     let candidate = base;
     for (let n = 2; await this.prisma.vendor.findUnique({ where: { subdomain: candidate } }); n++) {
-      candidate = `${base}-${n}`;
+      candidate = candidateSlug(base, n, SUBDOMAIN_HARD_MAX);   // the number never pushes the address over the limit
     }
     return candidate;
   }

@@ -1,6 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import { MANDATORY_RESERVED_SUBDOMAINS } from './reserved-subdomains';
 
+/** E11d (owner decision D1): no free subdomain is longer than this, whatever the setting says: a longer name can stop the web server from loading its host list. */
+export const SUBDOMAIN_HARD_MAX = 40;
+
 /** Editable settings of slice 5.6 (stored in g4d_plan_settings, edited through the existing plan-settings API). Every default is documented here. */
 export interface DomainSettings {
   /** names no vendor may take as a free subdomain (technical and impersonation-prone names); matched after look-alike folding */
@@ -60,7 +63,7 @@ export function domainSettingProblem(key: keyof DomainSettings, value: unknown):
     case 'reservedSubdomains': return nameList(value, 500, 1) ? null : 'must be a list of up to 500 lowercase names (letters, digits, hyphen)';
     case 'blockedSubdomainWords': return nameList(value, 500, 3) ? null : 'must be a list of up to 500 lowercase words of 3 or more letters';
     case 'subdomainMinLength': return intIn(value, 1, 30) ? null : 'must be a whole number from 1 to 30';
-    case 'subdomainMaxLength': return intIn(value, 3, 63) ? null : 'must be a whole number from 3 to 63';
+    case 'subdomainMaxLength': return intIn(value, 3, SUBDOMAIN_HARD_MAX) ? null : `must be a whole number from 3 to ${SUBDOMAIN_HARD_MAX}`;
     case 'subdomainChangeLimitPerPeriod': return intIn(value, 0, 50) ? null : 'must be a whole number from 0 to 50';
     case 'subdomainChangePeriodDays': return intIn(value, 1, 3650) ? null : 'must be a whole number of days from 1 to 3650';
     case 'baseDomain': return typeof value === 'string' && value.length <= 120 && /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(value) ? null : 'must be a lowercase domain name such as example.com';

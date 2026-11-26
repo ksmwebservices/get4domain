@@ -1,0 +1,11 @@
+# Every minute. A calendar timer, because a one-shot service never stays "active" for a timer to count from.
+[Unit]
+Description=Every minute: Get4Domain V3 vendor host names for nginx
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=5s
+Unit=g4d-v3-vendor-hosts-sync.service
+
+[Install]
+WantedBy=timers.target
