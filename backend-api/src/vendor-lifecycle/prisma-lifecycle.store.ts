@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { assertAnotherSuperAdmin, isPlatformAdminAccount, lockSuperAdmins } from '../admin-team/last-super-admin';
 import { KeyedQueue } from '../common/keyed-queue';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../plans/admin/audit.service';
@@ -31,6 +32,11 @@ export class PrismaLifecycleStore extends LifecycleStore {
 
   async setVendorStatus(vendorId: string, status: 'ACTIVE' | 'SUSPENDED', audit: AuditEntry): Promise<void> {
     await this.queue.run(`lifecycle:${vendorId}`, () => this.prisma.$transaction(async (tx) => {
+      if (status === 'SUSPENDED') {
+        // E11c: suspending the platform's own administrator account takes a Super admin sign-in away; the last one stays
+        const account = await tx.vendor.findUnique({ where: { id: vendorId }, select: { role: true, status: true } });
+        if (account && isPlatformAdminAccount(account)) { await lockSuperAdmins(tx); await assertAnotherSuperAdmin(tx, { vendorId }); }
+      }
       await tx.vendor.update({ where: { id: vendorId }, data: { status } });
       await this.audit(tx, audit);
     }, { maxWait: 15_000 }));

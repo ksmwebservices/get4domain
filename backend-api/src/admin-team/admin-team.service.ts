@@ -8,6 +8,7 @@ import { WhatsAppService } from '../notifications/whatsapp.service';
 import { InviteAdminDto } from './dto/invite-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { AcceptAdminInviteDto } from './dto/accept-admin-invite.dto';
+import { assertAnotherSuperAdmin, isActiveSuperMember, underSuperAdminLock } from './last-super-admin';
 
 // Never leak password/inviteToken back to the client.
 type SafeAdminMember = Omit<AdminTeamMember, 'password' | 'inviteToken'>;
@@ -58,19 +59,24 @@ export class AdminTeamService {
   }
 
   async update(id: string, dto: UpdateAdminDto): Promise<SafeAdminMember> {
-    const member = await this.prisma.adminTeamMember.findUnique({ where: { id } });
-    if (!member) throw new NotFoundException('Team member not found');
-    const updated = await this.prisma.adminTeamMember.update({
-      where: { id },
-      data: { role: dto.role ?? member.role, status: dto.status ?? member.status },
+    // read, check and write in one locked transaction: the last Super admin can never be demoted or switched off
+    const updated = await underSuperAdminLock<AdminTeamMember>(this.prisma, async (tx) => {
+      const member = await tx.adminTeamMember.findUnique({ where: { id } });
+      if (!member) throw new NotFoundException('Team member not found');
+      const next = { role: dto.role ?? member.role, status: dto.status ?? member.status };
+      if (isActiveSuperMember(member) && !isActiveSuperMember(next)) await assertAnotherSuperAdmin(tx, { memberId: id });
+      return tx.adminTeamMember.update({ where: { id }, data: next });
     });
     return this.toSafe(updated);
   }
 
   async remove(id: string): Promise<SafeAdminMember> {
-    const member = await this.prisma.adminTeamMember.findUnique({ where: { id } });
-    if (!member) throw new NotFoundException('Team member not found');
-    const updated = await this.prisma.adminTeamMember.update({ where: { id }, data: { status: 'removed', inviteToken: null } });
+    const updated = await underSuperAdminLock<AdminTeamMember>(this.prisma, async (tx) => {
+      const member = await tx.adminTeamMember.findUnique({ where: { id } });
+      if (!member) throw new NotFoundException('Team member not found');
+      if (isActiveSuperMember(member)) await assertAnotherSuperAdmin(tx, { memberId: id });
+      return tx.adminTeamMember.update({ where: { id }, data: { status: 'removed', inviteToken: null } });
+    });
     return this.toSafe(updated);
   }
 

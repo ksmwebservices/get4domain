@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Vendor } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { assertAnotherSuperAdmin, isPlatformAdminAccount, underSuperAdminLock } from '../admin-team/last-super-admin';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { WalletService } from '../wallet/wallet.service';
@@ -148,9 +149,20 @@ export class VendorsService {
   }
 
   async remove(id: string): Promise<Vendor> {
-    await this.findOne(id);
+    const vendor = await this.findOne(id);
+    // E11c: the platform's own administrator account is a Super admin sign-in; the last one is never deleted
+    if (isPlatformAdminAccount(vendor)) {
+      return underSuperAdminLock<Vendor>(this.prisma, async (tx) => {
+        await assertAnotherSuperAdmin(tx, { vendorId: id });
+        return this.deleteRow(() => tx.vendor.delete({ where: { id } }));
+      });
+    }
+    return this.deleteRow(() => this.prisma.vendor.delete({ where: { id } }));
+  }
+
+  private async deleteRow(run: () => Promise<Vendor>): Promise<Vendor> {
     try {
-      return await this.prisma.vendor.delete({ where: { id } });
+      return await run();
     } catch {
       throw new ConflictException(
         'Cannot delete vendor with existing subscriptions, invoices, tickets or CMS records — suspend instead',
@@ -159,7 +171,13 @@ export class VendorsService {
   }
 
   async suspend(id: string): Promise<Vendor> {
-    await this.findOne(id);
+    const vendor = await this.findOne(id);
+    if (isPlatformAdminAccount(vendor)) {
+      return underSuperAdminLock<Vendor>(this.prisma, async (tx) => {
+        await assertAnotherSuperAdmin(tx, { vendorId: id });
+        return tx.vendor.update({ where: { id }, data: { status: 'SUSPENDED' } });
+      });
+    }
     return this.prisma.vendor.update({ where: { id }, data: { status: 'SUSPENDED' } });
   }
 

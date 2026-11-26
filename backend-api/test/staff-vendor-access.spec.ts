@@ -113,6 +113,7 @@ describe('no controller decides "is this an admin?" on its own any more', () => 
     'commercial/foundation.services.ts': 'its own CommercialAdminGuard / MoneyAdminGuard role rules',
     'registry/dashboard-context.service.ts': 'refuses staff the vendor dashboard',
     'admin-team/admin-team.controller.ts': 'echoes the caller own role',
+    'admin-team/last-super-admin.ts': 'classifies accounts (which ones can sign in as Super admin) so the last one is never removed; it grants nobody access',
   };
   const walk = (dir: string): string[] => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : e.name.endsWith('.ts') ? [path.join(dir, e.name)] : []));
   const INLINE = /role\s*[!=]==?\s*'(ADMIN|SUPER_ADMIN)'|Boolean\(\s*user\.adminRole\s*\)|u\.role\s*===\s*'ADMIN'/;
