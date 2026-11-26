@@ -16,6 +16,8 @@ export interface NewPublication {
   missingFieldsJson: MissingField[]; warningsJson: string[]; languages: string; totalBytes: number; createdByType: ActorKind; createdById: string | null;
 }
 export type NewPage = Omit<PageRow, 'publicationId' | 'vendorId'>;
+/** A stored site event, as read back: who published or rolled back a version, and why. */
+export interface SiteEventRow { publicationId: string | null; type: string; actorType: ActorKind; actorId: string | null; detail: Record<string, unknown> }
 export interface SiteEventInput { type: 'BUILT' | 'PUBLISHED' | 'ROLLED_BACK' | 'THEME_CHANGED' | 'NOINDEX_CHANGED' | 'CANONICAL_SWITCHED'; actorType: ActorKind; actorId: string | null; detail: Record<string, unknown> }
 /** Runs inside the repository's transaction so the audit row and the change are saved together or not at all (Prisma passes its transaction client). */
 export type TxHook = (tx: unknown) => Promise<void>;
@@ -35,6 +37,10 @@ export abstract class SiteRepository {
   abstract getPublication(id: string): Promise<PublicationRow | null>;
   abstract listPublications(vendorId: string, take: number): Promise<PublicationRow[]>;
   abstract pagesOf(publicationId: string): Promise<PageRow[]>;
+  /** Only the versions that were published at least once, newest version first. */
+  abstract listPublished(vendorId: string, page: { skip: number; take: number }): Promise<{ items: PublicationRow[]; total: number }>;
+  /** The events that made these versions live (PUBLISHED and ROLLED_BACK), oldest first; this vendor's only. */
+  abstract publishEventsOf(vendorId: string, publicationIds: string[]): Promise<SiteEventRow[]>;
   abstract getPage(publicationId: string, path: string, lang: string): Promise<PageRow | null>;
   /** Creates the next version (under the build lock) with its pages, one event and the audit hook. */
   abstract createPublication(data: NewPublication, pages: NewPage[], event: SiteEventInput, audit?: TxHook): Promise<PublicationRow>;

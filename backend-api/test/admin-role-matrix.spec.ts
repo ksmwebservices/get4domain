@@ -148,6 +148,7 @@ const ALL_STAFF_ROUTES = [
   'POST /admin/quotes', 'GET /admin/quotes', 'GET /admin/quotes/:id', 'PUT /admin/quotes/:id/status', 'POST /admin/quotes/proposals', 'GET /admin/quotes/:id/pdf', 'POST /admin/quotes/:id/share',
   'GET /website-themes/all', 'GET /website-themes/:id/unlocks',
   'GET /v3/admin/sites', 'GET /v3/admin/vendors/:id/site',   // S54.7: summaries only, never html
+  'GET /v3/admin/vendors/:id/site/revisions',   // E11a: published versions, summaries only
   'GET /v3/admin/banner-library',   // 5.5b: the library with its licences is readable by all staff
   'GET /v3/admin/seo/pages', 'GET /v3/admin/vendors/:id/site/seo',   // B1: SEO reports, read only
   // B4 slice 5.16b: all staff read the catalogue; MARKETING gets no money field (tested in services-api.spec.ts)
@@ -238,7 +239,7 @@ ALL_STAFF_ROUTES.push(   // E9a: open at the door so a TELECALLER can reach them
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(468);
+    expect(oracle).toHaveLength(469);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

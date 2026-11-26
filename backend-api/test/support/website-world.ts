@@ -143,7 +143,7 @@ export const OWNER_ACTOR: Actor = { type: 'VENDOR', id: 'owner-1', ip: null };
 
 export interface WebsiteWorld {
   repo: MemorySiteRepo; store: MemoryWebsiteStore; snapshots: MemorySnapshots; cache: RecordingCache; web: WebsiteService; build: SiteBuildService; publisher: PublishService; pub: SitePublicService;
-  content: ContentSource; state: { doc: SourceDocument; ent: ResolvedEntitlements }; scans: string[][]; audit: string[];
+  content: ContentSource; state: { doc: SourceDocument; ent: ResolvedEntitlements }; scans: string[][]; audit: string[]; auditDetails: Array<{ action: string; actorId: string | null; after: Record<string, unknown> }>;
   seo: SeoService; seoStore: MemoryPageSeoStore; location: LocationService; locStore: MemorySiteLocationStore; reviewLink: ReviewLinkService; rlStore: MemoryReviewLinkStore; testimonials: TestimonialsService; tmStore: MemoryTestimonialStore;
   reviews: ReviewService; rstore: MemoryReviewStore; notices: RecordingNotifier['items']; activity: Array<{ vendorId: string | null; actionKey: string }>; scanSources: string[];
   media: MediaService; banners: BannerLibraryService; mstore: MemoryMediaStore; storage: FakeMediaStorage; image: FakeImagePort; wsettings: { v: WebsiteSettings }; vendorId: string;
@@ -159,7 +159,8 @@ export function websiteWorld(o: { level?: 'FREE' | 'PRO'; kind?: 'plumber' | 'de
   const legacy = { load: async () => state.doc };
   const content = new ManagedContentSource(legacy as never, snapshots);
   const ents = { resolve: async () => state.ent };
-  const auditSink: SiteAudit = { hook: (_a, action) => async () => { audit.push(action); } };
+  const auditDetails: WebsiteWorld['auditDetails'] = [];
+  const auditSink: SiteAudit = { hook: (a, action, _id, after) => async () => { audit.push(action); auditDetails.push({ action, actorId: a.id, after }); } };
   const themes = themeService();
   const build = new SiteBuildService(repo, themes, content, ents as never, auditSink, undefined, undefined, undefined, snapshots); build.clock = () => NOW;
   const scan = { scan: async (_v: string, source: string, texts: string[]) => { scanSources.push(source); scans.push(texts); } };
@@ -176,7 +177,7 @@ export function websiteWorld(o: { level?: 'FREE' | 'PRO'; kind?: 'plumber' | 'de
   const banners = new BannerLibraryService(mstore, web);
   const rstore = new MemoryReviewStore(); const notifier = new RecordingNotifier();
   const reviews = new ReviewService(rstore, web, notifier, { record: async (i: { vendorId: string | null; actionKey: string }) => { activity.push({ vendorId: i.vendorId, actionKey: i.actionKey }); return null; } } as never, scan as never);
-  return { repo, store, snapshots, cache, web, build, publisher, pub, content, state, scans, audit, media, banners, mstore, storage, image, wsettings, vendorId: state.doc.vendor.id, reviews, rstore, notices: notifier.items, activity, scanSources, seo, seoStore, location, locStore, reviewLink, rlStore, testimonials, tmStore };
+  return { auditDetails, repo, store, snapshots, cache, web, build, publisher, pub, content, state, scans, audit, media, banners, mstore, storage, image, wsettings, vendorId: state.doc.vendor.id, reviews, rstore, notices: notifier.items, activity, scanSources, seo, seoStore, location, locStore, reviewLink, rlStore, testimonials, tmStore };
 }
 
 export type { LoadOptions };

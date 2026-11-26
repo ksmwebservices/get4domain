@@ -6,7 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { MissingField, siteError } from '../site.errors';
 import { HostResolver } from './site-public.service';
 import {
-  NewPage, NewPublication, PageRow, PublicationRow, PublishOptions, RollbackOptions, SiteEventInput, SiteRepository, SiteSettingsRow, TxHook,
+  NewPage, NewPublication, PageRow, PublicationRow, PublishOptions, RollbackOptions, SiteEventInput, SiteEventRow, SiteRepository, SiteSettingsRow, TxHook,
 } from './site.repository';
 
 const notFound = (): NotFoundException => new NotFoundException(siteError('PUBLICATION_NOT_FOUND', 'That version of the site does not exist.'));
@@ -41,6 +41,17 @@ export class PrismaSiteRepository extends SiteRepository {
   async listPublications(vendorId: string, take: number) { return (await this.prisma.v3SitePublication.findMany({ where: { vendorId }, orderBy: { version: 'desc' }, take })).map(toPub); }
   async pagesOf(publicationId: string) { return (await this.prisma.v3SitePublicationPage.findMany({ where: { publicationId }, orderBy: [{ lang: 'asc' }, { path: 'asc' }] })).map(toPage); }
   async getPage(publicationId: string, path: string, lang: string) { const r = await this.prisma.v3SitePublicationPage.findUnique({ where: { publicationId_path_lang: { publicationId, path, lang } } }); return r ? toPage(r) : null; }
+
+  async listPublished(vendorId: string, page: { skip: number; take: number }) {
+    const where: Prisma.V3SitePublicationWhereInput = { vendorId, publishedAt: { not: null } };
+    const [rows, total] = await Promise.all([this.prisma.v3SitePublication.findMany({ where, orderBy: { version: 'desc' }, skip: page.skip, take: page.take }), this.prisma.v3SitePublication.count({ where })]);
+    return { items: rows.map(toPub), total };
+  }
+  async publishEventsOf(vendorId: string, publicationIds: string[]): Promise<SiteEventRow[]> {
+    if (!publicationIds.length) return [];
+    const rows = await this.prisma.v3SiteEvent.findMany({ where: { vendorId, publicationId: { in: publicationIds }, type: { in: ['PUBLISHED', 'ROLLED_BACK'] } }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] });
+    return rows.map((r) => ({ publicationId: r.publicationId, type: r.type, actorType: r.actorType, actorId: r.actorId, detail: (r.detailJson ?? {}) as Record<string, unknown> }));
+  }
 
   async createPublication(data: NewPublication, pages: NewPage[], event: SiteEventInput, audit?: TxHook): Promise<PublicationRow> {
     return this.queue.run(`site-build:${data.vendorId}`, () => this.prisma.$transaction(async (tx) => {

@@ -1,7 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { siteError } from '../../src/site-publish/site.errors';
 import {
-  NewPage, NewPublication, PageRow, PublicationRow, PublishOptions, RollbackOptions, SiteEventInput, SiteRepository, SiteSettingsRow, TxHook,
+  NewPage, NewPublication, PageRow, PublicationRow, PublishOptions, RollbackOptions, SiteEventInput, SiteEventRow, SiteRepository, SiteSettingsRow, TxHook,
 } from '../../src/site-publish/publish/site.repository';
 
 const notFound = (): NotFoundException => new NotFoundException(siteError('PUBLICATION_NOT_FOUND', 'That version of the site does not exist.'));
@@ -38,6 +38,15 @@ export class MemorySiteRepo extends SiteRepository {
   async listPublications(vendorId: string, take: number) { return this.forVendor(vendorId).slice(0, take).map((p) => ({ ...p })); }
   async pagesOf(publicationId: string) { return this.pages.filter((p) => p.publicationId === publicationId).map((p) => ({ ...p })); }
   async getPage(publicationId: string, path: string, lang: string) { const p = this.pages.find((x) => x.publicationId === publicationId && x.path === path && x.lang === lang); return p ? { ...p } : null; }
+
+  async listPublished(vendorId: string, page: { skip: number; take: number }) {
+    const all = this.forVendor(vendorId).filter((p) => p.publishedAt !== null);
+    return { items: all.slice(page.skip, page.skip + page.take).map((p) => ({ ...p })), total: all.length };
+  }
+  async publishEventsOf(vendorId: string, publicationIds: string[]): Promise<SiteEventRow[]> {
+    return this.events.filter((e) => e.vendorId === vendorId && e.publicationId !== null && publicationIds.includes(e.publicationId) && (e.type === 'PUBLISHED' || e.type === 'ROLLED_BACK'))
+      .map((e) => ({ publicationId: e.publicationId, type: e.type, actorType: e.actorType, actorId: e.actorId, detail: { ...e.detail } }));
+  }
 
   async createPublication(data: NewPublication, pages: NewPage[], event: SiteEventInput, audit?: TxHook): Promise<PublicationRow> {
     return this.locked(`build:${data.vendorId}`, async () => {

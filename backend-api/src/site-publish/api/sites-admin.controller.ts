@@ -10,7 +10,7 @@ import { SiteProvisionFacts } from '../publish/site-provision-facts.service';
 import { SitePreviewService } from '../publish/site-preview.service';
 import { SiteSettingsService, summarise } from '../publish/site-settings.service';
 import { SiteRepository } from '../publish/site.repository';
-import { AssignThemeDto, BuildSiteDto, NoindexDto, PublishSiteDto, RollbackSiteDto, SetThemeDto } from './dto/site.dto';
+import { AssignThemeDto, BuildSiteDto, NoindexDto, PublishSiteDto, SetThemeDto } from './dto/site.dto';
 import { previewHeaders, settingsView } from './site-http';
 
 /** How many sites of one list page are checked at the same time: each check reads several tables, and a whole page at once would take every pooled database connection. */
@@ -76,12 +76,6 @@ export class SitesAdminController {
   @ApiOperation({ summary: 'Publish a vendor\'s preview' })
   async publish(@Param('id') id: string, @Body() dto: PublishSiteDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
     return summarise(await this.publisher.publish(id, dto.publicationId, actorOf(user, req)));
-  }
-
-  @Post('vendors/:id/site/rollback') @HttpCode(200)
-  @ApiOperation({ summary: 'Republish an earlier version of a vendor\'s site as a new version' })
-  async rollback(@Param('id') id: string, @Body() dto: RollbackSiteDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
-    return summarise(await this.publisher.rollback(id, dto.toVersion, actorOf(user, req)));
   }
 
   @Put('vendors/:id/site/noindex') @HttpCode(200)

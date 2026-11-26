@@ -6,6 +6,8 @@ import { ActOnBehalfCron, ActOnBehalfService } from './act-on-behalf/act-on-beha
 import { ActOnBehalfInterceptor } from './act-on-behalf/act-on-behalf.interceptor';
 import { ActOnBehalfStore, PrismaActOnBehalfStore } from './act-on-behalf/act-on-behalf.store';
 import { AdminActOnBehalfController, MeActOnBehalfController } from './api/act-on-behalf.controllers';
+import { AdminSiteVersionsController } from './api/admin-versions.controller';
+import { SiteVersionsService } from './versions/site-versions.service';
 import { OnboardingQueueService } from './onboarding/onboarding-queue.service';
 import { AdminMediaController, MeMediaController } from './api/media.controllers';
 import { AdminReviewController } from './api/review.controllers';
@@ -45,11 +47,13 @@ export const WEBSITE_PROVIDERS = [
   { provide: ReviewLinkStore, useClass: PrismaReviewLinkStore }, ReviewLinkProjector, ReviewLinkService,
   // B4 testimonials
   { provide: TestimonialStore, useClass: PrismaTestimonialStore }, TestimonialProjector, TestimonialsService,
+  // E11a: staff see a site's published versions and go back to one
+  SiteVersionsService,
   // 5.13b act on behalf (the interceptor is global like the activity interceptor) and the onboarding queue
   { provide: ActOnBehalfStore, useClass: PrismaActOnBehalfStore }, ActOnBehalfService, ActOnBehalfCron, { provide: APP_INTERCEPTOR, useClass: ActOnBehalfInterceptor }, OnboardingQueueService,
   { provide: LIVE_PROJECTORS, useFactory: (seo: SeoProjector, loc: LocationProjector, rl: ReviewLinkProjector, tm: TestimonialProjector) => [seo, loc, rl, tm], inject: [SeoProjector, LocationProjector, ReviewLinkProjector, TestimonialProjector] },
 ];
-export const WEBSITE_CONTROLLERS = [MeWebsiteController, MeMediaController, AdminMediaController, AdminReviewController, AdminSeoController, AdminActOnBehalfController, MeActOnBehalfController];
+export const WEBSITE_CONTROLLERS = [MeWebsiteController, MeMediaController, AdminMediaController, AdminReviewController, AdminSeoController, AdminActOnBehalfController, MeActOnBehalfController, AdminSiteVersionsController];
 
 /**
  * The Website manager (slice 5.5): drafts, preview, publish, revisions. It builds and publishes only through the site publish module (SitePublishModule) and reads

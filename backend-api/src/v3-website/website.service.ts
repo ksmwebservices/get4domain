@@ -352,20 +352,25 @@ export class WebsiteService {
   }
 
   /** Republish an earlier version as a new one. The draft becomes that version's content, so the next edit starts from what is live. Needs the plan's version history. */
-  restore(vendorId: string, toVersion: number, actor: Actor): Promise<{ publication: PublicationSummary }> {
+  restore(vendorId: string, toVersion: number, actor: Actor, o: { reason?: string } = {}): Promise<{ publication: PublicationSummary; draftRestored: boolean; replacedUnpublishedChanges: boolean }> {
     return websiteQueue.run(`site-manager:${vendorId}`, async () => {
       const pubs = await this.repo.listPublications(vendorId, 500);
       if (!pubs.some((p) => p.version === toVersion)) throw versionNotFound();
       const doc = await this.docOfVersion(vendorId, toVersion, pubs);
-      const row = await this.publisher.rollback(vendorId, toVersion, actor);
+      // read before the rollback changes what is live: does the draft hold edits that were never published, and will they be replaced?
+      const before = await this.store.getDraft(vendorId);
+      const replacedUnpublishedChanges = before !== null && hashDoc(before.doc) !== hashDoc(await this.liveDoc(vendorId)) && hashDoc(before.doc) !== hashDoc(doc);
+      const row = await this.publisher.rollback(vendorId, toVersion, actor, o.reason);
       await this.snapshots?.record(vendorId, row.id, row.version, doc);
-      for (let i = 0; i < 5; i++) {
+      let draftRestored = false;
+      for (let i = 0; i < 5 && !draftRestored; i++) {
         const cur = await this.store.getDraft(vendorId);
-        if (await this.store.saveDraft(vendorId, doc, { expectedRev: cur?.rev ?? null, baseVersion: row.version, by: actor.id })) break;
+        draftRestored = (await this.store.saveDraft(vendorId, doc, { expectedRev: cur?.rev ?? null, baseVersion: row.version, by: actor.id })) !== null;
       }
+      if (!draftRestored) this.logger.warn(`the draft was not reset after going back to version ${toVersion}`);
       await this.cache.purge(vendorId);
       await this.project(vendorId, row.version, doc);
-      return { publication: summarise(row) as PublicationSummary };
+      return { publication: summarise(row) as PublicationSummary, draftRestored, replacedUnpublishedChanges };
     });
   }
 

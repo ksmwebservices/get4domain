@@ -159,26 +159,23 @@ describe('site API', () => {
       expect((await get(`/v3/admin/vendors/${V}/site/preview/${id}/${encodeURIComponent('/')}`, 'MARKETING')).status).toBe(403);
       for (const [m, url, body] of [
         ['put', `/v3/admin/vendors/${V}/site/theme`, { themeId: 'free-service-pro' }], ['post', `/v3/admin/vendors/${V}/site/build`, {}], ['post', `/v3/admin/vendors/${V}/site/publish`, { publicationId: id }],
-        ['post', `/v3/admin/vendors/${V}/site/rollback`, { toVersion: 1 }], ['put', `/v3/admin/vendors/${V}/site/noindex`, { forceNoindex: true }],
+        ['put', `/v3/admin/vendors/${V}/site/noindex`, { forceNoindex: true }],
       ] as const) expect((await send(m, url, 'MARKETING', body)).status).toBe(403);
     });
     it('a vendor token is refused on every staff route', async () => {
       for (const url of ['/v3/admin/sites', `/v3/admin/vendors/${V}/site`]) expect((await get(url, 'owner')).status).toBe(403);
       expect((await send('post', `/v3/admin/vendors/${V}/site/build`, 'owner')).status).toBe(403);
     });
-    it('OPERATIONS builds, publishes, previews html, rolls back, switches noindex on behalf of a vendor', async () => {
+    // going back to an earlier version moved to the website module (E11a): its staff cases are in e11a-site-versions.spec.ts
+    it('OPERATIONS builds, publishes, previews html and switches noindex on behalf of a vendor', async () => {
       const b = await send('post', `/v3/admin/vendors/${V}/site/build`, 'OPERATIONS'); expect(b.status).toBe(200);
       const id = b.body.data.publication.id as string;
       const prev = await get(`/v3/admin/vendors/${V}/site/preview/${id}/${encodeURIComponent('/')}`, 'OPERATIONS'); expect(prev.status).toBe(200); expect(prev.headers['x-robots-tag']).toContain('noindex');
       expect((await send('post', `/v3/admin/vendors/${V}/site/publish`, 'OPERATIONS', { publicationId: id })).status).toBe(200);
       const off = await send('put', `/v3/admin/vendors/${V}/site/noindex`, 'SUPER_ADMIN', { forceNoindex: true });
       expect(off.status).toBe(200); expect(off.body.data.published).toMatchObject({ indexable: false });
-      expect((await send('post', `/v3/admin/vendors/${V}/site/rollback`, 'OPERATIONS', { toVersion: 1 })).body.code).toBe('PUBLISH_BLOCKED');   // forced noindex vs an indexable snapshot
-      expect(JSON.stringify((await send('post', `/v3/admin/vendors/${V}/site/rollback`, 'OPERATIONS', { toVersion: 1 })).body)).toContain('FORCE_NOINDEX');
     });
     it('PUBLISH_BLOCKED carries the missing list through the error filter', async () => {
-      const r = await send('post', `/v3/admin/vendors/${V}/site/rollback`, 'OPERATIONS', { toVersion: 1 });
-      expect(r.status).toBe(404);   // nothing published yet
       const id = (await send('post', `/v3/admin/vendors/${V}/site/build`, 'OPERATIONS')).body.data.publication.id as string;
       w.repo.pubs.get(id)!.warningsJson = ['missing-template:home'];
       const blocked = await send('post', `/v3/admin/vendors/${V}/site/publish`, 'OPERATIONS', { publicationId: id });

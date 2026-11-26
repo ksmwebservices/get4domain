@@ -1,5 +1,5 @@
-import { Type } from 'class-transformer';
-import { Allow, IsArray, IsInt, IsObject, IsString, Matches, MaxLength, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { Allow, IsArray, IsInt, IsObject, IsString, Matches, MaxLength, Min, MinLength } from 'class-validator';
 
 /** A key of the editable-field map such as hero.title. Whether the key is editable is decided by the document rules, which answer FIELD_LOCKED for any other key. */
 export class DraftFieldDto {
@@ -23,6 +23,12 @@ export class DraftBrandDto {
 }
 export class RestoreRevisionDto {
   @Type(() => Number) @IsInt() @Min(1) toVersion!: number;
+}
+/** Staff going back to an earlier version must say why (kept on the site event and the audit row). Spaces at the ends do not count. */
+export class AdminRollbackSiteDto {
+  @Type(() => Number) @IsInt() @Min(1) toVersion!: number;
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString() @MinLength(5, { message: 'Write the reason in at least 5 characters' }) @MaxLength(300, { message: 'Keep the reason to 300 characters' }) reason!: string;
 }
 export class CompareRevisionsQuery {
   @Type(() => Number) @IsInt() @Min(1) from!: number;

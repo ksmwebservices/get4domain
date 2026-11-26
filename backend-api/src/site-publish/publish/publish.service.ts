@@ -92,16 +92,17 @@ export class PublishService {
     try { await this.scan.scan(vendorId, 'PUBLISH', (await this.repo.pagesOf(publicationId)).filter((pg) => pg.html.startsWith('<!doctype html>')).map((pg) => textOfHtml(pg.html))); } catch { /* a scan fault never undoes a publish */ }
   }
 
-  /** Republishes an older snapshot as a new version. Needs the plan feature site.revisions. */
-  async rollback(vendorId: string, toVersion: number, actor: Actor): Promise<PublicationRow> {
+  /** Republishes an older snapshot as a new version. Needs the plan feature site.revisions. A `reason` (staff rollbacks) is kept on the site event and on the audit row. */
+  async rollback(vendorId: string, toVersion: number, actor: Actor, reason?: string): Promise<PublicationRow> {
+    const why = reason ? { reason } : {};
     const ent = await this.entitlements.resolve(vendorId);
     const f = ent.features['site.revisions'];
     if (f?.state !== 'ACTIVE') throw new ForbiddenException(planError('FEATURE_LOCKED', 'Going back to an earlier version needs a plan with version history.', { feature: 'site.revisions', upsellText: f?.upsellText ?? null }));
     return this.repo.rollback(vendorId, toVersion, {
       now: this.clock(), actor,
       validate: (src) => this.revalidate(vendorId, src, { forPublish: false }),
-      event: (newVersion) => ({ type: 'ROLLED_BACK', actorType: actor.type, actorId: actor.id, detail: { toVersion, newVersion } }),
-      audit: this.audit.hook(actor, 'site.rollback', vendorId, { toVersion }),
+      event: (newVersion) => ({ type: 'ROLLED_BACK', actorType: actor.type, actorId: actor.id, detail: { toVersion, newVersion, ...why } }),
+      audit: this.audit.hook(actor, 'site.rollback', vendorId, { toVersion, ...why }),
     });
   }
 }
