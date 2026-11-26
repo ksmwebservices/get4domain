@@ -30,8 +30,8 @@ describe('render entitlements: callsToAction follows site.cta', () => {
     const hidden = entitlements('PRO', 'ecommerce'); delete hidden.features['site.cta'];
     expect(toRenderEntitlements(hidden).callsToAction).toBe(false);
   });
-  it('the render entitlements object has exactly the five keys the kit knows', () => {
-    expect(Object.keys(toRenderEntitlements(entitlements('PRO'))).sort()).toEqual(['booking', 'callsToAction', 'cart', 'customDomain', 'video']);
+  it('the render entitlements object has exactly the six keys the kit knows', () => {
+    expect(Object.keys(toRenderEntitlements(entitlements('PRO'))).sort()).toEqual(['booking', 'callsToAction', 'cart', 'chat', 'customDomain', 'video']);
     expect(resolveEntitlements).toBeDefined();
   });
 });

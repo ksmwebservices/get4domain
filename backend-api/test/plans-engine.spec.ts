@@ -235,11 +235,11 @@ describe('renderer bridge (pinned mapping for the theme kit)', () => {
     const input = baseInput({ subscription: sub('handyman_pro') });
     input.matrix.get('id_handyman_pro')!.set('site.video', { state: 'LIMITED' as never, limitValue: 3, enumValue: null, upsellText: null });
     expect(toRenderEntitlements(resolveEntitlements(input), true).video).toBe(false);
-    expect(Object.keys(render('handyman_pro')).sort()).toEqual(['booking', 'callsToAction', 'cart', 'customDomain', 'video']);   // 5.4b: callsToAction = site.cta ACTIVE
+    expect(Object.keys(render('handyman_pro')).sort()).toEqual(['booking', 'callsToAction', 'cart', 'chat', 'customDomain', 'video']);   // 5.4b: callsToAction = site.cta ACTIVE
     for (const v of Object.values(render('handyman_pro'))) expect(typeof v).toBe('boolean');
   });
   it('a LEGACY vendor gets all five false', () => {
-    expect(toRenderEntitlements(resolveEntitlements(baseInput({ flagOn: false })), true)).toEqual({ video: false, cart: false, booking: false, customDomain: false, callsToAction: false });
+    expect(toRenderEntitlements(resolveEntitlements(baseInput({ flagOn: false })), true)).toEqual({ video: false, cart: false, booking: false, customDomain: false, callsToAction: false, chat: false });
   });
 });
 

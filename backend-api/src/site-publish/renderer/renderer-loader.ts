@@ -22,7 +22,7 @@ export interface KitTheme { manifest: KitManifest; templates: Record<string, str
 export interface RenderInput {
   theme?: KitTheme; page: string | { slug: string; template?: string; item?: unknown; parent?: string };
   content: Record<string, unknown>; settings?: Record<string, unknown>; vendor?: Record<string, unknown>; host?: Record<string, unknown>;
-  entitlements?: { video?: boolean; cart?: boolean; booking?: boolean; customDomain?: boolean; callsToAction?: boolean };
+  entitlements?: { video?: boolean; cart?: boolean; booking?: boolean; customDomain?: boolean; callsToAction?: boolean; chat?: boolean };
 }
 export interface RenderSeo { title: string; description: string; canonical: string; structuredData: Record<string, unknown>; hreflang: Array<{ lang: string; href: string }> }
 export interface RenderResult { html: string; lang: string; seo: RenderSeo; slots: Array<{ name: string; rendered: boolean }>; warnings: string[]; template: string; variant?: { id: string } | null }

@@ -1,4 +1,5 @@
 import { kitCategoryFor } from '../../directory/core/listable-categories';
+import { requestFormFor } from '../../requests-orders/request-form';
 import { ResolvedEntitlements } from '../../plans/entitlements/entitlement-engine';
 import { Kit, loadKit } from '../renderer/renderer-loader';
 import { branchAddress, directionsFor } from '../../v3-website/core/branch-core';
@@ -127,6 +128,7 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
     social: { googleBusiness: str(ex.googleBusiness), instagram: str(cms?.instagram), facebook: str(cms?.facebook), youtube: str(cms?.youtube), linkedin: str(cms?.linkedin), x: str(ex.social?.x), custom: str(ex.social?.customUrl), customLabel: str(ex.social?.customLabel), maps: o.directions === false ? '' : str(cms?.googleMaps), whatsapp: waDigits.length >= 10 ? `https://wa.me/${waDigits}` : '' },
     cta: { label: str(ex.ctaLabel) || cat.ctaPrimary, href: phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : '/contact', secondaryLabel: '', secondaryHref: '' },
     ...(kitTerms ? { terms: kitTerms } : {}),
+    requestForm: requestFormFor(doc.vendor.industry),
     branches: (ex.branches ?? []).map((b) => ({ id: slugify(b.name), name: str(b.name), address: branchAddress(b), locality: str(b.locality), area: str(b.area), city: str(b.city), pin: str(b.pincode), mapUrl: o.directions === false ? '' : directionsFor(b) })),
     items, groups: (ex.groups ?? []).map((g) => ({ id: slugify(g.name), name: str(g.name) })), offers: (ex.offers ?? []).map((x) => ({ title: str(x.title), detail: str(x.detail) })), team: (ex.team ?? []).map((t) => ({ id: slugify(t.name), name: str(t.name), role: str(t.role), note: str(t.note), image: str(t.image) })),
     testimonials: (cms?.testimonials ?? []).filter((t) => !t.sample && !(t.proOnly && o.directions === false)).map((t) => ({ quote: str(t.quote), author: str(t.author), note: str(t.note) })),

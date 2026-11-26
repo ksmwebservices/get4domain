@@ -10,10 +10,20 @@ import { ConsentGate } from '../v3-mail/consent.port';
 import { planActive } from '../v3-mail/core/mail-core';
 import { InboxService } from '../v3-mail/inbox.service';
 import { MailSettingsService } from '../v3-mail/settings/mail-settings';
+import { PrismaService } from '../prisma/prisma.service';
+import { detailLines, RequestField, validateDetails } from './core/request-form-core';
+import { requestFormFor } from './request-form';
 import { PublicRequestsService } from './public-requests.service';
 
 /** What the theme's enquiry form posts (`name`, `phone`, `message`, `consent`, `source`), plus the optional extras a themed page may add. Any other field is ignored, never stored. */
-export interface EnquiryForm { name?: unknown; phone?: unknown; email?: unknown; message?: unknown; consent?: unknown; source?: unknown; item?: unknown; website?: unknown; otp?: unknown }
+export interface EnquiryForm { name?: unknown; phone?: unknown; email?: unknown; message?: unknown; consent?: unknown; source?: unknown; item?: unknown; website?: unknown; otp?: unknown; fields?: unknown }
+/** The answers to the business's own questions: a `fields` object (a script) or `f_<key>` form fields (the request sheet). Only keys of a lower-case name are read; the checking is done against that business's own list. */
+export function collectAnswers(form: EnquiryForm): Record<string, unknown> {
+  const src = (form ?? {}) as Record<string, unknown>; const out: Record<string, unknown> = {}; const NAME = /^[a-z][a-z0-9_]{0,31}$/;
+  if (src.fields && typeof src.fields === 'object' && !Array.isArray(src.fields)) for (const k of Object.keys(src.fields as Record<string, unknown>)) if (NAME.test(k)) out[k] = (src.fields as Record<string, unknown>)[k];
+  for (const k of Object.keys(src)) if (k.startsWith('f_') && NAME.test(k.slice(2))) out[k.slice(2)] = src[k];
+  return out;
+}
 export type EnquiryResult = { received: true; reference: string | null } | { otpRequired: true; message: string };
 
 const invalid = (errors: string[]): BadRequestException => new BadRequestException(b3Error('REQUEST_INVALID', 'Some details are missing or not valid.', { errors }));
@@ -38,7 +48,15 @@ export class EnquiryFormService {
     private readonly requests: PublicRequestsService, private readonly inbox: InboxService, @Inject(B3SettingsService) private readonly b3: Pick<B3SettingsService, 'get'>,
     @Inject(EntitlementsService) private readonly ents: Pick<EntitlementsService, 'resolve'>, private readonly mailSettings: MailSettingsService, private readonly consent: ConsentGate,
     @Optional() private readonly bus?: ActivityBus,
+    /** reads the business's registration category to find its request-form questions; absent = the default questions */
+    @Optional() private readonly prisma?: PrismaService,
   ) {}
+
+  /** The request-form questions of the business behind a host (its registration category; the default list when it is not known). */
+  private async fieldsFor(vendorId: string | null): Promise<RequestField[]> {
+    if (!vendorId || !this.prisma) return requestFormFor(null);
+    try { return requestFormFor((await this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { industry: true } }))?.industry ?? null); } catch { return requestFormFor(null); }
+  }
 
   /** The key is the same for the same visitor sending the same words to the same site inside one duplicate window, so the second post is a replay, not a second enquiry. */
   async keyFor(host: string, phoneE164: string, message: string): Promise<string> {
@@ -62,11 +80,18 @@ export class EnquiryFormService {
     if (!consentGiven(form?.consent)) errors.push('consent: agree to the current text before sending');
     if (errors.length) throw invalid(errors);
 
+    // the business's own questions (S1 shell): checked against ITS list, so a browser cannot add a field
+    const fields = await this.fieldsFor((await this.requests.lookup(hostIn))?.vendorId ?? null);
+    const answered = validateDetails(fields, collectAnswers(form));
+    if (!answered.ok) throw invalid(answered.errors);
+    const answers = answered.values; const lines = detailLines(fields, answers);
+
     const body = message || NO_MESSAGE;
     const honeypot = text(form?.website);
-    const key = await this.keyFor(String(hostIn ?? '').toLowerCase(), phone!, body);
+    const key = await this.keyFor(String(hostIn ?? '').toLowerCase(), phone!, Object.keys(answers).length ? `${body}|${JSON.stringify(answers)}` : body);
     const kind = item ? 'PRODUCT_ENQUIRY' : 'ENQUIRY';
-    const payload = item ? { productRef: item, ...(message ? { message } : {}) } : { message: body };
+    const payload = { ...(item ? { productRef: item, ...(message ? { message } : {}) } : { message: body }), ...(Object.keys(answers).length ? { answers } : {}) };
+    const inboxText = [message, ...lines].filter(Boolean).join('\n').slice(0, 1500) || NO_MESSAGE;   // the vendor reads the answers in the inbox copy too
     const submitBody = {
       kind, payload, name, phone: phone!, email, idempotencyKey: key, website: honeypot || undefined, otp: /^\d{6}$/.test(text(form?.otp)) ? text(form?.otp) : undefined,
       consent: { contactByBusiness: true, contactByPlatform: true, marketing: false, textVersion: s.customerConsentVersion },
@@ -76,11 +101,11 @@ export class EnquiryFormService {
     try { result = await this.requests.submit(hostIn, submitBody, ip); }
     catch (e) {
       if (!(e instanceof NotFoundException)) throw e;
-      return this.hold(hostIn, { key, name, phone: phone!, email, message: body, item: item || null, honeypot: honeypot !== '' });
+      return this.hold(hostIn, { key, name, phone: phone!, email, message: inboxText, item: item || null, honeypot: honeypot !== '' });
     }
     if ('otpRequired' in result) return { otpRequired: true, message: result.message };
     // A first, real (not spam, not replayed) request carries a tracking link: only then is the written copy made and the vendor alerted.
-    if (result.trackingUrl && !result.replay) await this.copyToInbox(hostIn, result.reference, { key: result.reference, name, phone: phone!, email, message: body, item: item || null });
+    if (result.trackingUrl && !result.replay) await this.copyToInbox(hostIn, result.reference, { key: result.reference, name, phone: phone!, email, message: inboxText, item: item || null });
     return { received: true, reference: result.reference };
   }
 
