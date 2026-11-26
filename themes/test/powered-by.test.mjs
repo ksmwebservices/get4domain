@@ -5,7 +5,7 @@ import { loadTheme, listVendorThemeIds } from '../lib/theme.mjs';
 import { sampleContent, ENTITLEMENTS_ON, ENTITLEMENTS_OFF } from '../fixtures/index.mjs';
 
 // D2: the published (static) site carries "Powered by Get4Domain" on every page, free or paid, listing-only or with calls to action, whatever the theme and the settings.
-const MARK = /<p class="g4d-footer__powered" data-g4d-powered-by>Powered by <a href="https:\/\/get4domain\.com" target="_blank" rel="noopener">Get4Domain<\/a><\/p>/g;
+const MARK = /<p class="g4d-footer__powered" data-g4d-powered-by>Powered by <a href="https:\/\/get4domain\.com\/" target="_blank" rel="noopener">Get4Domain<\/a><\/p>/g;
 const page = (id, slug, entitlements, extra = {}) => renderPage({ theme: loadTheme(id), page: { slug }, content: sampleContent('plumber'), settings: {}, vendor: { id: 'v' }, host: { siteUrl: 'https://x.get4domain.com' }, entitlements, ...extra });
 
 test('the mark: the words, the brand name alone as the link text, the address https://get4domain.com', () => {
