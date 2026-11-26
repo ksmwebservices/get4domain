@@ -57,7 +57,7 @@ export class MeWebsiteController {
   }
 
   @Put('draft/brand') @HttpCode(200)
-  @ApiOperation({ summary: 'Brand within the theme: accent colours, fonts from the theme list and the logo' })
+  @ApiOperation({ summary: 'Brand within the theme: accent colours, fonts from the theme list and the logo. REPLACES the whole brand: send every setting you want to keep (a setting left out is cleared).' })
   brand(@Tenant() t: TenantContext, @Body() dto: DraftBrandDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
     return this.web.save(t.vendorId, this.actor(user, req), { kind: 'brand', value: dto.brand });
   }
@@ -87,7 +87,7 @@ export class MeWebsiteController {
   locationParse(@Query('url') url: string) { return this.location.parse(url); }
 
   @Put('draft/location') @HttpCode(200)
-  @ApiOperation({ summary: 'Autosave the location: address lines, city, state, pincode, optional coordinates and a pasted full map link' })
+  @ApiOperation({ summary: 'Autosave the location: address lines, city, state, pincode, optional coordinates and a pasted full map link. REPLACES the whole location: send every part you want to keep (a part left out is cleared).' })
   locationSave(@Tenant() t: TenantContext, @Body() body: Record<string, unknown>, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
     return this.web.save(t.vendorId, this.actor(user, req), { kind: 'location', value: body });
   }

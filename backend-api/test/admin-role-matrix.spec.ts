@@ -74,6 +74,7 @@ const MARKETING_DENIED = [
   'GET /v3/admin/alerts', 'GET /v3/admin/alerts/:id', 'PATCH /v3/admin/alerts/:id', 'GET /v3/admin/vendors/:vendorId/activity', 'GET /v3/admin/attention',
   'GET /v3/admin/mail-rules',   // Block 4b slice 11: the recorded mail lanes and promotion rules
   // Block 4b slice 9: staff actions on a business: a plan change with a date, the business name and its history, the per-host visit report (OPERATIONS and SUPER_ADMIN; MARKETING refused)
+  'POST /v3/admin/vendors/:id/send-password-reset',   // Website Manager lane A: operations and super admin only
   'PUT /v3/admin/vendors/:id/business-name', 'GET /v3/admin/vendors/:id/business-name-history', 'POST /v3/admin/vendors/:id/plan-change', 'GET /v3/admin/vendors/:id/plan-changes', 'POST /v3/admin/plan-changes/:id/cancel', 'GET /v3/admin/vendors/:id/visits',
   // Block 4b slice 4: the support desk (OPERATIONS and SUPER_ADMIN; MARKETING refused)
   'GET /v3/admin/tickets', 'GET /v3/admin/tickets/:id', 'PUT /v3/admin/tickets/:id/assignee', 'PUT /v3/admin/tickets/:id/status', 'POST /v3/admin/tickets/:id/messages',
@@ -110,7 +111,7 @@ const MARKETING_DENIED = [
   'POST /v3/admin/provisioning/jobs/:id/retry', 'POST /v3/admin/provisioning/jobs/:id/cancel', 'POST /v3/admin/provisioning/jobs/:id/run',
   'POST /v3/admin/vendors/:id/claim-link/reissue', 'POST /v3/admin/vendors/:id/claim-link/revoke', 'GET /v3/admin/invites',
   // S54.7: sites. Anything that carries html, and every write, is OPERATIONS and SUPER_ADMIN; MARKETING only reads summaries (the two ALL_STAFF routes below)
-  'PUT /v3/admin/vendors/:id/site/theme', 'POST /v3/admin/vendors/:id/site/build', 'POST /v3/admin/vendors/:id/site/publish', 'POST /v3/admin/vendors/:id/site/rollback',
+  'PUT /v3/admin/vendors/:id/site/theme', 'POST /v3/admin/vendors/:id/site/theme/assign', 'POST /v3/admin/vendors/:id/site/build', 'POST /v3/admin/vendors/:id/site/publish', 'POST /v3/admin/vendors/:id/site/rollback',
   'GET /v3/admin/vendors/:id/site/preview/:publicationId/:path', 'PUT /v3/admin/vendors/:id/site/noindex',
   // 5.13b: act on behalf and the onboarding queue
   'POST /v3/admin/vendors/:id/act-on-behalf', 'POST /v3/admin/act-on-behalf/:sessionId/end', 'GET /v3/admin/act-on-behalf', 'GET /v3/admin/onboarding-queue',
@@ -230,7 +231,7 @@ MARKETING_DENIED.push('GET /v3/admin/theme-market/themes', 'GET /v3/admin/theme-
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(449);
+    expect(oracle).toHaveLength(451);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

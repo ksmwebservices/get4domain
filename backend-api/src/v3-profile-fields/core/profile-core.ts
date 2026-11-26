@@ -30,6 +30,7 @@ export const COMMON_FIELDS: readonly Spec[] = [
   t('address_line', 'Address', 'text', '', 'contact'), t('locality', 'Locality', 'text', '', 'contact'), t('city', 'City', 'text', '', 'contact'), t('state', 'State', 'text', '', 'contact'), t('pincode', 'Pincode', 'text', '', 'contact'),
   t('phone', 'Phone', 'phone', '', 'contact'), t('email', 'Email', 'email', '', 'contact'), t('whatsapp', 'WhatsApp number', 'phone', '', 'contact'),
   t('social_instagram', 'Instagram link', 'url', '', 'social'), t('social_facebook', 'Facebook link', 'url', '', 'social'), t('social_youtube', 'YouTube link', 'url', '', 'social'), t('social_linkedin', 'LinkedIn link', 'url', '', 'social'), t('social_x', 'X link', 'url', '', 'social'),
+  t('owner_name', 'Owner name', 'text', '', 'about'), t('organisation_name', 'Organisation name', 'text', '', 'about'), t('established_year', 'Year established', 'text', '', 'about'), t('google_business_link', 'Google Business Profile link', 'url', '', 'social'),
   t('banner_image', 'Banner image', 'image', '', 'hero'), t('banner_image_alt', 'Banner image description', 'text', '', 'hero'), t('gallery_images', 'Gallery images', 'imagelist', '', 'gallery'),
 ];
 
@@ -63,6 +64,7 @@ export const COMMON_MAP: ReadonlyArray<Omit<SiteMapRow, 'packKey' | 'categorySlu
   K('address_line', 'LOCATION', 'addressLine1'), K('locality', 'LOCATION', 'addressLine2'), K('city', 'LOCATION', 'city'), K('state', 'LOCATION', 'state'), K('pincode', 'LOCATION', 'pincode'),
   F('phone', 'contact.phone'), F('email', 'contact.email'), F('whatsapp', 'contact.whatsapp'),
   F('social_instagram', 'social.instagram'), F('social_facebook', 'social.facebook'), F('social_youtube', 'social.youtube'), F('social_linkedin', 'social.linkedin'), F('social_x', 'social.x'),
+  F('owner_name', 'about.ownerName'), F('organisation_name', 'about.organisation'), F('established_year', 'about.established'), F('google_business_link', 'social.googleBusiness'),
   F('banner_image', 'hero.image'), F('banner_image_alt', 'hero.imageAlt'),
   { fieldKey: 'gallery_images', targetKind: 'LIST', targetKey: 'gallery', itemMap: { src: 'src', alt: 'alt' }, active: true },
 ];

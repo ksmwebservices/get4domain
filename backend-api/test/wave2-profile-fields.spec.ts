@@ -144,7 +144,7 @@ describe('the service and the routes', () => {
 
   it('the loader is a dry run by default, idempotent, and never touches an edited row', async () => {
     const empty = new MemFields(); const dry = await loadProfileFields(empty, cats, { apply: false });
-    expect(dry).toMatchObject({ applied: false, packs: 16, fieldsToCreate: 1263 }); expect(empty.fields).toHaveLength(0);
+    expect(dry).toMatchObject({ applied: false, packs: 16, fieldsToCreate: 1327 }); expect(empty.fields).toHaveLength(0);
     const k = fields.fields.findIndex((f) => f.fieldKey === 'tagline' && f.packKey === 'RETAIL'); fields.fields[k] = { ...fields.fields[k], label: 'Edited by staff' };
     const again = await loadProfileFields(fields, cats, { apply: true }); expect(again).toMatchObject({ fieldsToCreate: 0, mapsToCreate: 0 }); expect(fields.fields[k].label).toBe('Edited by staff');
   });

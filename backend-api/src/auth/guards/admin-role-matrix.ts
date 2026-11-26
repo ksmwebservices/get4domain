@@ -163,6 +163,7 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // Block 4b slice 11: the recorded mail lanes and promotion rules (read: OPERATIONS + SUPER_ADMIN) and confirming a mailbox price (SUPER_ADMIN only)
   'GET /v3/admin/mail-rules': OPS_AND_SUPER, 'POST /v3/admin/mailbox-prices/:id/confirm': SUPER_ONLY,
   // Block 4b slice 9: staff actions on a business (A1 plan change with a date, A2 business name, the visit report) are OPERATIONS + SUPER_ADMIN; merging listings (A4) is SUPER_ADMIN only
+  'POST /v3/admin/vendors/:id/send-password-reset': OPS_AND_SUPER,   // Website Manager lane A: staff e-mail the owner a reset link (never set a password)
   'PUT /v3/admin/vendors/:id/business-name': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/business-name-history': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/plan-change': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/plan-changes': OPS_AND_SUPER, 'POST /v3/admin/plan-changes/:id/cancel': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/visits': OPS_AND_SUPER,
   'POST /v3/admin/listing-merges/plan': SUPER_ONLY, 'POST /v3/admin/listing-merges': SUPER_ONLY, 'GET /v3/admin/listing-merges': SUPER_ONLY, 'POST /v3/admin/listing-merges/:id/reverse': SUPER_ONLY,
   // Block 4b slice 4: the support desk (OPERATIONS + SUPER_ADMIN; MARKETING refused, tickets carry account details)
@@ -211,7 +212,7 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // B3 slice 5.1d: lifecycle actions and the owner deletion queue: OPERATIONS and SUPER_ADMIN, MARKETING refused everywhere (a deletion request identifies a business)
   'GET /v3/admin/vendors/:id/lifecycle': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/convert-to-free': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/restore-pro': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/extend-grace': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/suspend': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/reinstate': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/delete-empty-listing': OPS_AND_SUPER, 'GET /v3/admin/account-deletions': OPS_AND_SUPER, 'GET /v3/admin/account-deletions/:id': OPS_AND_SUPER, 'POST /v3/admin/account-deletions/:id/execute': OPS_AND_SUPER,
   'GET /v3/admin/sites': ALL_STAFF, 'GET /v3/admin/vendors/:id/site': ALL_STAFF,
-  'PUT /v3/admin/vendors/:id/site/theme': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/build': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/publish': OPS_AND_SUPER,
+  'PUT /v3/admin/vendors/:id/site/theme': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/theme/assign': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/build': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/publish': OPS_AND_SUPER,
   // 5.13b: act on behalf and the onboarding queue (the stage file's Website Developer and Customer Support roles do not exist: OPERATIONS and SUPER_ADMIN; MARKETING never)
   'POST /v3/admin/vendors/:id/act-on-behalf': OPS_AND_SUPER, 'POST /v3/admin/act-on-behalf/:sessionId/end': OPS_AND_SUPER, 'GET /v3/admin/act-on-behalf': OPS_AND_SUPER, 'GET /v3/admin/onboarding-queue': OPS_AND_SUPER,
   // 5.6c: own-domain automation and the per-vendor domain log (owner answer Q12 names Support; that role does not exist here: OPERATIONS and SUPER_ADMIN, MARKETING denied)

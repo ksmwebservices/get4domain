@@ -6,6 +6,8 @@ import { buildDirectionsUrl, composeAddress, Location, parseMapLink, validateLoc
 import { validateReviewUrl } from './review-link-core';
 import { TESTIMONIAL_LABEL, Testimonial, validateTestimonials } from './testimonial-core';
 import { isPageKey, PageSeoEdit, validatePageSeo } from './seo-core';
+import { itemDetailProblem } from './item-detail-core';
+import { BRANCHES_MAX, branchProblem } from './branch-core';
 
 /**
  * The managed content document (slice 5.5a), pure. It holds ONLY what a vendor wrote in the Website manager, as typed fields: anything not in it falls back to the
@@ -33,6 +35,9 @@ export const FIELD_DEFS: Readonly<Record<string, FieldDef>> = {
   'about.text': { type: 'longtext', max: 4000, label: 'About text' },
   'about.image': { type: 'image', max: 500, label: 'About image' },
   'about.imageAlt': { type: 'text', max: 160, label: 'About image description' },
+  'about.ownerName': { type: 'text', max: 80, label: 'Owner name' },
+  'about.organisation': { type: 'text', max: 120, label: 'Organisation name' },
+  'about.established': { type: 'text', max: 4, label: 'Year established' },
   'cta.label': { type: 'text', max: 40, label: 'Button wording', proOnly: true },
   'contact.phone': { type: 'phone', max: 24, label: 'Phone' },
   'contact.email': { type: 'email', max: 120, label: 'Email' },
@@ -45,11 +50,12 @@ export const FIELD_DEFS: Readonly<Record<string, FieldDef>> = {
   'social.x': { type: 'url', max: 300, label: 'X link' },
   'social.custom': { type: 'url', max: 300, label: 'Your own link' },
   'social.customLabel': { type: 'text', max: 40, label: 'Your own link label' },
+  'social.googleBusiness': { type: 'url', max: 300, label: 'Google Business Profile link' },
 };
 
 export interface ListFieldDef { type: FieldType; max: number; required?: boolean }
 export interface ListDef { label: string; fields: Readonly<Record<string, ListFieldDef>> }
-export type ListName = 'faqs' | 'gallery' | 'steps' | 'trust' | 'stats' | 'team' | 'credentials' | 'pages';
+export type ListName = 'faqs' | 'gallery' | 'steps' | 'trust' | 'stats' | 'team' | 'credentials' | 'pages' | 'groups' | 'areas' | 'offers' | 'blocks' | 'itemDetails' | 'branches';
 export const LIST_DEFS: Readonly<Record<ListName, ListDef>> = {
   faqs: { label: 'Questions and answers', fields: { q: { type: 'text', max: 200, required: true }, a: { type: 'longtext', max: 1500, required: true } } },
   gallery: { label: 'Gallery', fields: { src: { type: 'image', max: 500, required: true }, alt: { type: 'text', max: 160, required: true }, title: { type: 'text', max: 120 } } },
@@ -58,6 +64,16 @@ export const LIST_DEFS: Readonly<Record<ListName, ListDef>> = {
   stats: { label: 'Numbers', fields: { value: { type: 'text', max: 20, required: true }, label: { type: 'text', max: 60, required: true } } },
   team: { label: 'Team', fields: { name: { type: 'text', max: 80, required: true }, role: { type: 'text', max: 80 }, note: { type: 'text', max: 200 }, image: { type: 'image', max: 500 } } },
   credentials: { label: 'Credentials', fields: { title: { type: 'text', max: 80, required: true }, detail: { type: 'text', max: 200 } } },
+  groups: { label: 'Service groups', fields: { name: { type: 'text', max: 60, required: true } } },
+  areas: { label: 'Areas we serve', fields: { name: { type: 'text', max: 60, required: true } } },
+  offers: { label: 'Offers', fields: { title: { type: 'text', max: 80, required: true }, detail: { type: 'text', max: 200 } } },
+  blocks: { label: 'Extra sections', fields: { key: { type: 'text', max: 40, required: true }, title: { type: 'text', max: 80, required: true }, entries: { type: 'longtext', max: 2000 } } },
+  itemDetails: { label: 'Item pages', fields: {
+    itemId: { type: 'text', max: 40, required: true }, title: { type: 'text', max: 120 }, summary: { type: 'text', max: 300 }, details: { type: 'longtext', max: 4000 }, price: { type: 'text', max: 40 },
+    images: { type: 'longtext', max: 1500 }, faqs: { type: 'longtext', max: 3000 }, status: { type: 'text', max: 12 }, area: { type: 'text', max: 100 } } },
+  branches: { label: 'Branches', fields: {
+    name: { type: 'text', max: 80, required: true }, addressLine: { type: 'text', max: 120 }, locality: { type: 'text', max: 80 }, area: { type: 'text', max: 80 },
+    city: { type: 'text', max: 60 }, pincode: { type: 'text', max: 6 }, mapLink: { type: 'url', max: 500 } } },
   pages: { label: 'Extra pages', fields: { slug: { type: 'text', max: 48, required: true }, title: { type: 'text', max: 120, required: true }, intro: { type: 'text', max: 300 }, body: { type: 'longtext', max: 8000, required: true } } },
 };
 /** the plan feature that limits a list, where the plan has one (the others use the payload ceiling only) */
@@ -143,12 +159,18 @@ export function cleanValue(type: FieldType, max: number, value: unknown, field: 
   return { ok: true, value: v };
 }
 
+/** The latest year accepted when the caller gives no clock (this core has none). */
+export const YEAR_CEILING = 2100;
+/** A four-digit year from 1800 to maxYear (the caller passes the current year: a business cannot have started in the future). */
+export const validYear = (v: string, maxYear: number = YEAR_CEILING): boolean => /^\d{4}$/.test(v) && Number(v) >= 1800 && Number(v) <= maxYear;
+
 /** Set one editable field. An empty value removes the override (the legacy text shows again). */
-export function writeField(doc: ManagedDoc, key: string, value: unknown): Ok<{ doc: ManagedDoc }> | Fail {
+export function writeField(doc: ManagedDoc, key: string, value: unknown, maxYear?: number): Ok<{ doc: ManagedDoc }> | Fail {
   if (!has(FIELD_DEFS, key)) return fail('FIELD_LOCKED', 'That field is not editable.', key);
   const def = FIELD_DEFS[key];
   const c = cleanValue(def.type, def.max, value, key);
   if (!c.ok) return c;
+  if (key === 'about.established' && c.value !== '' && !validYear(c.value, maxYear)) return fail('FIELD_INVALID', 'Enter the four-digit year the business started, for example 2012.', key);
   const fields = { ...doc.fields };
   if (c.value === '') delete fields[key]; else fields[key] = c.value;
   return { ok: true, doc: { ...doc, fields } };
@@ -175,6 +197,23 @@ export function validateList(name: ListName, items: unknown): Ok<{ items: ListIt
       if (!c.ok) return c;
       if (fd.required && c.value === '') return fail(name === 'gallery' && fk === 'alt' ? 'ALT_REQUIRED' : fk === 'slug' ? 'SLUG_INVALID' : 'FIELD_INVALID', `${fk} is required.`, `${name}[${i}].${fk}`);
       clean[fk] = c.value;
+    }
+    if (name === 'branches') {
+      if (out.length >= BRANCHES_MAX) return fail('LIST_TOO_LONG', `Use at most ${BRANCHES_MAX} branches.`, `branches[${i}]`);
+      const p = branchProblem(clean);
+      if (p) return fail('FIELD_INVALID', p.message, `branches[${i}].${p.field}`);
+    }
+    if (name === 'itemDetails') {
+      const id = String(clean.itemId);
+      if (slugs.has(id)) return fail('FIELD_INVALID', 'Each item can have only one page of details.', `itemDetails[${i}].itemId`);
+      slugs.add(id);
+      const p = itemDetailProblem(clean);
+      if (p) return fail('FIELD_INVALID', p.message, `itemDetails[${i}].${p.field}`);
+    }
+    if (name === 'blocks') {
+      const key = String(clean.key);
+      if (!SLUG.test(key) || slugs.has(key)) return fail('SLUG_INVALID', 'Use lower-case letters, digits and hyphens; each section needs its own name.', `blocks[${i}].key`);
+      slugs.add(key);
     }
     if (name === 'pages') {
       const slug = String(clean.slug);
@@ -306,6 +345,7 @@ const CMS_FIELD: Readonly<Record<string, keyof SourceCms>> = {
 };
 const EXTRAS_FIELD: Readonly<Record<string, keyof SourceExtras>> = {
   'hero.title': 'headline', 'hero.subtitle': 'subline', 'hero.badge': 'announcement', 'cta.label': 'ctaLabel', 'hero.imageAlt': 'heroImageAlt', 'about.image': 'aboutImage', 'about.imageAlt': 'aboutImageAlt',
+  'about.ownerName': 'ownerName', 'about.organisation': 'organisation', 'about.established': 'established', 'social.googleBusiness': 'googleBusiness',
 };
 
 /**
@@ -333,6 +373,12 @@ export function applyToSource(src: SourceDocument, doc: ManagedDoc): SourceDocum
     if (L.trust) extras.trust = L.trust.map((t) => String(t.text));
     if (L.stats) extras.stats = L.stats.map((s) => ({ value: String(s.value), label: String(s.label) }));
     if (L.team) extras.team = L.team.map((t) => ({ name: String(t.name), role: String(t.role ?? ''), note: String(t.note ?? ''), image: String(t.image ?? '') }));
+    if (L.groups) extras.groups = L.groups.map((g) => ({ name: String(g.name) }));
+    if (L.areas) extras.areas = L.areas.map((a) => ({ name: String(a.name) }));
+    if (L.offers) extras.offers = L.offers.map((o) => ({ title: String(o.title), detail: String(o.detail ?? '') }));
+    if (L.blocks) extras.blocks = L.blocks.map((b) => ({ key: String(b.key), title: String(b.title), entries: String(b.entries ?? '') }));
+    if (L.itemDetails) extras.itemDetails = L.itemDetails.map((d) => ({ itemId: String(d.itemId), title: String(d.title ?? ''), summary: String(d.summary ?? ''), details: String(d.details ?? ''), price: String(d.price ?? ''), images: String(d.images ?? ''), faqs: String(d.faqs ?? ''), status: String(d.status ?? ''), area: String(d.area ?? '') }));
+    if (L.branches) extras.branches = L.branches.map((b) => ({ name: String(b.name), addressLine: String(b.addressLine ?? ''), locality: String(b.locality ?? ''), area: String(b.area ?? ''), city: String(b.city ?? ''), pincode: String(b.pincode ?? ''), mapLink: String(b.mapLink ?? '') }));
     if (L.credentials) extras.credentials = L.credentials.map((c) => ({ title: String(c.title), detail: String(c.detail ?? '') }));
     if (d.location) {
       const l = d.location; const address = composeAddress(l); const maps = buildDirectionsUrl(l);
