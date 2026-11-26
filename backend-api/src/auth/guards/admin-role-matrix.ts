@@ -262,8 +262,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // Part B (B13): pausing and resuming a vendor's paid plan: OPERATIONS and SUPER_ADMIN (ADMIN inherits OPERATIONS; SUPPORT and MARKETING refused)
   'POST /v3/admin/pack-engine/vendors/:vendorId/plan-pause': OPS_AND_SUPER, 'POST /v3/admin/pack-engine/vendors/:vendorId/plan-resume': OPS_AND_SUPER,
   // Wave 3 Part A: referral partners. Reading is OPERATIONS, ADMIN (inherits) and SUPER_ADMIN; creating and editing is ADMIN and SUPER_ADMIN (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow). SALES, SUPPORT and every label are refused.
-  // E6 telecallers: creating an account is SUPER_ADMIN; the monitor of all telecallers is OPERATIONS and SUPER_ADMIN; a telecaller's own routes are open to every staff role (the service refuses a login that is not set up as a telecaller)
-  'POST /v3/admin/telecallers': SUPER_ONLY, 'GET /v3/admin/telecallers/monitor': OPS_AND_SUPER,
+  // E6 and E9c telecallers: creating an account is ADMIN (through STAFF_ROLE_EXTENSIONS.ADMIN.allow) and SUPER_ADMIN; the pay setting of a telecaller (salary) is SUPER_ADMIN only; the monitor of all telecallers and the settings view are OPERATIONS, ADMIN and SUPER_ADMIN; a telecaller's own routes are open to every staff role (the service refuses a login that is not set up as a telecaller)
+  'POST /v3/admin/telecallers': SUPER_ONLY, 'GET /v3/admin/telecallers/monitor': OPS_AND_SUPER, 'GET /v3/admin/telecallers/settings': OPS_AND_SUPER, 'GET /v3/admin/telecallers/:partnerId/pay': SUPER_ONLY, 'PUT /v3/admin/telecallers/:partnerId/pay': SUPER_ONLY,
   'GET /v3/admin/telecaller/monitor': ALL_STAFF, 'POST /v3/admin/telecaller/vendors': ALL_STAFF, 'POST /v3/admin/telecaller/vendors/:id/collections': ALL_STAFF,
   'GET /v3/admin/partners': OPS_AND_SUPER, 'GET /v3/admin/partners/:id': OPS_AND_SUPER, 'POST /v3/admin/partners': SUPER_ONLY, 'PUT /v3/admin/partners/:id': SUPER_ONLY,
   // Wave 3 Part C: the payment gateway setting. Reading is OPERATIONS, ADMIN (inherits) and SUPER_ADMIN; choosing the gateway and its mode is ADMIN and SUPER_ADMIN (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow).
@@ -336,6 +336,7 @@ export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExt
     ],
     // the pack engine's content (A6): packs, tabs and the category map. The tier matrix, the two switches and the add-on switch stay SUPER_ADMIN only.
     allow: [...THEME_MARKET_ADMIN_WRITES, 'PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', 'PUT /v3/admin/pack-engine/addon-eligibility', 'POST /v3/admin/partners', 'PUT /v3/admin/partners/:id', 'PUT /v3/admin/payment-gateway', 'POST /v3/admin/billing/orders/:id/mark-paid', 'POST /v3/admin/billing/vendors/:vendorId/cash-orders', 'GET /v3/admin/billing/held-payments', 'GET /v3/admin/billing/held-payments/:id', 'POST /v3/admin/billing/held-payments/:id/resolve', 'GET /v3/admin/commission/payouts/export.csv',
+      'POST /v3/admin/telecallers',   // E9c: ADMIN creates telecaller accounts (owner decision, 26 Nov 2026)
       'POST /v3/admin/partners/:id/links', 'POST /v3/admin/referral-links/:id/disable', 'POST /v3/admin/commission/slabs', 'PUT /v3/admin/commission/slabs/:id', 'POST /v3/admin/commission/months/:month/close', 'POST /v3/admin/commission/payouts', 'PUT /v3/admin/vendors/:id/referral',
       ...Object.keys(SEO_ROUTES)],
   },

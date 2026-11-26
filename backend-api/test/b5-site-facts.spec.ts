@@ -43,7 +43,7 @@ describe('B5.3 the address of a staff-made business', () => {
   it('create stores it on the site record BEFORE the site is made, and stores nothing when none was given', async () => {
     const calls: string[] = []; const upsert = jest.fn(async () => { calls.push('address'); });
     const svc = new AdminVendorSiteService({ create: async () => ({ id: 'v1' }) } as never, { createMySite: async () => { calls.push('site'); return { url: 'https://x' }; } } as never, { resolveSubdomain: async (s: string) => s } as never,
-      { vendor: { update: async () => undefined }, vendorCMS: { upsert } } as never, { listableCategories: async () => ({ items: [{ key: 'plumber' }] }) } as never);
+      { vendor: { update: async () => undefined }, vendorCMS: { upsert } } as never, { listableCategories: async () => ({ items: [{ key: 'plumber' }] }) } as never, { run: async (_s: string, f: () => Promise<unknown>) => f() } as never);
     const dto = { category: 'plumber', businessName: 'B', ownerName: 'O', phone: '+919876543210', email: 'a@b.invalid', city: 'Madurai', subdomain: 'b' };
     await svc.create({ ...dto, address: '12 Bypass Road, Madurai' }, { id: 's', role: 'ADMIN' });
     expect(upsert).toHaveBeenCalledWith({ where: { vendorId: 'v1' }, create: { vendorId: 'v1', address: '12 Bypass Road, Madurai' }, update: { address: '12 Bypass Road, Madurai' } });

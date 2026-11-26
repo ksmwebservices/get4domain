@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, Type } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, Type } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { AdminRole } from '@prisma/client';
 import { PasswordService } from '../account-security/password.service';
@@ -10,10 +10,12 @@ import { CreateVendorWithSiteDto } from '../v3-admin-vendor-site/admin-vendor-si
 import { AdminVendorSiteService } from '../v3-admin-vendor-site/admin-vendor-site.service';
 import { PartnersService } from '../v3-partners/partners.service';
 import { ReferralsService } from '../v3-referrals/referrals.service';
-import { capReached, checkEmployee, EmployeeInput, MonitorView, monitorView } from './core/telecaller-core';
+import { checkEmployee, checkPay, EmployeeInput, isPayType, MonitorView, monitorView, PAY_TYPES, PayType } from './core/telecaller-core';
+import { TelecallerSettingsService } from './settings/telecaller-settings';
 
 export interface Caller { id: string; ip?: string | null }
 export interface CollectionInput { planKey: string; termMonths: number; idempotencyKey: string }
+export interface PayView { partnerId: string; payType: PayType | null; monthlySalaryMinor: number | null; updatedAt: Date | null }
 
 /**
  * Telecaller backend (E6). A telecaller is a staff login with the TELECALLER label (the SALES rights) linked to a referral partner row, so what they bring in earns commission by the existing ledger.
@@ -22,30 +24,74 @@ export interface CollectionInput { planKey: string; termMonths: number; idempote
  */
 @Injectable()
 export class TelecallerService {
-  /** The most businesses one telecaller may create in a day; null = the owner has not set a cap. */
-  dailyCap: number | null = null;
+  private readonly logger = new Logger(TelecallerService.name);
   clock: () => Date = () => new Date();
 
-  constructor(private readonly modules: ModuleRef, private readonly prisma: PrismaService) {}
+  constructor(private readonly modules: ModuleRef, private readonly prisma: PrismaService, private readonly settings: TelecallerSettingsService) {}
 
   private get<T>(t: Type<T>): T { return this.modules.get(t, { strict: false }); }
 
   // ── A: one-step employee account (admin) ───────────────────────────────────────────
 
-  async createEmployee(input: EmployeeInput, actor: Caller): Promise<{ partnerId: string; loginId: string; name: string; email: string; referralCode: string | null; inviteSent: true }> {
+  /** The pay type may be chosen here; a salary amount may not (it is set on the pay route, SUPER_ADMIN only). */
+  async createEmployee(input: EmployeeInput & { payType?: unknown; monthlySalaryMinor?: unknown }, actor: Caller): Promise<{ partnerId: string; loginId: string; name: string; email: string; referralCode: string | null; payType: PayType | null; inviteSent: true }> {
     const c = checkEmployee(input);
-    if (!c.ok) throw new BadRequestException({ code: 'TELECALLER_INVALID', message: 'Some details need fixing.', fields: c.problems });
+    const problems: Record<string, string> = c.ok ? {} : { ...c.problems };
+    const payType = input?.payType ?? null;
+    if (payType !== null && !isPayType(payType)) problems.payType = 'Choose salary plus commission, or commission slabs only (freelancer).';
+    if ((input?.monthlySalaryMinor ?? null) !== null) problems.monthlySalaryMinor = 'The salary is set after the account is made, on the pay screen.';
+    if (!c.ok || Object.keys(problems).length) throw new BadRequestException({ code: 'TELECALLER_INVALID', message: 'Some details need fixing.', fields: problems });
     const member = await this.get(AdminTeamService).invite({ name: c.value.name, email: c.value.email, ...(c.value.phone ? { phone: c.value.phone } : {}), role: AdminRole.TELECALLER });
     try {
       const partners = this.get(PartnersService);
       const partner = await partners.create({ type: 'SALES_TEAM', name: c.value.name, email: c.value.email, ...(c.value.phone ? { phone: c.value.phone } : {}), staffUserId: member.id }, { id: actor.id, ip: actor.ip ?? null });
       const link = await this.get(ReferralsService).issueLink(partner.id, { id: actor.id, ip: actor.ip ?? null });
-      return { partnerId: partner.id, loginId: member.id, name: c.value.name, email: c.value.email, referralCode: (link as { code?: string } | null)?.code ?? null, inviteSent: true };
+      let saved: PayType | null = null;
+      if (isPayType(payType)) {
+        // the account, partner and code exist by now: a failure here must not remove the login, so the answer says no pay type is set and it can be set on the pay route
+        try { await this.prisma.telecallerProfile.create({ data: { partnerId: partner.id, payType, updatedById: actor.id } }); saved = payType; }
+        catch (e) { this.logger.warn(`pay type of a new telecaller was not saved: ${e instanceof Error ? e.name : 'error'}`); }
+      }
+      return { partnerId: partner.id, loginId: member.id, name: c.value.name, email: c.value.email, referralCode: (link as { code?: string } | null)?.code ?? null, payType: saved, inviteSent: true };
     } catch (e) {
       // undo the login made a moment ago, so a half-made employee never exists
       try { await this.prisma.adminTeamMember.update({ where: { id: member.id }, data: { status: 'removed', inviteToken: null } }); } catch { /* the original failure is the one to show */ }
       throw e;
     }
+  }
+
+  // ── pay and settings (E9c) ───────────────────────────────────────────
+
+  /** Not found for a partner that is not a telecaller (a freelance referral partner has no telecaller pay). */
+  private async assertTelecallerPartner(partnerId: string): Promise<string> {
+    const id = String(partnerId).slice(0, 64);
+    const partner = await this.prisma.referralPartner.findUnique({ where: { id }, select: { staffUserId: true } });
+    const login = partner?.staffUserId ? await this.prisma.adminTeamMember.findUnique({ where: { id: partner.staffUserId }, select: { role: true } }) : null;
+    if (login?.role !== AdminRole.TELECALLER) throw new NotFoundException({ code: 'TELECALLER_NOT_FOUND', message: 'That telecaller was not found.' });
+    return id;
+  }
+
+  private payView(partnerId: string, row: { payType: string; monthlySalaryMinor: number | null; updatedAt: Date } | null): PayView {
+    return { partnerId, payType: row && isPayType(row.payType) ? row.payType : null, monthlySalaryMinor: row?.monthlySalaryMinor ?? null, updatedAt: row?.updatedAt ?? null };
+  }
+
+  async payOf(partnerId: string): Promise<PayView> {
+    const id = await this.assertTelecallerPartner(partnerId);
+    return this.payView(id, await this.prisma.telecallerProfile.findUnique({ where: { partnerId: id } }));
+  }
+
+  /** Replaces the pay setting: a salary that is left out is cleared. */
+  async setPay(partnerId: string, input: { payType?: unknown; monthlySalaryMinor?: unknown }, actor: Caller): Promise<PayView> {
+    const id = await this.assertTelecallerPartner(partnerId);
+    const c = checkPay(input);
+    if (!c.ok) throw new BadRequestException({ code: 'TELECALLER_INVALID', message: 'Some details need fixing.', fields: c.problems });
+    const data = { ...c.value, updatedById: actor.id };
+    return this.payView(id, await this.prisma.telecallerProfile.upsert({ where: { partnerId: id }, create: { partnerId: id, ...data }, update: data }));
+  }
+
+  async settingsView(): Promise<{ dailyCap: number; cashOverdueAfterDays: number; payTypes: readonly PayType[]; settingKeys: { dailyCap: string; cashOverdueAfterDays: string } }> {
+    const s = await this.settings.get();
+    return { dailyCap: s.telecallerDailyCap, cashOverdueAfterDays: s.telecallerCashOverdueDays, payTypes: PAY_TYPES, settingKeys: { dailyCap: 'telecallerDailyCap', cashOverdueAfterDays: 'telecallerCashOverdueDays' } };
   }
 
   // ── who is calling ───────────────────────────────────────────────────────────────
@@ -66,13 +112,10 @@ export class TelecallerService {
 
   async createBusiness(u: Pick<AuthenticatedUser, 'sub'>, dto: CreateVendorWithSiteDto, ip: string | null): Promise<{ vendorId: string; subdomain: string; siteUrl: string | null; passwordLinkSentTo: 'EMAIL' }> {
     const partner = await this.partnerOf(u);
-    const start = new Date(this.clock()); start.setHours(0, 0, 0, 0);
-    const today = await this.prisma.vendor.count({ where: { registeredByStaffId: u.sub, createdAt: { gte: start } } });
-    if (capReached(today, this.dailyCap)) throw new ConflictException({ code: 'TELECALLER_DAILY_CAP', message: 'You have reached the number of businesses you can create today.' });
-    const { duplicateOverrideReason: _admins, ...safe } = dto;   // only an admin may create a business that looks like an existing one
-    const made = await this.get(AdminVendorSiteService).create(safe as CreateVendorWithSiteDto, { id: u.sub, role: 'TELECALLER' });
+    // the daily cap and the admins-only duplicate override are enforced by the creating service, which the general vendor-site route shares
+    const made = await this.get(AdminVendorSiteService).create(dto, { id: u.sub, role: 'TELECALLER' });
     await this.get(ReferralsService).setAttribution(made.vendorId, partner.id, 'created by a telecaller', { id: u.sub, ip });
-    this.get(PasswordService).requestReset(safe.email, ip ?? undefined);   // the owner sets their own password from the e-mailed link; nobody sees it
+    this.get(PasswordService).requestReset(dto.email, ip ?? undefined);   // the owner sets their own password from the e-mailed link; nobody sees it
     return { vendorId: made.vendorId, subdomain: made.subdomain, siteUrl: made.siteUrl, passwordLinkSentTo: 'EMAIL' };
   }
 
@@ -87,24 +130,27 @@ export class TelecallerService {
 
   // ── E: monitoring ────────────────────────────────────────────────────────────────
 
-  async monitorOf(partnerId: string): Promise<MonitorView> {
-    const [attrs, lines] = await Promise.all([
+  async monitorOf(partnerId: string): Promise<MonitorView & { payType: PayType | null }> {
+    const [{ telecallerCashOverdueDays }, profile, attrs, lines] = await Promise.all([
+      this.settings.get(),
+      this.prisma.telecallerProfile.findUnique({ where: { partnerId } }),
       this.prisma.referralAttribution.findMany({ where: { partnerId }, select: { vendorId: true } }),
       this.prisma.commissionLedger.findMany({ where: { partnerId, kind: 'COMMISSION' }, select: { status: true, amountMinor: true } }),
     ]);
     const ids = attrs.map((a) => a.vendorId);
     const orders = ids.length ? await this.prisma.v3PlanOrder.findMany({ where: { vendorId: { in: ids }, gateway: 'cash', status: 'CREATED' }, select: { createdAt: true } }) : [];
     const now = this.clock().getTime();
-    return monitorView({ created: ids.length, paid: lines.length, waiting: orders.map((o) => ({ ageDays: Math.floor((now - o.createdAt.getTime()) / 86_400_000) })), commission: lines });
+    const view = monitorView({ created: ids.length, paid: lines.length, waiting: orders.map((o) => ({ ageMs: now - o.createdAt.getTime() })), overdueAfterDays: telecallerCashOverdueDays, commission: lines });
+    return { ...view, payType: this.payView(partnerId, profile).payType };
   }
 
-  async myMonitor(u: Pick<AuthenticatedUser, 'sub'>): Promise<MonitorView & { partnerId: string }> {
+  async myMonitor(u: Pick<AuthenticatedUser, 'sub'>): Promise<MonitorView & { partnerId: string; payType: PayType | null }> {
     const p = await this.partnerOf(u);
     return { partnerId: p.id, ...(await this.monitorOf(p.id)) };
   }
 
   /** Every telecaller (a partner linked to a TELECALLER login) with the same numbers, for the admin screen. */
-  async allMonitor(): Promise<Array<{ partnerId: string; name: string; email: string; status: string } & MonitorView>> {
+  async allMonitor(): Promise<Array<{ partnerId: string; name: string; email: string; status: string; payType: PayType | null } & MonitorView>> {
     const partners = await this.prisma.referralPartner.findMany({ where: { staffUserId: { not: null } }, orderBy: { createdAt: 'desc' }, take: 200 });
     const logins = await this.prisma.adminTeamMember.findMany({ where: { id: { in: partners.map((p) => p.staffUserId as string) }, role: AdminRole.TELECALLER }, select: { id: true } });
     const telecallers = partners.filter((p) => logins.some((l) => l.id === p.staffUserId));

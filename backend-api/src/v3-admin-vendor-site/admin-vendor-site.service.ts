@@ -6,6 +6,7 @@ import { RegistrationHook, SiteAnswer } from '../plans/registration/registration
 import { SeededSitesService } from '../seeded-sites/seeded-sites.service';
 import { TrialSignupPolicy } from '../v3-trial/trial-signup.policy';
 import { VendorsService } from '../vendors/vendors.service';
+import { TelecallerCapService } from '../v3-telecaller/telecaller-cap.service';
 import { CreateVendorWithSiteDto } from './admin-vendor-site.dto';
 import { buildCategoryTree, CategoryTree, PackRow } from './category-tree';
 
@@ -17,7 +18,9 @@ export function siteAddress(dto: Pick<CreateVendorWithSiteDto, 'address' | 'addr
   return [line, dto.area?.trim(), dto.city?.trim(), dto.pincode?.trim()].filter(Boolean).join(', ');
 }
 
-export interface StaffActor { id: string; role: string }
+/** label: FIELD_EXECUTIVE or TELECALLER when the role is a labelled SALES one. */
+export interface StaffActor { id: string; role: string; label?: string | null }
+const isTelecaller = (a: StaffActor): boolean => a.role === 'TELECALLER' || a.label === 'TELECALLER';
 export interface CreatedVendorSite { vendorId: string; subdomain: string; site: SiteAnswer; siteUrl: string | null }
 
 /**
@@ -29,7 +32,7 @@ export interface CreatedVendorSite { vendorId: string; subdomain: string; site: 
 export class AdminVendorSiteService {
   constructor(
     private readonly vendors: VendorsService, private readonly registration: RegistrationHook, private readonly trial: TrialSignupPolicy,
-    private readonly prisma: PrismaService, private readonly seeded: SeededSitesService,
+    private readonly prisma: PrismaService, private readonly seeded: SeededSitesService, private readonly telecallerCap: TelecallerCapService,
   ) {}
 
   async tree(q?: string): Promise<CategoryTree> {
@@ -39,14 +42,21 @@ export class AdminVendorSiteService {
     return buildCategoryTree(listable, packs, q ?? '');
   }
 
+  /** A telecaller is held to the daily cap whichever route was used, and cannot override the duplicate check (admins only). */
   async create(dto: CreateVendorWithSiteDto, actor: StaffActor): Promise<CreatedVendorSite> {
+    if (!isTelecaller(actor)) return this.createNow(dto, actor);
+    const { duplicateOverrideReason: _admins, ...safe } = dto;
+    return this.telecallerCap.run(actor.id, () => this.createNow(safe as CreateVendorWithSiteDto, actor));
+  }
+
+  private async createNow(dto: CreateVendorWithSiteDto, actor: StaffActor): Promise<CreatedVendorSite> {
     const listable = (await this.seeded.listableCategories()).items;
     if (!isListableCategory(dto.category, (k) => listable.some((c) => c.key === k))) throw new BadRequestException({ code: 'CATEGORY_UNKNOWN', message: 'That category does not exist. Pick one from the category list.' });
     const subdomain = await this.trial.resolveSubdomain(dto.subdomain, dto.businessName);
     const vendor = await this.vendors.create({
       name: dto.ownerName, email: dto.email.trim().toLowerCase(), password: `${randomBytes(12).toString('base64url')}aA1`, businessName: dto.businessName, phone: dto.phone, industry: dto.category, subdomain,
       city: dto.city, area: dto.area, pincode: dto.pincode, gstin: dto.gstin, duplicateOverrideReason: dto.duplicateOverrideReason,
-    }, { path: 'ADMIN_VENDOR', actor, selfService: false });
+    }, { path: 'ADMIN_VENDOR', actor: { id: actor.id, role: actor.role }, selfService: false });
     // provenance first: the plan step only fills an empty `source`
     await this.prisma.vendor.update({ where: { id: vendor.id }, data: { source: 'STAFF', registeredByStaffId: actor.id } });
     const address = siteAddress(dto);

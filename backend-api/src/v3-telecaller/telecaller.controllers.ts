@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString, Length, Max, MaxLength, Min } from 'class-validator';
 import type { Request } from 'express';
@@ -8,7 +8,8 @@ import { CreateVendorWithSiteDto } from '../v3-admin-vendor-site/admin-vendor-si
 import { TelecallerService } from './telecaller.service';
 
 /** Loose on purpose: the pure core names every problem by field. */
-export class EmployeeDto { @IsOptional() name?: unknown; @IsOptional() email?: unknown; @IsOptional() phone?: unknown }
+export class EmployeeDto { @IsOptional() name?: unknown; @IsOptional() email?: unknown; @IsOptional() phone?: unknown; @IsOptional() payType?: unknown; @IsOptional() monthlySalaryMinor?: unknown }
+export class PayDto { @IsOptional() payType?: unknown; @IsOptional() monthlySalaryMinor?: unknown }
 export class CollectionDto {
   @IsString() @Length(2, 60) planKey!: string;
   @IsInt() @Min(1) @Max(120) termMonths!: number;
@@ -24,12 +25,24 @@ export class AdminTelecallerController {
   constructor(private readonly svc: TelecallerService) {}
 
   @Post() @HttpCode(200)
-  @ApiOperation({ summary: 'SUPER_ADMIN: create a telecaller in one step: the staff login (invite e-mail), the commission partner linked to it, and its referral code' })
+  @ApiOperation({ summary: 'ADMIN or SUPER_ADMIN: create a telecaller in one step: the staff login (invite e-mail), the commission partner linked to it, its referral code and, optionally, the pay type (payType: SALARY_PLUS_COMMISSION or FREELANCE_SLAB)' })
   create(@Body() dto: EmployeeDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.svc.createEmployee(dto, { id: u?.sub ?? null as never, ip: req.ip ?? null }); }
 
   @Get('monitor')
-  @ApiOperation({ summary: 'Every telecaller: businesses created, paid, cash waiting for the office, commission by state' })
+  @ApiOperation({ summary: 'Every telecaller: pay type, businesses created, paid, cash waiting for the office and overdue, commission by state' })
   monitor() { return this.svc.allMonitor(); }
+
+  @Get('settings')
+  @ApiOperation({ summary: 'The telecaller settings in force: the daily cap of new businesses and the days after which unconfirmed cash is overdue (SUPER_ADMIN changes them on PUT /v3/admin/plan-settings/:key)' })
+  settings() { return this.svc.settingsView(); }
+
+  @Get(':partnerId/pay')
+  @ApiOperation({ summary: 'SUPER_ADMIN: the pay setting of one telecaller (pay type and monthly salary in paise)' })
+  pay(@Param('partnerId') partnerId: string) { return this.svc.payOf(partnerId); }
+
+  @Put(':partnerId/pay') @HttpCode(200)
+  @ApiOperation({ summary: 'SUPER_ADMIN: set how one telecaller is paid. REPLACES the setting: a salary left out is cleared; a freelancer has none. Commission tiers are the commission slab rows.' })
+  setPay(@Param('partnerId') partnerId: string, @Body() dto: PayDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.svc.setPay(partnerId, dto, { id: u?.sub ?? null as never, ip: req.ip ?? null }); }
 }
 
 /** The telecaller's own side. A login that is not a telecaller gets NOT_A_TELECALLER. */

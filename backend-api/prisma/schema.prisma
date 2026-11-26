@@ -8248,9 +8248,24 @@ model ReferralPartner {
   attributions ReferralAttribution[]
   ledger       CommissionLedger[]
   payouts      CommissionPayout[]
+  telecallerProfile TelecallerProfile?
 
   @@index([status])
   @@map("g4d_referral_partners")
+}
+
+/// E9c: how one telecaller is paid. Platform data, staff-only (RLS on, no policy). payType: SALARY_PLUS_COMMISSION | FREELANCE_SLAB. monthlySalaryMinor is in paise, entered by the owner, only for the salaried type. Commission tiers are the CommissionSlab rows.
+model TelecallerProfile {
+  partnerId          String   @id
+  payType            String
+  monthlySalaryMinor Int?
+  updatedById        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  partner ReferralPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_telecaller_profiles")
 }
 
 /// Wave 3 Part I: a code a partner shares. Platform data, staff-only (RLS on, no policy). Disabling keeps the row: a disabled code resolves as invalid and attributions already made stay.

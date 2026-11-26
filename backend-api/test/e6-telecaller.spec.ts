@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PasswordService } from '../src/account-security/password.service';
 import { AdminTeamService } from '../src/admin-team/admin-team.service';
 import { PlanOrderService } from '../src/plan-billing/plan-order.service';
@@ -6,13 +6,14 @@ import { AdminVendorSiteService } from '../src/v3-admin-vendor-site/admin-vendor
 import { PartnersService } from '../src/v3-partners/partners.service';
 import { ReferralsService } from '../src/v3-referrals/referrals.service';
 import { capReached, checkEmployee, monitorView } from '../src/v3-telecaller/core/telecaller-core';
+import { DEFAULT_TELECALLER_SETTINGS } from '../src/v3-telecaller/settings/telecaller-settings';
 import { TelecallerService } from '../src/v3-telecaller/telecaller.service';
 
 /** E6: telecaller accounts, creating a business on behalf, the collection record and the monitor. Fakes for every neighbour service. */
 const NOW = new Date('2026-11-26T10:00:00+05:30');
 const dto = (over: Record<string, unknown> = {}) => ({ category: 'plumber', businessName: 'Sri Plumbing', ownerName: 'Ravi', phone: '+919800000000', email: 'ravi@example.com', city: 'Aluva', subdomain: 'sriplumbing', ...over }) as never;
 
-function make(o: { loginIsTelecaller?: boolean; attributions?: Array<{ vendorId: string; partnerId: string }>; ledger?: Array<{ partnerId: string; status: string; amountMinor: number | null; kind: string }>; orders?: Array<{ vendorId: string; createdAt: Date }>; failPartnerCreate?: boolean; todayCount?: number } = {}) {
+function make(o: { loginIsTelecaller?: boolean; attributions?: Array<{ vendorId: string; partnerId: string }>; ledger?: Array<{ partnerId: string; status: string; amountMinor: number | null; kind: string }>; orders?: Array<{ vendorId: string; createdAt: Date }>; failPartnerCreate?: boolean } = {}) {
   const calls: Record<string, unknown[]> = { invite: [], partnerCreate: [], issueLink: [], vendorCreate: [], attribute: [], reset: [], cashOrder: [], memberUpdate: [] };
   const team = { invite: async (d: unknown) => { calls.invite.push(d); return { id: 'login-1' }; } };
   const partners = {
@@ -33,10 +34,10 @@ function make(o: { loginIsTelecaller?: boolean; attributions?: Array<{ vendorId:
     },
     commissionLedger: { findMany: async ({ where }: { where: { partnerId: string } }) => (o.ledger ?? []).filter((l) => l.partnerId === where.partnerId && l.kind === 'COMMISSION') },
     v3PlanOrder: { findMany: async ({ where }: { where: { vendorId: { in: string[] } } }) => (o.orders ?? []).filter((x) => where.vendorId.in.includes(x.vendorId)) },
-    vendor: { count: async () => o.todayCount ?? 0 },
+    telecallerProfile: { findUnique: async () => null, create: async () => ({}) },
     referralPartner: { findMany: async () => [{ id: 'partner-1', name: 'Asha', email: 'asha@example.com', status: 'ACTIVE', staffUserId: 'login-1' }, { id: 'partner-9', name: 'Freelancer', email: 'f@example.com', status: 'ACTIVE', staffUserId: 'login-9' }] },
   };
-  const svc = new TelecallerService({ get: (t: unknown) => registry.get(t) } as never, prisma as never);
+  const svc = new TelecallerService({ get: (t: unknown) => registry.get(t) } as never, prisma as never, { get: async () => DEFAULT_TELECALLER_SETTINGS } as never);
   svc.clock = () => NOW;
   return { svc, calls };
 }
@@ -48,12 +49,12 @@ describe('the pure rules', () => {
     expect(checkEmployee({ name: 'A', email: 'nope', phone: 'call me' })).toEqual({ ok: false, problems: expect.objectContaining({ name: expect.any(String), email: expect.any(String), phone: expect.any(String) }) });
     expect(checkEmployee({ name: '<b>x</b>', email: 'a@b.co' })).toMatchObject({ ok: false });
   });
-  it('the cap: none set means no limit', () => {
-    expect(capReached(100, null)).toBe(false); expect(capReached(19, 20)).toBe(false); expect(capReached(20, 20)).toBe(true);
+  it('the cap: the last place is the cap-th business', () => {
+    expect(capReached(19, 20)).toBe(false); expect(capReached(20, 20)).toBe(true); expect(capReached(21, 20)).toBe(true);
   });
   it('the monitor adds commission by state and counts lines with no slab price', () => {
-    const v = monitorView({ created: 5, paid: 2, waiting: [{ ageDays: 1 }, { ageDays: 6 }], commission: [{ status: 'ACCRUED', amountMinor: null }, { status: 'APPROVED', amountMinor: 50_000 }, { status: 'PAID', amountMinor: 30_000 }, { status: 'PAID', amountMinor: 20_000 }] });
-    expect(v).toEqual({ vendorsCreated: 5, vendorsPaid: 2, vendorsNotPaidYet: 3, cashWaitingForOffice: 2, oldestWaitingDays: 6, commission: { accruedMinor: 0, approvedMinor: 50_000, paidMinor: 50_000, reversedMinor: 0, unpricedLines: 1 } });
+    const v = monitorView({ created: 5, paid: 2, waiting: [{ ageMs: 86_400_000 }, { ageMs: 6 * 86_400_000 + 5 }], overdueAfterDays: 60, commission: [{ status: 'ACCRUED', amountMinor: null }, { status: 'APPROVED', amountMinor: 50_000 }, { status: 'PAID', amountMinor: 30_000 }, { status: 'PAID', amountMinor: 20_000 }] });
+    expect(v).toEqual({ vendorsCreated: 5, vendorsPaid: 2, vendorsNotPaidYet: 3, cashWaitingForOffice: 2, oldestWaitingDays: 6, cashOverdue: 0, cashOverdueAfterDays: 60, commission: { accruedMinor: 0, approvedMinor: 50_000, paidMinor: 50_000, reversedMinor: 0, unpricedLines: 1 } });
   });
 });
 
@@ -81,10 +82,9 @@ describe('A: one-step employee account', () => {
 describe('B: create a business as a telecaller', () => {
   it('creates it, credits the telecaller, and e-mails the owner a link to set their own password (no password anywhere)', async () => {
     const { svc, calls } = make();
-    const r = await svc.createBusiness(caller, dto({ duplicateOverrideReason: 'I want to override this' }), '1.2.3.4');
+    const r = await svc.createBusiness(caller, dto(), '1.2.3.4');
     expect(r).toEqual({ vendorId: 'v-new', subdomain: 'sriplumbing', siteUrl: 'https://sriplumbing.get4domain.com', passwordLinkSentTo: 'EMAIL' });
-    const [made, actor] = calls.vendorCreate[0] as [Record<string, unknown>, Record<string, unknown>];
-    expect(made.duplicateOverrideReason).toBeUndefined();   // only an admin may override the duplicate check
+    const [, actor] = calls.vendorCreate[0] as [Record<string, unknown>, Record<string, unknown>];   // the cap and the override rule live in the creating service (e9-telecaller.spec.ts)
     expect(actor).toEqual({ id: 'login-1', role: 'TELECALLER' });
     expect(calls.attribute[0]).toEqual(['v-new', 'partner-1', 'created by a telecaller', { id: 'login-1', ip: '1.2.3.4' }]);
     expect(calls.reset[0]).toEqual(['ravi@example.com', '1.2.3.4']);
@@ -94,13 +94,6 @@ describe('B: create a business as a telecaller', () => {
     const { svc, calls } = make({ loginIsTelecaller: false });
     await expect(svc.createBusiness(caller, dto(), null)).rejects.toBeInstanceOf(ForbiddenException);
     expect(calls.vendorCreate).toEqual([]);
-  });
-  it('the daily cap stops creation when the owner has set one', async () => {
-    const { svc, calls } = make({ todayCount: 20 }); svc.dailyCap = 20;
-    await expect(svc.createBusiness(caller, dto(), null)).rejects.toBeInstanceOf(ConflictException);
-    expect(calls.vendorCreate).toEqual([]);
-    const free = make({ todayCount: 500 });
-    await expect(free.svc.createBusiness(caller, dto(), null)).resolves.toMatchObject({ vendorId: 'v-new' });   // no cap set
   });
 });
 
@@ -132,7 +125,7 @@ describe('E: monitoring', () => {
   };
   it('my numbers count only my businesses, my cash orders and my commission', async () => {
     const { svc } = make(data);
-    expect(await svc.myMonitor(caller)).toEqual({ partnerId: 'partner-1', vendorsCreated: 3, vendorsPaid: 1, vendorsNotPaidYet: 2, cashWaitingForOffice: 1, oldestWaitingDays: 3, commission: { accruedMinor: 0, approvedMinor: 40_000, paidMinor: 0, reversedMinor: 0, unpricedLines: 0 } });
+    expect(await svc.myMonitor(caller)).toEqual({ partnerId: 'partner-1', payType: null, vendorsCreated: 3, vendorsPaid: 1, vendorsNotPaidYet: 2, cashWaitingForOffice: 1, oldestWaitingDays: 3, cashOverdue: 0, cashOverdueAfterDays: 60, commission: { accruedMinor: 0, approvedMinor: 40_000, paidMinor: 0, reversedMinor: 0, unpricedLines: 0 } });
   });
   it('the admin list has telecallers only (a partner whose login is not a TELECALLER is not listed)', async () => {
     const { svc } = make(data);

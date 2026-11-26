@@ -196,6 +196,7 @@ SUPER_ONLY_ROUTES.push('GET /v3/admin/firm-profile', 'PUT /v3/admin/firm-profile
 SUPER_ONLY_ROUTES.push('PUT /v3/admin/pack-engine/addon-eligibility'); MARKETING_DENIED.push('GET /v3/admin/pack-engine/addon-eligibility');
 // Wave 3 Part A: referral partners. Reads OPERATIONS and SUPER_ADMIN (ADMIN inherits); writes SUPER_ADMIN in the base table and ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in wave3-roles.spec.ts)
 SUPER_ONLY_ROUTES.push('POST /v3/admin/telecallers'); MARKETING_DENIED.push('GET /v3/admin/telecallers/monitor'); ALL_STAFF_ROUTES.push('GET /v3/admin/telecaller/monitor', 'POST /v3/admin/telecaller/vendors', 'POST /v3/admin/telecaller/vendors/:id/collections');   // E6 telecallers
+MARKETING_DENIED.push('GET /v3/admin/telecallers/settings'); SUPER_ONLY_ROUTES.push('GET /v3/admin/telecallers/:partnerId/pay', 'PUT /v3/admin/telecallers/:partnerId/pay');   // E9c
 SUPER_ONLY_ROUTES.push('POST /v3/admin/partners', 'PUT /v3/admin/partners/:id'); MARKETING_DENIED.push('GET /v3/admin/partners', 'GET /v3/admin/partners/:id');
 // Wave 3 Part C: the payment gateway setting. Read OPERATIONS and SUPER_ADMIN (ADMIN inherits); write SUPER_ADMIN in the base table and ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in wave3-gateways.spec.ts)
 SUPER_ONLY_ROUTES.push('PUT /v3/admin/payment-gateway'); MARKETING_DENIED.push('GET /v3/admin/payment-gateway');
@@ -237,7 +238,7 @@ ALL_STAFF_ROUTES.push(   // E9a: open at the door so a TELECALLER can reach them
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(465);
+    expect(oracle).toHaveLength(468);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

@@ -44,7 +44,7 @@ describe('AdminVendorSiteService.create', () => {
     const trial = { resolveSubdomain: jest.fn(async (s: string) => { calls.push('subdomain'); return s; }) };
     const prisma = { vendor: { update: jest.fn(async () => { calls.push('provenance'); }) }, v3PackCategory: { findMany: async () => [] } };
     const seeded = { listableCategories: async () => ({ items: listable }) };
-    return { svc: new AdminVendorSiteService(vendors as never, registration as never, trial as never, prisma as never, seeded as never), calls, vendors };
+    return { svc: new AdminVendorSiteService(vendors as never, registration as never, trial as never, prisma as never, seeded as never, { run: async (_s: string, f: () => Promise<unknown>) => f() } as never), calls, vendors };
   };
   const dto = { category: 'driving-school', businessName: 'Sri Murugan Driving School', ownerName: 'Murugan', phone: '+919876543210', email: 'M@x.invalid', city: 'Madurai', subdomain: 'murugan' };
   it('checks the address, creates through the shared duplicate check, records provenance, makes the plan and live site, returns the url', async () => {
