@@ -102,7 +102,7 @@ describe('C: the payment collection record', () => {
   it("makes the CASH order for the telecaller's own business, creator = the telecaller, and says it waits for the office", async () => {
     const { svc, calls } = make();
     const r = await svc.recordCollection(caller, 'v-own', input, '1.2.3.4');
-    expect(calls.cashOrder[0]).toEqual(['v-own', { planKey: 'pro', termMonths: 12, idempotencyKey: 'collect-abc-0001' }, { type: 'STAFF', id: 'login-1', ip: '1.2.3.4' }]);
+    expect(calls.cashOrder[0]).toEqual(['v-own', { planKey: 'pro', termMonths: 12, idempotencyKey: 'collect-abc-0001' }, { type: 'STAFF', id: 'login-1', ip: '1.2.3.4' }, { openDays: 366 }]);
     expect(r).toMatchObject({ order: { status: 'CREATED' }, state: 'WAITING_FOR_THE_OFFICE' });
   });
   it("another telecaller's business or an unknown one is the same plain 404, and no order is made", async () => {

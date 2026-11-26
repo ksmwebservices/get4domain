@@ -130,7 +130,7 @@ export class PlanOrderService {
    * Wave 3 Part E: an ADMIN or SUPER_ADMIN makes a CASH order for a vendor who paid cash in a special case. The amount is the same server price as an online order (price book plus GST, never typed),
    * the order has no gateway and no provider order, and it can only be settled by an admin confirming the cash (SettlementService.confirmCash). Idempotent by key.
    */
-  async createCashOrder(vendorId: string, input: { planKey: string; termMonths: number; idempotencyKey: string }, actor: Actor): Promise<OrderView> {
+  async createCashOrder(vendorId: string, input: { planKey: string; termMonths: number; idempotencyKey: string }, actor: Actor, o: { openDays?: number } = {}): Promise<OrderView> {
     const now = this.clock();
     const key = String(input.idempotencyKey ?? '');
     const prior = await this.repo.findOrderByIdempotency(vendorId, key);
@@ -146,7 +146,7 @@ export class PlanOrderService {
       order = await this.repo.createOrder({
         vendorId, planId: plan.id, termMonths: input.termMonths, kind: kind === 'RENEWAL' ? 'RENEWAL' : kind === 'UPGRADE' ? 'UPGRADE' : 'NEW',
         quote: { ...quote, base: price.amountPaise, planKey: plan.key, priceId: price.id, creditPaise: credit, taxName: tax.name, taxRatePercent: tax.ratePercent, termMonths: input.termMonths },
-        amountPaise: quote.totalMinor, currency: price.currency, gateway: 'cash', idempotencyKey: key, expiresAt: new Date(now.getTime() + CASH_ORDER_DAYS * 86_400_000), createdByType: actor.type, createdById: actor.id,
+        amountPaise: quote.totalMinor, currency: price.currency, gateway: 'cash', idempotencyKey: key, expiresAt: new Date(now.getTime() + (o.openDays ?? CASH_ORDER_DAYS) * 86_400_000), createdByType: actor.type, createdById: actor.id,
       });
     } catch (e) {
       if (e instanceof DuplicateOrderError) { const again = await this.repo.findOrderByIdempotency(vendorId, key); if (again) return this.view(again); }

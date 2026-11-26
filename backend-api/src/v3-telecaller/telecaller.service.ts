@@ -4,6 +4,7 @@ import { AdminRole } from '@prisma/client';
 import { PasswordService } from '../account-security/password.service';
 import { AdminTeamService } from '../admin-team/admin-team.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { CASH_MAX_AGE_DAYS } from '../plan-billing/core/cash-core';
 import { PlanOrderService } from '../plan-billing/plan-order.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVendorWithSiteDto } from '../v3-admin-vendor-site/admin-vendor-site.dto';
@@ -124,7 +125,8 @@ export class TelecallerService {
   async recordCollection(u: Pick<AuthenticatedUser, 'sub'>, vendorId: string, input: CollectionInput, ip: string | null) {
     const partner = await this.partnerOf(u);
     await this.ownBusiness(partner.id, vendorId);
-    const order = await this.get(PlanOrderService).createCashOrder(String(vendorId).slice(0, 64), { planKey: String(input?.planKey ?? ''), termMonths: Number(input?.termMonths), idempotencyKey: String(input?.idempotencyKey ?? '') }, { type: 'STAFF', id: u.sub, ip });
+    // the money is already collected, so the order stays open as long as a confirmation of it is accepted (an admin's own cash order closes after a few days)
+    const order = await this.get(PlanOrderService).createCashOrder(String(vendorId).slice(0, 64), { planKey: String(input?.planKey ?? ''), termMonths: Number(input?.termMonths), idempotencyKey: String(input?.idempotencyKey ?? '') }, { type: 'STAFF', id: u.sub, ip }, { openDays: CASH_MAX_AGE_DAYS });
     return { order, state: 'WAITING_FOR_THE_OFFICE', note: 'An admin confirms the cash with the receipt reference. Until then the plan is not started and no commission is made.' };
   }
 
@@ -138,7 +140,7 @@ export class TelecallerService {
       this.prisma.commissionLedger.findMany({ where: { partnerId, kind: 'COMMISSION' }, select: { status: true, amountMinor: true } }),
     ]);
     const ids = attrs.map((a) => a.vendorId);
-    const orders = ids.length ? await this.prisma.v3PlanOrder.findMany({ where: { vendorId: { in: ids }, gateway: 'cash', status: 'CREATED' }, select: { createdAt: true } }) : [];
+    const orders = ids.length ? await this.prisma.v3PlanOrder.findMany({ where: { vendorId: { in: ids }, gateway: 'cash', status: { in: ['CREATED', 'PENDING_PAYMENT'] } }, select: { createdAt: true } }) : [];
     const now = this.clock().getTime();
     const view = monitorView({ created: ids.length, paid: lines.length, waiting: orders.map((o) => ({ ageMs: now - o.createdAt.getTime() })), overdueAfterDays: telecallerCashOverdueDays, commission: lines });
     return { ...view, payType: this.payView(partnerId, profile).payType };
