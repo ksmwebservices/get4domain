@@ -79,7 +79,10 @@ export function normalizeCashfreeEvent(raw: Buffer | string): NormalizedEvent | 
   return { eventId, type, kind, providerOrderId, paymentId, amountMinor, currency, redacted };
 }
 
-/** A Razorpay webhook body: payment.captured and order.paid are PAID, payment.failed is FAILED. The event id is Razorpay's own header (else a digest of the body). */
+/**
+ * A Razorpay webhook body: payment.captured and order.paid are PAID, payment.failed is FAILED. payment_link.paid is PAID for the LINK (E11e): the order is found by the
+ * link id, never by the gateway order Razorpay makes behind a link. The event id is Razorpay's own header (else a digest of the body).
+ */
 export function normalizeRazorpayEvent(raw: Buffer | string, eventIdHeader: string | undefined): NormalizedEvent | null {
   const body = parseJson(raw);
   if (!isObj(body)) return null;
@@ -87,15 +90,20 @@ export function normalizeRazorpayEvent(raw: Buffer | string, eventIdHeader: stri
   const payload = isObj(body.payload) ? body.payload : {};
   const pay = isObj(payload.payment) && isObj(payload.payment.entity) ? payload.payment.entity : {};
   const ord = isObj(payload.order) && isObj(payload.order.entity) ? payload.order.entity : {};
-  const providerOrderId = cleanId(str(pay.order_id) ?? str(ord.id));
+  const link = isObj(payload.payment_link) && isObj(payload.payment_link.entity) ? payload.payment_link.entity : {};
+  const isLink = type.startsWith('payment_link.');
+  const linkId = isLink ? cleanId(str(link.id)) : null;
+  const providerOrderId = isLink ? linkId : cleanId(str(pay.order_id) ?? str(ord.id));
   const paymentId = cleanId(str(pay.id));
-  const amount = typeof pay.amount === 'number' ? pay.amount : typeof ord.amount_paid === 'number' ? ord.amount_paid : null;
+  const amount = typeof pay.amount === 'number' ? pay.amount : isLink ? (typeof link.amount_paid === 'number' ? link.amount_paid : null) : typeof ord.amount_paid === 'number' ? ord.amount_paid : null;
   const amountMinor = typeof amount === 'number' && Number.isInteger(amount) && amount >= 0 ? amount : null;
-  const currency = str(pay.currency, 8) ?? str(ord.currency, 8);
-  const kind: EventKind = type === 'payment.captured' || type === 'order.paid' ? 'PAID' : type === 'payment.failed' ? 'FAILED' : 'OTHER';
+  const currency = str(pay.currency, 8) ?? str(isLink ? link.currency : ord.currency, 8);
+  // a paid link counts only when the link says paid and the payment, if it is described, is captured
+  const linkPaid = type === 'payment_link.paid' && link.status === 'paid' && (pay.status === undefined || pay.status === 'captured');
+  const kind: EventKind = type === 'payment.captured' || type === 'order.paid' || linkPaid ? 'PAID' : type === 'payment.failed' ? 'FAILED' : 'OTHER';
   const eventId = typeof eventIdHeader === 'string' && /^[A-Za-z0-9_-]{6,80}$/.test(eventIdHeader) ? eventIdHeader : `evt-${digestOf(raw).slice(0, 40)}`;
   const redacted: Record<string, unknown> = { event: type };
-  if (providerOrderId) redacted.order_id = providerOrderId;
+  if (providerOrderId) redacted[isLink ? 'payment_link_id' : 'order_id'] = providerOrderId;
   if (paymentId) redacted.payment_id = paymentId;
   if (amountMinor !== null) redacted.amount = amountMinor;
   if (currency) redacted.currency = currency;

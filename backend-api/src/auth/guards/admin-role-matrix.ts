@@ -274,6 +274,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/payment-gateway': OPS_AND_SUPER, 'PUT /v3/admin/payment-gateway': SUPER_ONLY,
   // Wave 3 Part E: cash confirmed by an admin (CASH only, for a cash order). Making the cash order and confirming the cash are ADMIN and SUPER_ADMIN (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow); OPERATIONS, SALES, SUPPORT and every label are refused. mark-paid itself was SUPER_ADMIN only and stays that in the base table.
   'POST /v3/admin/billing/vendors/:vendorId/cash-orders': SUPER_ONLY,
+  // E11e payment links: like a cash order, ADMIN and SUPER_ADMIN (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow); a telecaller's own route is open to every staff role and the service refuses another business
+  'POST /v3/admin/billing/vendors/:vendorId/pay-links': SUPER_ONLY, 'POST /v3/admin/telecaller/vendors/:id/pay-links': ALL_STAFF,
   // Wave 4 W2: held payments (list, detail, resolve) are ADMIN and SUPER_ADMIN only (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow); OPERATIONS, SALES, SUPPORT and every label are refused.
   // Wave 4 W6: the gateway keys are SUPER_ADMIN only in every method; ADMIN is NOT given them (no STAFF_ROLE_EXTENSIONS entry), and every other role is refused.
   // Wave 4 W7: the GST rate. Reading is OPERATIONS and SUPER_ADMIN (ADMIN inherits the read); setting it is SUPER_ADMIN only, and ADMIN is NOT extended (tested in wave4-gst-rate.spec.ts).
@@ -341,6 +343,7 @@ export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExt
     // the pack engine's content (A6): packs, tabs and the category map. The tier matrix, the two switches and the add-on switch stay SUPER_ADMIN only.
     allow: [...THEME_MARKET_ADMIN_WRITES, 'PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', 'PUT /v3/admin/pack-engine/addon-eligibility', 'POST /v3/admin/partners', 'PUT /v3/admin/partners/:id', 'PUT /v3/admin/payment-gateway', 'POST /v3/admin/billing/orders/:id/mark-paid', 'POST /v3/admin/billing/vendors/:vendorId/cash-orders', 'GET /v3/admin/billing/held-payments', 'GET /v3/admin/billing/held-payments/:id', 'POST /v3/admin/billing/held-payments/:id/resolve', 'GET /v3/admin/commission/payouts/export.csv',
       'POST /v3/admin/telecallers',   // E9c: ADMIN creates telecaller accounts (owner decision, 26 Nov 2026)
+      'POST /v3/admin/billing/vendors/:vendorId/pay-links',
       'POST /v3/admin/partners/:id/links', 'POST /v3/admin/referral-links/:id/disable', 'POST /v3/admin/commission/slabs', 'PUT /v3/admin/commission/slabs/:id', 'POST /v3/admin/commission/months/:month/close', 'POST /v3/admin/commission/payouts', 'PUT /v3/admin/vendors/:id/referral',
       ...Object.keys(SEO_ROUTES)],
   },

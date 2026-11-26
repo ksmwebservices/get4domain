@@ -1,6 +1,9 @@
 import { Provider, Type } from '@nestjs/common';
 import { AdminGatewayCredentialsController, AdminInvoicesController, AdminPaymentGatewayController, BillingAdminController, HeldPaymentsAdminController } from './api/billing-admin.controller';
 import { MeBillingController } from './api/me-billing.controller';
+import { AdminPayLinkController, MePayLinkController } from './api/pay-link.controllers';
+import { PaymentLinkGate } from './pay-link/payment-link.gate';
+import { PlanPayLinkService } from './pay-link/plan-pay-link.service';
 import { CashfreeWebhookController, PaymentsWebhookController } from './api/payments-webhook.controller';
 import { OtpPepper } from '../directory/pepper';
 import { PaymentGatewaySettingsService } from './gateway/gateway-settings.service';
@@ -20,6 +23,6 @@ import { PaymentSettlementService } from './settlement.service';
 export const PLAN_BILLING_PROVIDERS: Provider[] = [
   { provide: PlanBillingRepository, useClass: PrismaPlanBillingRepository },
   { provide: ReminderMailer, useClass: SandboxReminderMailer },
-  BillingSettingsService, GatewayCredentialsService, PaymentGatewaySettingsService, PaymentsGate, OtpPepper, PlanInvoiceDeliveryService, PaymentSettlementService, HeldPaymentsService, PlanOrderService, RenewalReminderService, PlanBillingCron,
+  BillingSettingsService, GatewayCredentialsService, PaymentGatewaySettingsService, PaymentsGate, OtpPepper, PlanInvoiceDeliveryService, PaymentSettlementService, HeldPaymentsService, PlanOrderService, RenewalReminderService, PlanBillingCron, PaymentLinkGate, PlanPayLinkService,
 ];
-export const PLAN_BILLING_CONTROLLERS: Type<unknown>[] = [MeBillingController, PaymentsWebhookController, CashfreeWebhookController, BillingAdminController, AdminInvoicesController, AdminPaymentGatewayController, AdminGatewayCredentialsController, HeldPaymentsAdminController];
+export const PLAN_BILLING_CONTROLLERS: Type<unknown>[] = [MeBillingController, PaymentsWebhookController, CashfreeWebhookController, BillingAdminController, AdminInvoicesController, AdminPaymentGatewayController, AdminGatewayCredentialsController, HeldPaymentsAdminController, MePayLinkController, AdminPayLinkController];

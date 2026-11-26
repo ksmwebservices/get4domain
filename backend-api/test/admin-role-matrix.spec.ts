@@ -204,6 +204,8 @@ SUPER_ONLY_ROUTES.push('POST /v3/admin/partners', 'PUT /v3/admin/partners/:id');
 SUPER_ONLY_ROUTES.push('PUT /v3/admin/payment-gateway'); MARKETING_DENIED.push('GET /v3/admin/payment-gateway');
 // Wave 3 Part E: the cash order and its confirmation. SUPER_ADMIN in the base table; ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (mark-paid is in SUPER_ONLY_ROUTES above and gains ADMIN the same way). OPERATIONS is refused (tested in wave3-cash.spec.ts).
 SUPER_ONLY_ROUTES.push('POST /v3/admin/billing/vendors/:vendorId/cash-orders');
+// E11e: payment links, like the cash order (ADMIN through the extension); a telecaller's own link route is open to every staff role and narrowed by the service
+SUPER_ONLY_ROUTES.push('POST /v3/admin/billing/vendors/:vendorId/pay-links'); ALL_STAFF_ROUTES.push('POST /v3/admin/telecaller/vendors/:id/pay-links');
 // Wave 4 W2: held payments. SUPER_ADMIN in the base table; ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in wave4-held-payments.spec.ts).
 // Wave 4 W8: the payout preview (read) and the payouts CSV (ADMIN and SUPER_ADMIN, it carries the PAN)
 SUPER_ONLY_ROUTES.push('GET /v3/admin/commission/payouts/export.csv'); MARKETING_DENIED.push('GET /v3/admin/commission/payouts/preview');
@@ -240,7 +242,7 @@ ALL_STAFF_ROUTES.push(   // E9a: open at the door so a TELECALLER can reach them
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(471);
+    expect(oracle).toHaveLength(473);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

@@ -68,7 +68,7 @@ describe('RazorpayTestAdapter (with a fake fetch: no network)', () => {
 
 describe('billing settings', () => {
   it('defaults: payments OFF, reminders OFF, seller details EMPTY (nothing invented), a neutral invoice prefix, 30 minute orders', () => {
-    expect(DEFAULT_BILLING_SETTINGS).toEqual({ paymentsMode: 'off', paymentGateway: 'razorpay', orderExpiryMinutes: 30, renewalRemindersEnabled: false, invoiceNumberPrefix: 'INV', invoiceSellerName: '', invoiceSellerAddress: '', invoiceSellerGstin: '' });
+    expect(DEFAULT_BILLING_SETTINGS).toEqual({ paymentsMode: 'off', paymentGateway: 'razorpay', payLinkEnabled: false, orderExpiryMinutes: 30, renewalRemindersEnabled: false, invoiceNumberPrefix: 'INV', invoiceSellerName: '', invoiceSellerAddress: '', invoiceSellerGstin: '' });
   });
   it.each([
     ['paymentsMode', 'test', true], ['paymentsMode', 'live', true], ['paymentsMode', 'on', false], ['orderExpiryMinutes', 30, true], ['orderExpiryMinutes', 4, false], ['orderExpiryMinutes', 1441, false],

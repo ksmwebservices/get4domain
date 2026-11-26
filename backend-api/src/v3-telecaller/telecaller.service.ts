@@ -5,6 +5,7 @@ import { PasswordService } from '../account-security/password.service';
 import { AdminTeamService } from '../admin-team/admin-team.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { CASH_MAX_AGE_DAYS } from '../plan-billing/core/cash-core';
+import { PlanPayLinkService, PayLinkView } from '../plan-billing/pay-link/plan-pay-link.service';
 import { PlanOrderService } from '../plan-billing/plan-order.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVendorWithSiteDto } from '../v3-admin-vendor-site/admin-vendor-site.dto';
@@ -172,6 +173,15 @@ export class TelecallerService {
     // the money is already collected, so the order stays open as long as a confirmation of it is accepted (an admin's own cash order closes after a few days)
     const order = await this.get(PlanOrderService).createCashOrder(String(vendorId).slice(0, 64), { planKey: String(input?.planKey ?? ''), termMonths: Number(input?.termMonths), idempotencyKey: String(input?.idempotencyKey ?? '') }, { type: 'STAFF', id: u.sub, ip }, { openDays: CASH_MAX_AGE_DAYS });
     return { order, state: 'WAITING_FOR_THE_OFFICE', note: 'An admin confirms the cash with the receipt reference. Until then the plan is not started and no commission is made.' };
+  }
+
+  // ── D2 (E11e): payment link ──
+
+  /** A payment link for one of this telecaller's businesses: the same ownership rule as a cash collection. Nothing is collected here: the owner pays the gateway. */
+  async payLink(u: Pick<AuthenticatedUser, 'sub'>, vendorId: string, input: CollectionInput, ip: string | null): Promise<PayLinkView> {
+    const partner = await this.partnerOf(u);
+    await this.ownBusiness(partner.id, vendorId);
+    return this.get(PlanPayLinkService).create(String(vendorId).slice(0, 64), { planKey: String(input?.planKey ?? ''), termMonths: Number(input?.termMonths), idempotencyKey: String(input?.idempotencyKey ?? '') }, { type: 'STAFF', id: u.sub, ip });
   }
 
   // ── E: monitoring ────────────────────────────────────────────────────────────────

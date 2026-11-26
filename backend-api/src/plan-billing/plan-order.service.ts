@@ -114,7 +114,8 @@ export class PlanOrderService {
 
   private async replay(prior: OrderRow, input: { planKey: string; termMonths: number }): Promise<OrderView> {
     const plan = await this.repo.getPlanById(prior.planId);
-    if (!plan || plan.key !== input.planKey || prior.termMonths !== input.termMonths) throw new ConflictException(billingError('IDEMPOTENCY_CONFLICT', 'That request key was already used for a different order.'));
+    // a payment link's order (E11e) has no checkout to open, so its key cannot be replayed here
+    if (!plan || plan.key !== input.planKey || prior.termMonths !== input.termMonths || (prior.quote as { payLink?: unknown }).payLink === true) throw new ConflictException(billingError('IDEMPOTENCY_CONFLICT', 'That request key was already used for a different order.'));
     let keyId: string | null = null;
     try { keyId = (await this.portOf(prior)).publicKeyId(); } catch { /* payments switched off since: the order is still shown */ }
     return this.view(prior, keyId);

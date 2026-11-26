@@ -124,6 +124,18 @@ export class PaymentsGate {
     return g;
   }
 
+  /**
+   * E11e: the Razorpay TEST keys a payment link is made with: the set stored in the admin app first, the environment second. Null unless the set is complete (the
+   * webhook secret too: without it a payment on a link could never be recorded) and the key id is a test one. A live key is never handed out here.
+   */
+  async razorpayTestKeys(): Promise<{ keyId: string; keySecret: string } | null> {
+    const stored = await this.creds?.resolve('razorpay', 'test');
+    const keyId = stored?.keyId ?? this.env.RAZORPAY_TEST_KEY_ID;
+    const keySecret = stored?.keySecret ?? this.env.RAZORPAY_TEST_KEY_SECRET;
+    const webhookSecret = stored?.webhookSecret ?? this.env.RAZORPAY_TEST_WEBHOOK_SECRET;
+    return keyId && keySecret && webhookSecret && keyId.startsWith('rzp_test_') ? { keyId, keySecret } : null;
+  }
+
   /** For the webhook: null when payments are off or not set up, so the route can say "nothing to do" without an error the provider would retry. */
   async webhookPort(): Promise<RazorpayPort | null> {
     const mode = (await this.settings.get()).paymentsMode;

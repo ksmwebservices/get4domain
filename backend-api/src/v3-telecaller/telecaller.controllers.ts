@@ -70,6 +70,10 @@ export class TelecallerSelfController {
   @ApiOperation({ summary: 'Create a business for an owner and a live trial site. The business is credited to me; the owner gets an e-mail link to set their own password (nobody sees a password). The duplicate override is for admins only.' })
   createBusiness(@Body() dto: CreateVendorWithSiteDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.svc.createBusiness(u, dto, req.ip ?? null); }
 
+  @Post('vendors/:id/pay-links') @HttpCode(200)
+  @ApiOperation({ summary: 'A payment link for my business at the server price, to share with the owner (test mode only, off until staff switch it on). When it is paid the plan starts and my commission is made, as for any payment.' })
+  payLink(@Param('id') id: string, @Body() dto: CollectionDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.svc.payLink(u, id, dto, req.ip ?? null); }
+
   @Post('vendors/:id/collections') @HttpCode(200)
   @ApiOperation({ summary: 'Record a payment I collected: makes the CASH order for my business at the server price. It waits for an admin to confirm the cash with the receipt reference; only then the plan starts and my commission is made.' })
   collect(@Param('id') id: string, @Body() dto: CollectionDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.svc.recordCollection(u, id, dto, req.ip ?? null); }
