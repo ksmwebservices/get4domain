@@ -1,9 +1,10 @@
-import { Body, Controller, Get, HttpCode, Param, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsArray, IsObject } from 'class-validator';
 import type { Request } from 'express';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../common/decorators/current-user.decorator';
+import { PageQueryDto, pageArgs } from '../plans/admin/plans-admin.common';
 import { DraftBrandDto, DraftFieldDto, DraftListDto, DraftNavigationDto, DraftSectionsDto } from '../v3-website/api/dto/website.dto';
 import { staffOf } from '../v3-website/api/staff-ref';
 import { AdminDraftService, StaffWrite } from './admin-draft.service';
@@ -13,6 +14,19 @@ export class AdminDraftHoursDto { @IsArray() hours!: unknown[] }
 
 type StaffRequest = Request & { actOnBehalf?: { sessionId: string } };
 const write = (user: AuthenticatedUser, req: StaffRequest): StaffWrite => ({ staff: staffOf(user), actor: { type: 'STAFF', id: user.sub, ip: req.ip ?? null }, sessionId: req.actOnBehalf?.sessionId ?? null });
+
+/** E11b: the items of a business, for staff who edit its item pages. The same roles as reading the draft. */
+@ApiTags('v3-website-draft-admin')
+@ApiBearerAuth()
+@UseGuards(AdminGuard)
+@Controller('v3/admin/vendors/:id')
+export class AdminItemsController {
+  constructor(private readonly drafts: AdminDraftService) {}
+
+  @Get('items')
+  @ApiOperation({ summary: 'The items of a business (hidden ones too), oldest first, with which already have an item page, and the list of every item page in the draft. A telecaller only for a business that telecaller created.' })
+  items(@Param('id') id: string, @Query() q: PageQueryDto, @CurrentUser() u: AuthenticatedUser) { return this.drafts.items(staffOf(u), id, pageArgs(q)); }
+}
 
 /**
  * E9a: the staff twin of every PUT /v3/me/site/draft/* route, plus profile details and opening hours. OPERATIONS, ADMIN and SUPER_ADMIN; a TELECALLER only for a business that telecaller created.

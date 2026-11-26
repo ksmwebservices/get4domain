@@ -1,9 +1,10 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString, Length, Max, MaxLength, Min } from 'class-validator';
 import type { Request } from 'express';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../common/decorators/current-user.decorator';
+import { PageQueryDto, pageArgs, paged } from '../plans/admin/plans-admin.common';
 import { CreateVendorWithSiteDto } from '../v3-admin-vendor-site/admin-vendor-site.dto';
 import { TelecallerService } from './telecaller.service';
 
@@ -56,6 +57,14 @@ export class TelecallerSelfController {
   @Get('monitor')
   @ApiOperation({ summary: 'My numbers: businesses I created, how many have paid, cash waiting for the office, my commission by state' })
   monitor(@CurrentUser() u: AuthenticatedUser) { return this.svc.myMonitor(u); }
+
+  @Get('vendors')
+  @ApiOperation({ summary: 'The businesses I created (only mine), newest first, each with where its website stands: LIVE, PREVIEW_ONLY, FAILED, NOT_BUILT or REMOVED. No owner name, e-mail or phone.' })
+  async myBusinesses(@CurrentUser() u: AuthenticatedUser, @Query() q: PageQueryDto) {
+    const { skip, take, page, pageSize } = pageArgs(q);
+    const r = await this.svc.myBusinesses(u, { skip, take });
+    return paged(r.items, r.total, page, pageSize);
+  }
 
   @Post('vendors') @HttpCode(200)
   @ApiOperation({ summary: 'Create a business for an owner and a live trial site. The business is credited to me; the owner gets an e-mail link to set their own password (nobody sees a password). The duplicate override is for admins only.' })

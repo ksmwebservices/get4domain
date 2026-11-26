@@ -40,6 +40,15 @@ export function checkEmployee(i: EmployeeInput): { ok: true; value: EmployeeClea
 
 export const capReached = (createdToday: number, cap: number): boolean => createdToday >= cap;
 
+/** Where a business's website stands, in one word. A removed site wins over everything; a live version wins over a newer preview. */
+export type SiteStanding = 'LIVE' | 'PREVIEW_ONLY' | 'FAILED' | 'NOT_BUILT' | 'REMOVED';
+export function siteStandingOf(f: { removed: boolean; live: boolean; preview: boolean; provisionStatus: string | null }): SiteStanding {
+  if (f.removed) return 'REMOVED';
+  if (f.live) return 'LIVE';
+  if (f.preview) return 'PREVIEW_ONLY';
+  return f.provisionStatus === 'FAILED' ? 'FAILED' : 'NOT_BUILT';
+}
+
 export interface MonitorInput {
   created: number;
   /** businesses of this telecaller that have a commission line (their first plan payment was made) */

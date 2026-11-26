@@ -6,6 +6,7 @@ import request from 'supertest';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import { buildValidationPipe } from '../src/common/pipes/edit-validation.pipe';
+import { PrismaService } from '../src/prisma/prisma.service';
 import { ActivityInterceptor } from '../src/v3-activity/activity.interceptor';
 import { AdminDraftController } from '../src/v3-admin-draft/admin-draft.controller';
 import { AdminDraftService } from '../src/v3-admin-draft/admin-draft.service';
@@ -75,7 +76,7 @@ describe('E9a: staff draft edits', () => {
       controllers: [AdminDraftController, AdminActOnBehalfController],
       providers: [
         AdminDraftService, { provide: ActOnBehalfService, useValue: a.svc }, { provide: ActOnBehalfStore, useValue: a.store }, { provide: WebsiteService, useValue: w.web },
-        { provide: ProfileFieldsService, useValue: profileService(w, a) }, { provide: OnboardingQueueService, useValue: {} },
+        { provide: ProfileFieldsService, useValue: profileService(w, a) }, { provide: OnboardingQueueService, useValue: {} }, { provide: PrismaService, useValue: {} },
         { provide: APP_INTERCEPTOR, useValue: new ActOnBehalfInterceptor(a.svc) }, { provide: APP_INTERCEPTOR, useValue: new ActivityInterceptor(a.aw.activity) },
       ],
     }).compile();

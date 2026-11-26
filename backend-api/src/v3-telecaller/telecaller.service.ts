@@ -11,12 +11,17 @@ import { CreateVendorWithSiteDto } from '../v3-admin-vendor-site/admin-vendor-si
 import { AdminVendorSiteService } from '../v3-admin-vendor-site/admin-vendor-site.service';
 import { PartnersService } from '../v3-partners/partners.service';
 import { ReferralsService } from '../v3-referrals/referrals.service';
-import { checkEmployee, checkPay, EmployeeInput, isPayType, MonitorView, monitorView, PAY_TYPES, PayType } from './core/telecaller-core';
+import { checkEmployee, checkPay, EmployeeInput, isPayType, MonitorView, monitorView, PAY_TYPES, PayType, SiteStanding, siteStandingOf } from './core/telecaller-core';
 import { TelecallerSettingsService } from './settings/telecaller-settings';
 
 export interface Caller { id: string; ip?: string | null }
 export interface CollectionInput { planKey: string; termMonths: number; idempotencyKey: string }
 export interface PayView { partnerId: string; payType: PayType | null; monthlySalaryMinor: number | null; updatedAt: Date | null }
+/** One business on a telecaller's own list. The owner's name, e-mail and phone are deliberately not part of it. */
+export interface OwnBusinessRow {
+  vendorId: string; businessName: string; category: string | null; createdAt: Date; accountStatus: string; subdomain: string | null;
+  site: { status: SiteStanding; url: string | null; publishedAt: Date | null; indexable: boolean | null; problemCode: string | null };
+}
 
 /**
  * Telecaller backend (E6). A telecaller is a staff login with the TELECALLER label (the SALES rights) linked to a referral partner row, so what they bring in earns commission by the existing ledger.
@@ -118,6 +123,45 @@ export class TelecallerService {
     await this.get(ReferralsService).setAttribution(made.vendorId, partner.id, 'created by a telecaller', { id: u.sub, ip });
     this.get(PasswordService).requestReset(dto.email, ip ?? undefined);   // the owner sets their own password from the e-mailed link; nobody sees it
     return { vendorId: made.vendorId, subdomain: made.subdomain, siteUrl: made.siteUrl, passwordLinkSentTo: 'EMAIL' };
+  }
+
+  // ── B2 (E11b): the businesses this telecaller created ──
+
+  /**
+   * "Created by" is the staff login written on the business when it was made (the same rule the draft-edit routes use), never the referral credit, which an
+   * admin can move. The login's own id is the only filter, so there is nothing in the request that could widen it.
+   */
+  async myBusinesses(u: Pick<AuthenticatedUser, 'sub'>, page: { skip: number; take: number }): Promise<{ items: OwnBusinessRow[]; total: number }> {
+    await this.partnerOf(u);
+    if (!u.sub) throw new ForbiddenException({ code: 'NOT_A_TELECALLER', message: 'This login is not set up as a telecaller.' });   // an empty id must never become an empty filter
+    const where = { registeredByStaffId: u.sub };
+    const [vendors, total] = await Promise.all([
+      this.prisma.vendor.findMany({
+        where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: page.skip, take: page.take,
+        select: { id: true, businessName: true, industry: true, status: true, subdomain: true, createdAt: true, siteProvisionStatus: true, siteProvisionCode: true, v3SiteRemoval: { select: { vendorId: true } } },
+      }),
+      this.prisma.vendor.count({ where }),
+    ]);
+    const ids = vendors.map((v) => v.id);
+    const [live, previews] = ids.length ? await Promise.all([
+      this.prisma.v3SitePublication.findMany({ where: { vendorId: { in: ids }, status: 'PUBLISHED' }, select: { vendorId: true, publishedAt: true, indexable: true } }),
+      this.prisma.v3SitePublication.findMany({ where: { vendorId: { in: ids }, status: 'DRAFT_PREVIEW' }, distinct: ['vendorId'], select: { vendorId: true } }),
+    ]) : [[], []];
+    const liveBy = new Map(live.map((p) => [p.vendorId, p]));
+    const previewed = new Set(previews.map((p) => p.vendorId));
+    const base = process.env.SITE_BASE_DOMAIN || 'get4domain.com';
+    return {
+      total,
+      items: vendors.map((v): OwnBusinessRow => {
+        const p = liveBy.get(v.id) ?? null;
+        const status = siteStandingOf({ removed: !!v.v3SiteRemoval, live: p !== null, preview: previewed.has(v.id), provisionStatus: v.siteProvisionStatus });
+        const isLive = status === 'LIVE';
+        return {
+          vendorId: v.id, businessName: v.businessName, category: v.industry, createdAt: v.createdAt, accountStatus: v.status, subdomain: v.subdomain,
+          site: { status, url: isLive && v.subdomain ? `https://${v.subdomain}.${base}` : null, publishedAt: isLive ? p!.publishedAt : null, indexable: isLive ? p!.indexable : null, problemCode: status === 'FAILED' ? v.siteProvisionCode : null },
+        };
+      }),
+    };
   }
 
   // ── C: payment collection record ──────────────────────────────────────────────────
