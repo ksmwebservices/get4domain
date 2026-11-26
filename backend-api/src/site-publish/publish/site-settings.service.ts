@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { EntitlementsService } from '../../plans/entitlements/entitlements.service';
 import { Actor } from '../../plans/admin/audit.service';
 import { planError } from '../../plans/plans.errors';
@@ -34,6 +34,7 @@ export const summarise = (p: PublicationRow | null): PublicationSummary | null =
 /** The settings of a vendor's site and the summary the dashboards show: theme choice (entitlement checked), the staff noindex switch, the live missing-field list. Never html. */
 @Injectable()
 export class SiteSettingsService {
+  private readonly logger = new Logger(SiteSettingsService.name);
   constructor(
     private readonly repo: SiteRepository,
     private readonly themes: ThemeRenderService,
@@ -61,11 +62,9 @@ export class SiteSettingsService {
     return library ? this.themes.listThemes(vendorId).filter((t) => t.tracks.includes(track)).map((t) => t.id) : def ? [def] : [];
   }
 
-  async status(vendorId: string): Promise<SiteStatus> {
-    const { doc, categoryId, track, ent } = await this.context(vendorId);
-    const s = await this.repo.getSettings(vendorId);
-    const f = ent.features['site.themes'];
-    const library = f?.state === 'ACTIVE' && f.enumValue === 'library';
+  /** What still keeps this site out of search engines, by the indexing rule, from the facts as they are now. The one place that decides it: the site page and the sites list both ask here. */
+  private async indexing(vendorId: string, c: Awaited<ReturnType<SiteSettingsService['context']>>, s: SiteSettingsRow | null): Promise<{ missing: MissingField[]; isSeeded: boolean }> {
+    const { doc, categoryId, ent } = c;
     const input = categoryId ? toRendererInput(doc, { categoryId, lang: 'en', year: 2000, siteBase: process.env.SITE_BASE_DOMAIN || DEFAULT_SITE_BASE, limits: limitsFrom(ent) }) : null;
     const seededState = this.lifecycle ? await this.lifecycle.lifecycleOf(vendorId) : null;
     const isSeeded = seededState === 'SEEDED' || seededState === 'INVITED';
@@ -75,6 +74,27 @@ export class SiteSettingsService {
       serviceAreas: ((input?.content.areas as unknown[]) ?? []).length, homeContent: input ? homeContentOk(input.content as never) : false, forceNoindex: s?.forceNoindex ?? false,
       ...(isSeeded ? { seeded: { mode: b3?.seededSiteIndexingMode ?? 'OFF', qualityOk: this.lifecycle ? await this.lifecycle.qualityOk(vendorId) : false } } : {}),
     }).missing;
+    return { missing, isSeeded };
+  }
+
+  /** The `indexable` of status() on its own, for one row of the sites list. Null when it cannot be worked out for that business: one broken record must not break the whole list. */
+  async indexableOf(vendorId: string, settings: SiteSettingsRow | null): Promise<boolean | null> {
+    try {
+      const { missing } = await this.indexing(vendorId, await this.context(vendorId), settings);
+      return readiness(missing, false, null).indexable;
+    } catch (e) {
+      this.logger.warn(`indexing check failed for vendor ${vendorId}: ${e instanceof Error ? e.name : 'error'}`);
+      return null;
+    }
+  }
+
+  async status(vendorId: string): Promise<SiteStatus> {
+    const context = await this.context(vendorId);
+    const { categoryId, track, ent } = context;
+    const s = await this.repo.getSettings(vendorId);
+    const f = ent.features['site.themes'];
+    const library = f?.state === 'ACTIVE' && f.enumValue === 'library';
+    const { missing, isSeeded } = await this.indexing(vendorId, context, s);
     const resolved = categoryId && track ? resolveTheme({ requested: s?.themeId ?? null, categoryId, track, themes: this.themes.listThemes(vendorId, s?.themeId ?? null), defaultId: this.themes.defaultThemeFor(categoryId), entitlement: f ? { state: f.state, enumValue: f.enumValue, upsellText: f.upsellText } : null, strict: false }).themeId : null;
     const newest = await this.repo.newestPublication(vendorId);
     const current = await this.repo.currentPublication(vendorId);
