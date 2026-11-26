@@ -20,11 +20,14 @@ import type { ManagedDoc } from '../../v3-website/core/managed-doc';
 
 export interface SourceExtras {
   headline?: string; subline?: string; ctaLabel?: string; announcement?: string;
+  itemDetails?: Array<{ itemId: string; title: string; summary: string; details: string; price: string; images: string; faqs: string; status: string; area: string }>;
+  branches?: Array<{ name: string; addressLine: string; locality: string; area: string; city: string; pincode: string; mapLink: string }>;
+  groups?: Array<{ name: string }>; areas?: Array<{ name: string }>; offers?: Array<{ title: string; detail?: string }>; blocks?: Array<{ key: string; title: string; entries: string }>;
   trust?: string[]; faq?: Array<{ q: string; a: string }>; steps?: Array<{ title: string; desc?: string }>;
   stats?: Array<{ value: string; label: string }>; team?: Array<{ name: string; role?: string; note?: string; image?: string }>;
   social?: { x?: string; customLabel?: string; customUrl?: string };
   /** slice 5.5a: written in the Website manager */
-  heroImageAlt?: string; aboutImage?: string; aboutImageAlt?: string; city?: string; pin?: string; credentials?: Array<{ title: string; detail?: string }>;
+  heroImageAlt?: string; ownerName?: string; organisation?: string; established?: string; googleBusiness?: string; aboutImage?: string; aboutImageAlt?: string; city?: string; pin?: string; credentials?: Array<{ title: string; detail?: string }>;
 }
 
 export interface SourceCms {

@@ -65,7 +65,8 @@ export class PartnersService {
   /** The login a partner uses must be an existing, active admin-team member whose role is REFERRAL_PARTNER, linked to no other partner. */
   private async assertLinkable(staffUserId: string, selfId: string | null): Promise<void> {
     const m = await this.store.staffMember(staffUserId);
-    if (!m || m.role !== PARTNER_ROLE || m.status === 'removed') throw partnerError(400, 'PARTNER_STAFF_LINK_INVALID', 'That login does not exist or is not a referral partner login.');
+    // a referral partner login, or an employee with the TELECALLER label (E6): both may carry the commission of the businesses they bring in
+    if (!m || (m.role !== PARTNER_ROLE && m.role !== 'TELECALLER') || m.status === 'removed') throw partnerError(400, 'PARTNER_STAFF_LINK_INVALID', 'That login does not exist or is not a referral partner or telecaller login.');
     const other = await this.store.getByStaffUser(staffUserId);
     if (other && other.id !== selfId) throw partnerError(409, 'PARTNER_STAFF_LINK_INVALID', 'That login is already linked to another partner.');
   }

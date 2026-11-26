@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { EntitlementsService } from '../../plans/entitlements/entitlements.service';
 import { Actor } from '../../plans/admin/audit.service';
 import { planError } from '../../plans/plans.errors';
@@ -7,7 +7,9 @@ import { ContentSource } from '../content/content-source';
 import { SourceDocument } from '../content/content-types';
 import { resolveTheme } from '../content/theme-resolution';
 import { ThemeRenderService } from '../renderer/theme-render.service';
-import { evaluateIndexing, homeContentOk } from '../seo/indexing-rule';
+import { evaluateIndexing, homeContentOk, Readiness, readiness } from '../seo/indexing-rule';
+import { B3SettingsService } from '../../b3-settings/b3-settings.service';
+import { SiteLifecycle } from './site-lifecycle';
 import { MissingField } from '../site.errors';
 import { PublishService } from './publish.service';
 import { SiteAudit } from './site-audit';
@@ -16,7 +18,7 @@ import { SiteBuildService } from './site-build.service';
 import { PublicationRow, SiteRepository, SiteSettingsRow } from './site.repository';
 
 export interface PublicationSummary { id: string; version: number; status: string; themeId: string; indexable: boolean; languages: string; warnings: string[]; createdAt: string; publishedAt: string | null; rolledBackFromVersion: number | null }
-export interface SiteStatus {
+export interface SiteStatus extends Readiness {
   settings: { themeId: string | null; language: string; variant: string | null; motionIntensity: string; forceNoindex: boolean };
   themeId: string | null;
   current: PublicationSummary | null;
@@ -32,6 +34,7 @@ export const summarise = (p: PublicationRow | null): PublicationSummary | null =
 /** The settings of a vendor's site and the summary the dashboards show: theme choice (entitlement checked), the staff noindex switch, the live missing-field list. Never html. */
 @Injectable()
 export class SiteSettingsService {
+  private readonly logger = new Logger(SiteSettingsService.name);
   constructor(
     private readonly repo: SiteRepository,
     private readonly themes: ThemeRenderService,
@@ -40,6 +43,9 @@ export class SiteSettingsService {
     private readonly build: SiteBuildService,
     private readonly publisher: PublishService,
     private readonly audit: SiteAudit,
+    /** seeded-site lifecycle and the staff indexing setting (slice 5.13a): absent = the site was never seeded */
+    @Optional() private readonly lifecycle?: SiteLifecycle,
+    @Optional() @Inject(B3SettingsService) private readonly b3?: Pick<B3SettingsService, 'get'>,
   ) {}
 
   private async context(vendorId: string): Promise<{ doc: SourceDocument; categoryId: string | null; track: string | null; ent: Awaited<ReturnType<Pick<EntitlementsService, 'resolve'>['resolve']>> }> {
@@ -56,22 +62,46 @@ export class SiteSettingsService {
     return library ? this.themes.listThemes(vendorId).filter((t) => t.tracks.includes(track)).map((t) => t.id) : def ? [def] : [];
   }
 
-  async status(vendorId: string): Promise<SiteStatus> {
-    const { doc, categoryId, track, ent } = await this.context(vendorId);
-    const s = await this.repo.getSettings(vendorId);
-    const f = ent.features['site.themes'];
-    const library = f?.state === 'ACTIVE' && f.enumValue === 'library';
+  /** What still keeps this site out of search engines, by the indexing rule, from the facts as they are now. The one place that decides it: the site page and the sites list both ask here. */
+  private async indexing(vendorId: string, c: Awaited<ReturnType<SiteSettingsService['context']>>, s: SiteSettingsRow | null): Promise<{ missing: MissingField[]; isSeeded: boolean }> {
+    const { doc, categoryId, ent } = c;
     const input = categoryId ? toRendererInput(doc, { categoryId, lang: 'en', year: 2000, siteBase: process.env.SITE_BASE_DOMAIN || DEFAULT_SITE_BASE, limits: limitsFrom(ent) }) : null;
+    const seededState = this.lifecycle ? await this.lifecycle.lifecycleOf(vendorId) : null;
+    const isSeeded = seededState === 'SEEDED' || seededState === 'INVITED';
+    const b3 = isSeeded && this.b3 ? await this.b3.get() : null;
     const missing = evaluateIndexing({
       businessName: doc.cms?.businessName || doc.vendor.businessName, categoryId, claimed: doc.claimed, verifiedContact: doc.claimed, address: String(doc.cms?.address ?? ''),
       serviceAreas: ((input?.content.areas as unknown[]) ?? []).length, homeContent: input ? homeContentOk(input.content as never) : false, forceNoindex: s?.forceNoindex ?? false,
+      ...(isSeeded ? { seeded: { mode: b3?.seededSiteIndexingMode ?? 'OFF', qualityOk: this.lifecycle ? await this.lifecycle.qualityOk(vendorId) : false } } : {}),
     }).missing;
+    return { missing, isSeeded };
+  }
+
+  /** The `indexable` of status() on its own, for one row of the sites list. Null when it cannot be worked out for that business: one broken record must not break the whole list. */
+  async indexableOf(vendorId: string, settings: SiteSettingsRow | null): Promise<boolean | null> {
+    try {
+      const { missing } = await this.indexing(vendorId, await this.context(vendorId), settings);
+      return readiness(missing, false, null).indexable;
+    } catch (e) {
+      this.logger.warn(`indexing check failed for vendor ${vendorId}: ${e instanceof Error ? e.name : 'error'}`);
+      return null;
+    }
+  }
+
+  async status(vendorId: string): Promise<SiteStatus> {
+    const context = await this.context(vendorId);
+    const { categoryId, track, ent } = context;
+    const s = await this.repo.getSettings(vendorId);
+    const f = ent.features['site.themes'];
+    const library = f?.state === 'ACTIVE' && f.enumValue === 'library';
+    const { missing, isSeeded } = await this.indexing(vendorId, context, s);
     const resolved = categoryId && track ? resolveTheme({ requested: s?.themeId ?? null, categoryId, track, themes: this.themes.listThemes(vendorId, s?.themeId ?? null), defaultId: this.themes.defaultThemeFor(categoryId), entitlement: f ? { state: f.state, enumValue: f.enumValue, upsellText: f.upsellText } : null, strict: false }).themeId : null;
     const newest = await this.repo.newestPublication(vendorId);
     const current = await this.repo.currentPublication(vendorId);
     return {
       settings: { themeId: s?.themeId ?? null, language: s?.language ?? 'en', variant: s?.variant ?? null, motionIntensity: s?.motionIntensity ?? 'LOW', forceNoindex: s?.forceNoindex ?? false },
       themeId: resolved, current: summarise(current), preview: newest && newest.status === 'DRAFT_PREVIEW' ? summarise(newest) : null, missing, allowedThemes: this.allowed(vendorId, categoryId, track, library),
+      ...readiness(missing, isSeeded, current ? current.indexable : null),
     };
   }
 
@@ -99,6 +129,21 @@ export class SiteSettingsService {
     const saved = await this.repo.upsertSettings(vendorId, { themeId, variant: typeof variant === 'string' ? variant : variant?.id ?? null });
     await this.repo.recordEvent(vendorId, null, { type: 'THEME_CHANGED', actorType: actor.type, actorId: actor.id, detail: { themeId } }, this.audit.hook(actor, 'site.theme', vendorId, { themeId }));
     return saved;
+  }
+
+  /**
+   * Staff assign a theme to a business (Website Manager lane A): the plan rules apply to a public theme exactly as in setTheme; a theme made privately for this business is always allowed.
+   * The reason is recorded. When the site is live it is built and published at once, so the visitor sees the new theme.
+   */
+  async assignTheme(vendorId: string, themeId: string, reason: string, actor: Actor): Promise<{ settings: SiteSettingsRow; published: PublicationRow | null }> {
+    const saved = await this.setTheme(vendorId, themeId, actor);
+    await this.repo.recordEvent(vendorId, null, { type: 'THEME_CHANGED', actorType: actor.type, actorId: actor.id, detail: { themeId, assigned: true, reason } }, this.audit.hook(actor, 'site.theme.assign', vendorId, { themeId, reason }));
+    let published: PublicationRow | null = null;
+    if (await this.repo.currentPublication(vendorId)) {
+      const built = await this.build.build(vendorId, { actor });
+      published = built.publication.status === 'DRAFT_PREVIEW' ? await this.publisher.publish(vendorId, built.publication.id, actor) : built.publication;
+    }
+    return { settings: saved, published };
   }
 
   /**

@@ -36,6 +36,28 @@ export const MISSING_LABELS: Record<string, string> = {
 };
 const m = (code: string): MissingField => ({ code, label: MISSING_LABELS[code] });
 
+/** The checklist wording: the positive sentence for each check, shown with a tick when it is met. */
+export const CHECK_LABELS: Record<string, string> = {
+  BUSINESS_NAME: 'Business name added', CATEGORY: 'Category chosen', CLAIMED: 'Owner has claimed the business', VERIFIED_CONTACT: 'Owner contact verified',
+  ADDRESS_OR_SERVICE_AREA: 'Address or service area added', HOME_CONTENT: 'Home page has a description and at least one service or photo', FORCE_NOINDEX: 'Search engines not switched off by staff',
+  SEEDED_INDEXING_OFF: 'Indexing of pages made from public information is switched on', SEEDED_QUALITY: 'Page meets the quality bar',
+};
+export interface ChecklistItem { code: string; label: string; done: boolean }
+export interface Readiness { indexable: boolean; checklist: ChecklistItem[]; publishedIndexable: boolean | null; needsRebuild: boolean }
+
+/** Every check of the rule in order, each with a tick: a seeded page is judged by the setting and the quality check, any other by the claim. */
+export function indexingChecklist(missing: ReadonlyArray<{ code: string }>, seeded: boolean): ChecklistItem[] {
+  const open = new Set(missing.map((m) => m.code));
+  const codes = ['BUSINESS_NAME', 'CATEGORY', ...(seeded ? ['SEEDED_INDEXING_OFF', 'SEEDED_QUALITY'] : ['CLAIMED', 'VERIFIED_CONTACT']), 'ADDRESS_OR_SERVICE_AREA', 'HOME_CONTENT', 'FORCE_NOINDEX'];
+  return codes.map((code) => ({ code, label: CHECK_LABELS[code], done: !open.has(code) }));
+}
+
+/** What staff see: the checklist, whether the site is ready to be indexed, whether the PUBLISHED page already is, and whether a rebuild is still needed (ready, but the page still says noindex). */
+export function readiness(missing: ReadonlyArray<{ code: string }>, seeded: boolean, publishedIndexable: boolean | null): Readiness {
+  const indexable = missing.length === 0;
+  return { indexable, checklist: indexingChecklist(missing, seeded), publishedIndexable, needsRebuild: indexable && publishedIndexable === false };
+}
+
 export function evaluateIndexing(i: IndexingInput): IndexingResult {
   const missing: MissingField[] = [];
   if (!i.businessName.trim()) missing.push(m('BUSINESS_NAME'));

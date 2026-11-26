@@ -191,3 +191,16 @@ describe('GET /v3/claim/:token/status (HTTP, real throttler)', () => {
     expect(codes.indexOf(429)).toBeLessThanOrEqual(30);
   });
 });
+
+describe('redeemClaim() asks for a site rebuild (so the page can turn indexable)', () => {
+  it('requests an immediate rebuild of that business once the token is used, and none for a token that is not usable', async () => {
+    const w = world(); const request = jest.fn();
+    (w.svc as unknown as { rebuild: { request: jest.Mock } }).rebuild = { request };
+    const { raw } = await issue(w);
+    await w.svc.redeemClaim(raw);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request).toHaveBeenCalledWith('v1', 'claim', { immediate: true });
+    await expect(w.svc.redeemClaim(raw)).rejects.toMatchObject({ response: { code: 'CLAIM_INVALID' } });
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+});

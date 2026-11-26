@@ -14,6 +14,7 @@ import { isSupportSettingKey, validateSupportSetting } from '../../v3-support/se
 import { isAdminActionsSettingKey, validateAdminActionsSetting } from '../../v3-admin-actions/settings/admin-actions-settings';
 import { isMailRulesSettingKey, validateMailRulesSetting } from '../../v3-mail/mail-rules/mail-rules-settings';
 import { isCommissionSettingKey, validateCommissionSetting } from '../../v3-referrals/settings/commission-settings';
+import { isTelecallerSettingKey, validateTelecallerSetting } from '../../v3-telecaller/settings/telecaller-settings';
 import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 
 /**
@@ -49,6 +50,8 @@ const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, val
   { owns: isAdminActionsSettingKey, validate: validateAdminActionsSetting },
   // Wave 4 W8: the TDS percent on commission payouts; unset (no TDS) until the owner sets the CA's rate
   { owns: isCommissionSettingKey, validate: validateCommissionSetting },
+  // E9c: the telecaller daily cap (starts at 20) and the days after which unconfirmed cash is overdue (starts at 60)
+  { owns: isTelecallerSettingKey, validate: validateTelecallerSetting },
 ];
 
 export function validateExtraSetting(key: string, value: unknown): void {

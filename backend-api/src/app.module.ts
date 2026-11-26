@@ -64,6 +64,9 @@ import { ClaimSetupModule } from './claim-setup/claim-setup.module';
 import { ProvisioningModule } from './provisioning/provisioning.module';
 import { SitePublishModule } from './site-publish/site-publish.module';
 import { WebsiteModule } from './v3-website/website.module';
+import { TelecallerModule } from './v3-telecaller/telecaller.module';
+import { ContentPackModule } from './v3-content-pack/content-pack.module';
+import { AdminDraftModule } from './v3-admin-draft/admin-draft.module';
 import { SiteDomainsModule } from './site-domains/site-domains.module';
 import { V3DomainAutomationModule } from './v3-domain-automation/domain-automation.module';
 import { V3RegistrarModule } from './v3-registrar/registrar.module';
@@ -95,6 +98,7 @@ import { DuplicateCheckModule } from './v3-duplicates/duplicate-check.module';
 import { RequestsOrdersModule } from './requests-orders/requests-orders.module';
 import { TermsModule } from './terms/terms.module';
 import { SiteLifecycleModule } from './seeded-sites/prisma-site-lifecycle';
+import { SiteRebuildSchedulerModule } from './site-domains/site-rebuild-scheduler';
 import { PlanBillingModule } from './plan-billing/plan-billing.module';
 import { PaymentsOpenModule } from './plan-billing/payments-open.module';
 import { ActivityBusModule } from './common/activity-bus';
@@ -158,6 +162,9 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     ProvisioningModule,
     SitePublishModule,
     WebsiteModule,
+    TelecallerModule,
+    ContentPackModule,
+    AdminDraftModule,
     SiteDomainsModule,
     V3DomainAutomationModule,
     V3RegistrarModule,
@@ -186,6 +193,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     B3SettingsModule,
     VendorLifecycleModule,
     SiteLifecycleModule,
+    SiteRebuildSchedulerModule,
     SeededSitesModule,
     DuplicateCheckModule,   // D1: the one duplicate check every creation path calls (global)
     RequestsOrdersModule,

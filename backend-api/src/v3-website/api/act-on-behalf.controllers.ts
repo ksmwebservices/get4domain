@@ -7,7 +7,8 @@ import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-
 import { Tenant, UseTenant } from '../../common/tenant/tenant.guard';
 import { TenantContext } from '../../common/tenant/tenant.types';
 import { PageQueryDto, pageArgs } from '../../plans/admin/plans-admin.common';
-import { ActOnBehalfService, StaffRef } from '../act-on-behalf/act-on-behalf.service';
+import { ActOnBehalfService } from '../act-on-behalf/act-on-behalf.service';
+import { staffOf } from './staff-ref';
 import { QUEUE_KINDS, QueueKind } from '../onboarding/onboarding-core';
 import { OnboardingQueueService } from '../onboarding/onboarding-queue.service';
 
@@ -18,11 +19,10 @@ export class SessionListQuery extends PageQueryDto {
 }
 export class QueueQuery extends PageQueryDto { @IsOptional() @IsIn(QUEUE_KINDS as unknown as string[]) kind?: QueueKind; }
 
-const staffOf = (user: AuthenticatedUser): StaffRef => ({ id: user.sub, role: user.adminRole ?? 'OPERATIONS' });
 
 /**
- * Staff side of acting on behalf (slice 5.13b) and the onboarding queue. Role matrix: OPERATIONS and SUPER_ADMIN (the stage file names Website Developer and Customer Support, roles that do not exist
- * here: OPEN QUESTIONS); MARKETING is refused. Inside a session the staff member sends the session id in the `x-act-on-behalf-session` header on `/v3/admin/vendors/:id/...` routes.
+ * Staff side of acting on behalf (slice 5.13b) and the onboarding queue. Role matrix: OPERATIONS, ADMIN and SUPER_ADMIN (the stage file names Website Developer and Customer Support, roles that do not exist
+ * here: OPEN QUESTIONS). E9a: a TELECALLER may start and end a session for a business that telecaller created; the service refuses every other SALES login. The session list and the queue stay closed to SALES. Inside a session the staff member sends the session id in the `x-act-on-behalf-session` header on `/v3/admin/vendors/:id/...` routes.
  */
 @ApiTags('v3-act-on-behalf-admin')
 @ApiBearerAuth()

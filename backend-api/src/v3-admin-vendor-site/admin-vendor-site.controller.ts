@@ -19,5 +19,5 @@ export class AdminVendorSiteController {
 
   @Post('vendor-sites') @HttpCode(201)
   @ApiOperation({ summary: 'Create a business with its Free plan and live trial site on behalf of an owner. Runs the shared duplicate check. Returns the site address.' })
-  create(@Body() dto: CreateVendorWithSiteDto, @CurrentUser() user: AuthenticatedUser) { return this.service.create(dto, { id: user.sub, role: String(user.adminRole ?? 'MARKETING') }); }
+  create(@Body() dto: CreateVendorWithSiteDto, @CurrentUser() user: AuthenticatedUser) { return this.service.create(dto, { id: user.sub, role: String(user.adminRole ?? 'MARKETING'), label: user.staffLabel ?? null }); }
 }

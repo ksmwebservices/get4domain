@@ -19,7 +19,7 @@ const STANDARD_PAGES = ['home', 'about', 'services', 'gallery', 'contact'] as co
 /** sections every site is expected to be able to show; a theme without one gets a gap line, nothing is invented for it */
 const EXPECTED_SECTIONS = ['hero', 'about', 'services', 'faq', 'gallery', 'contact'] as const;
 /** the repeater a template uses -> the list the vendor edits */
-const REPEATER_LIST: Readonly<Record<string, string>> = { faqs: 'faqs', gallery: 'gallery', steps: 'steps', trust: 'trust', stats: 'stats', team: 'team', credentials: 'credentials' };
+const REPEATER_LIST: Readonly<Record<string, string>> = { faqs: 'faqs', gallery: 'gallery', steps: 'steps', trust: 'trust', stats: 'stats', team: 'team', credentials: 'credentials', groups: 'groups', areas: 'areas', offers: 'offers', blocks: 'blocks' };
 /** gaps no theme can fill today: the renderer has no landing-page template, no editable menu labels and no structured opening hours */
 const PLATFORM_GAPS = ['landing-pages:no-template', 'navigation:renderer-menu-fixed', 'hours:free-text-only'] as const;
 

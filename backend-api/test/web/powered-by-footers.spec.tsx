@@ -41,7 +41,7 @@ const kitModel = (over: Record<string, unknown> = {}) => ({
 describe('the shared mark', () => {
   it('prints "Powered by Get4Domain" with the brand name alone as the link text, pointing at https://get4domain.com', () => {
     const html = renderToStaticMarkup(<PoweredBy />);
-    expectMark(html); expect(POWERED_BY_HREF).toBe('https://get4domain.com'); expect(POWERED_BY_BRAND).toBe('Get4Domain');
+    expectMark(html); expect(POWERED_BY_HREF).toBe('https://get4domain.com/'); expect(POWERED_BY_BRAND).toBe('Get4Domain');
   });
   it('takes a class name and nothing else: a plan flag, a vendor setting or a "hide" prop has no effect', () => {
     const html = renderToStaticMarkup(<PoweredBy {...({ className: 'x', hidden: true, hide: true, show: false, plan: 'PRO', whiteLabel: true, vendorSettings: { hidePoweredBy: true } } as object)} />);

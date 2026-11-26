@@ -21,6 +21,7 @@ import { VendorSeoSettings } from '../seo/vendor-seo-settings';
 import { VendorDirectoryFactsPort } from '../seo/vendor-directory-facts';
 import { siteError } from '../site.errors';
 import { CSS_BUDGET_BYTES, DEFAULT_SITE_BASE, PAGE_BUDGET_BYTES, clampMotion, contentTypeFor, kitMotion, parseLanguages, sha256, stableJson } from './site-config';
+import { manifestJson, SHELL_CSS, SHELL_JS } from '../shell/shell-assets';
 import { SiteAudit } from './site-audit';
 import { NewPage, PublicationRow, SiteRepository } from './site.repository';
 
@@ -175,9 +176,11 @@ export class SiteBuildService {
       const ta = canon.get(`ta:${p.path}`);
       sitemap.push({ loc: en, ...(ta ? { alternates: [{ lang: 'en-IN', href: en }, { lang: 'ta-IN', href: ta }] } : {}) });
     }
-    const css = [theme.theme.css.tokens, theme.theme.css.base, theme.theme.css.motion, theme.theme.css.print].filter(Boolean).join('\n');
+    const css = [theme.theme.css.tokens, theme.theme.css.base, theme.theme.css.motion, theme.theme.css.print, SHELL_CSS].filter(Boolean).join('\n');
     if (Buffer.byteLength(css) > this.budgets.css) throw new UnprocessableEntityException(siteError('SITE_BUDGET_EXCEEDED', 'The theme stylesheet is over the allowed size.'));
     const files: Array<[string, string]> = [['/assets/site.css', css], ['/sitemap.xml', buildSitemap(sitemap, indexing.indexable)], ['/robots.txt', buildRobotsTxt(indexing.indexable, `${siteUrl}/sitemap.xml`, vseo?.crawlers)]];
+    // S1 shell: the install script and the web app manifest exist only for a site with calls to action (the shell is drawn for those)
+    if (renderEnt.callsToAction !== false) files.push(['/assets/shell.js', SHELL_JS], ['/assets/manifest.webmanifest', manifestJson({ name: siteName, logo: doc.cms?.logo ?? null, accent: String((base.settings as Record<string, unknown>)?.accent ?? '') })]);
     if (vseo && indexing.indexable) {
       // prompt 6d: llms.txt from stored public facts only; a site that is not indexable gets none. Phone, email and hours only where the plan lets the site show them (Pro).
       const c = base.content.contact as { address: string; city: string; phone?: string; email?: string };

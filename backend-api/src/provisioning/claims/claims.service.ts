@@ -7,6 +7,7 @@ import { deliverInvite } from '../invites/invite-service';
 import { ProvisioningAudit } from '../runner/job-runner.service';
 import { ProvisioningSettingsService } from '../settings/provisioning-settings.service';
 import { INVITE_ENV } from '../steps/send-invite.step';
+import { SiteRebuildScheduler } from '../../site-domains/site-rebuild-scheduler';
 import { ClaimStore } from './claim-store';
 import { generateToken, hashToken, hashesEqual } from './token';
 
@@ -36,6 +37,8 @@ export class ClaimsService {
     private readonly audit: ProvisioningAudit,
     private readonly mail: EmailService,
     @Optional() @Inject(INVITE_ENV) private readonly env: Record<string, string | undefined> = process.env,
+    /** the site is rebuilt at once when the owner claims it, so the page can turn indexable without a manual build */
+    @Optional() private readonly rebuild?: SiteRebuildScheduler,
   ) {}
 
   /** The token's row when it is ACTIVE and not expired; null for anything else (an expired ACTIVE token is marked EXPIRED on the way). */
@@ -65,6 +68,7 @@ export class ClaimsService {
     const row = await this.usable(rawToken);
     if (!row || !(await this.claims.markUsed(row.id, this.clock()))) throw invalidPublic();
     await this.audit.record({ type: 'SYSTEM', id: null, ip: null }, 'claim.redeemed', 'claim_token', row.id, { vendorId: row.vendorId });
+    this.rebuild?.request(row.vendorId, 'claim', { immediate: true });
     return { vendorId: row.vendorId };
   }
 

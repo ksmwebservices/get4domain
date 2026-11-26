@@ -5,10 +5,11 @@ import { reasonProblem } from '../core/review-core';
 import { ReviewNotifier } from '../review/review.service';
 import { WebsiteSettingsService } from '../settings/website-settings.service';
 import { wmBody } from '../website.errors';
-import { expiryFor, MAY_END_ANY_SESSION, SessionState, stateOf } from './act-on-behalf-core';
+import { expiryFor, MAY_END_ANY_SESSION, mayActForVendor, OWN_BUSINESS_ONLY, SessionState, stateOf } from './act-on-behalf-core';
 import { ActOnBehalfStore, SessionRow } from './act-on-behalf.store';
 
-export interface StaffRef { id: string; role: string }
+/** A staff member as the rules see them: the matrix role, and the label (FIELD_EXECUTIVE or TELECALLER) when the role is a labelled SALES one. */
+export interface StaffRef { id: string; role: string; label?: string | null }
 export interface SessionView { id: string; vendorId: string; reason: string; startedAt: string; expiresAt: string; endedAt: string | null; endedBy: string | null; state: SessionState }
 export interface StaffSessionView extends SessionView { staffId: string }
 
@@ -31,7 +32,16 @@ export class ActOnBehalfService {
   }
   private staffView(s: SessionRow): StaffSessionView { return { ...this.view(s), staffId: s.staffId }; }
 
+  /** E9a: SALES may act only as a telecaller, and only for a business that telecaller created. Another business answers exactly like one that does not exist. */
+  async assertMayAct(staff: StaffRef, vendorId: string): Promise<void> {
+    const needsOwner = staff.role === OWN_BUSINESS_ONLY.role && staff.label === OWN_BUSINESS_ONLY.label;
+    const decision = mayActForVendor(staff, needsOwner ? await this.store.registeredBy(vendorId) : null);
+    if (decision === 'ROLE_REFUSED') throw err('forbidden', 'ACT_ON_BEHALF_ROLE', 'Your staff role does not allow this action.');
+    if (decision === 'NOT_THEIR_BUSINESS') throw err('notfound', 'ACT_ON_BEHALF_VENDOR_NOT_FOUND', 'That vendor does not exist.');
+  }
+
   async start(staff: StaffRef, vendorId: string, reason: unknown): Promise<StaffSessionView> {
+    await this.assertMayAct(staff, vendorId);
     const problem = reasonProblem(reason);
     if (problem) throw err('unprocessable', 'REASON_REQUIRED', problem);
     const minutes = (await this.settings.get()).actOnBehalfMaxMinutes;

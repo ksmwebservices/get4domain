@@ -19,8 +19,8 @@ import { validatePreset, presetStyle, applyPresetContent } from './preset.mjs';
 
 // ---------------------------------------------------------------- wording
 const UI = {
-  en: { skip: 'Skip to main content', menu: 'Menu', close: 'Close menu', home: 'Home', about: 'About', gallery: 'Gallery', contact: 'Contact', call: 'Call', whatsapp: 'WhatsApp', directions: 'Directions', readMore: 'Read more', viewAll: 'View all', badge: 'Listed on Get4Domain', googleReviews: 'Google reviews', testimonials: 'Customer testimonials', noReviews: 'No reviews yet', viewOnGoogle: 'View on Google', writeReview: 'Write a review on Google', ownerReply: 'Reply from the owner', reviewsBased: 'based on', reviewsWord: 'reviews', outOf: 'out of 5', yourName: 'Your name', yourPhone: 'Phone number', message: 'Message', consent: 'I agree to be contacted about this enquiry', send: 'Send enquiry', enquiryTitle: 'Send an enquiry', booking: 'Request a booking', share: 'Share this site', scan: 'Scan to open this site', hoursTitle: 'Opening hours', closed: 'Closed', map: 'Map', areas: 'Service areas', videos: 'Videos', watch: 'Watch video', transcript: 'Transcript', search: 'Search', searchLabel: 'Search this site', cart: 'Cart', claim: 'Is this your business? Claim this page', privacy: 'Privacy', terms: 'Terms', ask: 'Ask about this', addToCart: 'Add to cart', hoursWord: 'Hours', whatsappFloat: 'Chat on WhatsApp', sampleBadge: 'Sample', products: 'Products', mainNav: 'Main', closeImage: 'Close picture', faq: 'Frequently asked questions', process: 'How it works', why: 'Why choose us', orderOnWhatsApp: 'Order on WhatsApp', shippingNote: 'Delivery and returns: ask before you order and we will confirm the details with you on WhatsApp.' },
-  ta: { skip: 'முதன்மை உள்ளடக்கத்துக்குச் செல்', menu: 'பட்டி', close: 'பட்டியை மூடு', home: 'முகப்பு', about: 'எங்களைப் பற்றி', gallery: 'படங்கள்', contact: 'தொடர்பு', call: 'அழை', whatsapp: 'வாட்ஸ்அப்', directions: 'வழி', readMore: 'மேலும் படிக்க', viewAll: 'அனைத்தும்', badge: 'Get4Domain-இல் பட்டியலிடப்பட்டுள்ளது', googleReviews: 'Google மதிப்புரைகள்', testimonials: 'வாடிக்கையாளர் கருத்துகள்', noReviews: 'இன்னும் மதிப்புரைகள் இல்லை', viewOnGoogle: 'Google-இல் பார்க்க', writeReview: 'Google-இல் மதிப்புரை எழுதுங்கள்', ownerReply: 'உரிமையாளர் பதில்', reviewsBased: 'அடிப்படை', reviewsWord: 'மதிப்புரைகள்', outOf: '5 இல்', yourName: 'உங்கள் பெயர்', yourPhone: 'தொலைபேசி எண்', message: 'செய்தி', consent: 'இந்த விசாரணை தொடர்பாக என்னைத் தொடர்புகொள்ள ஒப்புக்கொள்கிறேன்', send: 'விசாரணை அனுப்பு', enquiryTitle: 'விசாரணை அனுப்புங்கள்', booking: 'முன்பதிவு கோருங்கள்', share: 'இந்த தளத்தைப் பகிருங்கள்', scan: 'இந்த தளத்தைத் திறக்க ஸ்கேன் செய்யுங்கள்', hoursTitle: 'திறந்திருக்கும் நேரம்', closed: 'மூடப்பட்டிருக்கும்', map: 'வரைபடம்', areas: 'சேவைப் பகுதிகள்', videos: 'காணொளிகள்', watch: 'காணொளி பார்க்க', transcript: 'எழுத்து வடிவம்', search: 'தேடு', searchLabel: 'இந்த தளத்தில் தேடு', cart: 'கூடை', claim: 'இது உங்கள் வணிகமா? இந்தப் பக்கத்தை உரிமை கோருங்கள்', privacy: 'தனியுரிமை', terms: 'விதிமுறைகள்', ask: 'இதைப் பற்றி கேளுங்கள்', addToCart: 'கூடையில் சேர்', hoursWord: 'நேரம்', whatsappFloat: 'வாட்ஸ்அப்பில் அரட்டை', sampleBadge: 'மாதிரி', products: 'பொருட்கள்', mainNav: 'முதன்மை', closeImage: 'படத்தை மூடு', faq: 'அடிக்கடி கேட்கப்படும் கேள்விகள்', process: 'எப்படி செயல்படுகிறது', why: 'ஏன் எங்களைத் தேர்ந்தெடுக்க வேண்டும்', orderOnWhatsApp: 'வாட்ஸ்அப்பில் ஆர்டர் செய்யுங்கள்', shippingNote: 'டெலிவரி மற்றும் திரும்பப் பெறுதல்: ஆர்டர் செய்யும் முன் கேளுங்கள், வாட்ஸ்அப்பில் விவரங்களை உறுதிப்படுத்துவோம்.' },
+  en: { skip: 'Skip to main content', menu: 'Menu', close: 'Close menu', home: 'Home', services: 'Services', request: 'Request', installApp: 'Install app', requestTitle: 'Send a request', requestFor: 'For', requestAny: 'Not sure yet', requestSend: 'Send request', closeSheet: 'Close', chatTitle: 'Chat with us', about: 'About', gallery: 'Gallery', contact: 'Contact', call: 'Call', whatsapp: 'WhatsApp', directions: 'Directions', readMore: 'Read more', viewAll: 'View all', badge: 'Listed on Get4Domain', googleReviews: 'Google reviews', testimonials: 'Customer testimonials', noReviews: 'No reviews yet', viewOnGoogle: 'View on Google', writeReview: 'Write a review on Google', ownerReply: 'Reply from the owner', reviewsBased: 'based on', reviewsWord: 'reviews', outOf: 'out of 5', yourName: 'Your name', yourPhone: 'Phone number', message: 'Message', consent: 'I agree to be contacted about this enquiry', send: 'Send enquiry', enquiryTitle: 'Send an enquiry', booking: 'Request a booking', share: 'Share this site', scan: 'Scan to open this site', hoursTitle: 'Opening hours', closed: 'Closed', map: 'Map', areas: 'Service areas', videos: 'Videos', watch: 'Watch video', transcript: 'Transcript', search: 'Search', searchLabel: 'Search this site', cart: 'Cart', claim: 'Is this your business? Claim this page', privacy: 'Privacy', terms: 'Terms', ask: 'Ask about this', addToCart: 'Add to cart', hoursWord: 'Hours', whatsappFloat: 'Chat on WhatsApp', sampleBadge: 'Sample', products: 'Products', mainNav: 'Main', closeImage: 'Close picture', faq: 'Frequently asked questions', process: 'How it works', why: 'Why choose us', orderOnWhatsApp: 'Order on WhatsApp', shippingNote: 'Delivery and returns: ask before you order and we will confirm the details with you on WhatsApp.' },
+  ta: { skip: 'முதன்மை உள்ளடக்கத்துக்குச் செல்', menu: 'பட்டி', close: 'பட்டியை மூடு', home: 'முகப்பு', services: 'சேவைகள்', request: 'கோரிக்கை', installApp: 'செயலியை நிறுவு', requestTitle: 'கோரிக்கை அனுப்புங்கள்', requestFor: 'எதற்காக', requestAny: 'இன்னும் தெரியவில்லை', requestSend: 'கோரிக்கை அனுப்பு', closeSheet: 'மூடு', chatTitle: 'எங்களுடன் அரட்டை', about: 'எங்களைப் பற்றி', gallery: 'படங்கள்', contact: 'தொடர்பு', call: 'அழை', whatsapp: 'வாட்ஸ்அப்', directions: 'வழி', readMore: 'மேலும் படிக்க', viewAll: 'அனைத்தும்', badge: 'Get4Domain-இல் பட்டியலிடப்பட்டுள்ளது', googleReviews: 'Google மதிப்புரைகள்', testimonials: 'வாடிக்கையாளர் கருத்துகள்', noReviews: 'இன்னும் மதிப்புரைகள் இல்லை', viewOnGoogle: 'Google-இல் பார்க்க', writeReview: 'Google-இல் மதிப்புரை எழுதுங்கள்', ownerReply: 'உரிமையாளர் பதில்', reviewsBased: 'அடிப்படை', reviewsWord: 'மதிப்புரைகள்', outOf: '5 இல்', yourName: 'உங்கள் பெயர்', yourPhone: 'தொலைபேசி எண்', message: 'செய்தி', consent: 'இந்த விசாரணை தொடர்பாக என்னைத் தொடர்புகொள்ள ஒப்புக்கொள்கிறேன்', send: 'விசாரணை அனுப்பு', enquiryTitle: 'விசாரணை அனுப்புங்கள்', booking: 'முன்பதிவு கோருங்கள்', share: 'இந்த தளத்தைப் பகிருங்கள்', scan: 'இந்த தளத்தைத் திறக்க ஸ்கேன் செய்யுங்கள்', hoursTitle: 'திறந்திருக்கும் நேரம்', closed: 'மூடப்பட்டிருக்கும்', map: 'வரைபடம்', areas: 'சேவைப் பகுதிகள்', videos: 'காணொளிகள்', watch: 'காணொளி பார்க்க', transcript: 'எழுத்து வடிவம்', search: 'தேடு', searchLabel: 'இந்த தளத்தில் தேடு', cart: 'கூடை', claim: 'இது உங்கள் வணிகமா? இந்தப் பக்கத்தை உரிமை கோருங்கள்', privacy: 'தனியுரிமை', terms: 'விதிமுறைகள்', ask: 'இதைப் பற்றி கேளுங்கள்', addToCart: 'கூடையில் சேர்', hoursWord: 'நேரம்', whatsappFloat: 'வாட்ஸ்அப்பில் அரட்டை', sampleBadge: 'மாதிரி', products: 'பொருட்கள்', mainNav: 'முதன்மை', closeImage: 'படத்தை மூடு', faq: 'அடிக்கடி கேட்கப்படும் கேள்விகள்', process: 'எப்படி செயல்படுகிறது', why: 'ஏன் எங்களைத் தேர்ந்தெடுக்க வேண்டும்', orderOnWhatsApp: 'வாட்ஸ்அப்பில் ஆர்டர் செய்யுங்கள்', shippingNote: 'டெலிவரி மற்றும் திரும்பப் பெறுதல்: ஆர்டர் செய்யும் முன் கேளுங்கள், வாட்ஸ்அப்பில் விவரங்களை உறுதிப்படுத்துவோம்.' },
 };
 const UI_BINDINGS = { 'ui.skip': 'skip', 'ui.call': 'call', 'ui.whatsapp': 'whatsapp', 'ui.directions': 'directions', 'ui.menu': 'menu', 'ui.readMore': 'readMore', 'ui.viewAll': 'viewAll', 'ui.home': 'home', 'ui.about': 'about', 'ui.gallery': 'gallery', 'ui.contact': 'contact', 'ui.closeImage': 'closeImage', 'ui.faq': 'faq', 'ui.process': 'process', 'ui.why': 'why', 'ui.hours': 'hoursTitle', 'ui.orderOnWhatsApp': 'orderOnWhatsApp', 'ui.shippingNote': 'shippingNote' };
 
@@ -268,7 +268,7 @@ function stripCtas(html) {
  * passed to the renderer (plan, entitlement, vendor setting, theme option) can switch it off. The link text is the brand name only. The React renderer's twin is get4domain_mvp/src/engine/components/PoweredBy.tsx
  * (a test keeps the two in step).
  */
-export const POWERED_BY_HREF = 'https://get4domain.com';
+export const POWERED_BY_HREF = 'https://get4domain.com/';
 export const POWERED_BY_BRAND = 'Get4Domain';
 function poweredByHtml() {
   return `<p class="g4d-footer__powered" data-g4d-powered-by>Powered by <a href="${POWERED_BY_HREF}" target="_blank" rel="noopener">${POWERED_BY_BRAND}</a></p>`;
@@ -282,6 +282,41 @@ function disclosureHtml(ctx) {
  * Lines after the page body: on a listing-only page the "Listed on Get4Domain" line and the footer bridge line; on a SEEDED or INVITED site the seeded notice with working claim
  * and remove links (/claim and /remove). All texts come from the platform (host.texts); nothing is invented here.
  */
+/** One field of the request sheet, drawn from the data the platform gives for this business's category and industry pack (content.requestForm). Field names are `f_<key>`. */
+const REQUEST_INPUT = { text: 'text', phone: 'tel', date: 'date', time: 'time', number: 'number' };
+function requestFieldHtml(ctx, f) {
+  const key = String(f?.key ?? '');
+  if (!/^[a-z][a-z0-9_]{0,31}$/.test(key)) return '';
+  const label = String(f.label ?? key).slice(0, 80); const req = f.required === true ? ' required' : '';
+  const id = nextId(ctx, `rf-${key}`); const name = `f_${key}`;
+  if (f.type === 'select') {
+    const opts = (Array.isArray(f.options) ? f.options : []).slice(0, 12).map((o) => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    return `<p><label for="${id}">${esc(label)}</label><select id="${id}" name="${name}"${req}><option value=""></option>${opts}</select></p>`;
+  }
+  if (f.type === 'longtext') return `<p><label for="${id}">${esc(label)}</label><textarea id="${id}" name="${name}" rows="3" maxlength="1000"${req}></textarea></p>`;
+  return `<p><label for="${id}">${esc(label)}</label><input id="${id}" name="${name}" type="${REQUEST_INPUT[f.type] ?? 'text'}" maxlength="200"${req}></p>`;
+}
+
+/**
+ * The platform's app shell around every page of a site WITH calls to action (the five-item bar is the bottom-nav slot): the request sheet (opens from the Request tab by the address `#g4d-request`, no script needed),
+ * the install button (shown by the small platform script only when the browser offers installing), and the chat drawer place (only when the plan has chat). Every part is a call-to-action slot, so a Free or lapsed site
+ * gets none of it. On an item page the chosen item is already selected; elsewhere the visitor picks one. Nothing is drawn when the page has no request form data.
+ */
+function shellHtml(ctx) {
+  if (!ctx.ent.callsToAction || !Array.isArray(ctx.c.requestForm)) return '';
+  const { ui } = ctx; const item = ctx.page.slug === 'item' && ctx.page.item ? ctx.page.item : null;
+  const items = (Array.isArray(ctx.c.items) ? ctx.c.items : []).filter((i) => i && i.id && i.name).slice(0, 40);
+  const chosen = item?.id ?? '';
+  const pid = nextId(ctx, 'rs-item'); const pick = items.length ? `<p><label for="${pid}">${esc(ui.requestFor)}</label><select id="${pid}" name="item"><option value="">${esc(ui.requestAny)}</option>${items.map((i) => `<option value="${esc(i.id)}"${i.id === chosen ? ' selected' : ''}>${esc(i.name)}</option>`).join('')}</select></p>` : '';
+  const fields = ctx.c.requestForm.map((f) => requestFieldHtml(ctx, f)).join('');
+  const nm = nextId(ctx, 'rs-name'); const ph = nextId(ctx, 'rs-phone'); const ms = nextId(ctx, 'rs-msg'); const ck = nextId(ctx, 'rs-ok');
+  const sheet = `<section id="g4d-request" class="g4d-sheet" data-g4d-slot="request-sheet" role="dialog" aria-modal="true" aria-label="${esc(ui.requestTitle)}"><div class="g4d-sheet__panel"><a class="g4d-sheet__close" href="#">${esc(ui.closeSheet)}</a><h2>${esc(ui.requestTitle)}</h2><form class="g4d-form" method="post" action="/enquire"><p><label for="${nm}">${esc(ui.yourName)}</label><input id="${nm}" name="name" type="text" autocomplete="name" required></p><p><label for="${ph}">${esc(ui.yourPhone)}</label><input id="${ph}" name="phone" type="tel" autocomplete="tel" required></p>${pick}${fields}<p><label for="${ms}">${esc(ui.message)}</label><textarea id="${ms}" name="message" rows="3"></textarea></p><p class="g4d-form__consent"><input id="${ck}" name="consent" type="checkbox" required><label for="${ck}">${esc(ui.consent)}</label></p><input type="hidden" name="source" value="request-sheet">${disclosureHtml(ctx)}<p><button type="submit" class="g4d-btn">${esc(ui.requestSend)}</button></p></form></div></section>`;
+  const install = `<div class="g4d-install" data-g4d-slot="install-button" hidden><button type="button" class="g4d-btn" data-g4d-install>${esc(ui.installApp)}</button></div>`;
+  const chat = ctx.ent.chat ? `<aside class="g4d-chat" data-g4d-slot="chat-drawer" aria-label="${esc(ui.chatTitle)}" hidden></aside>` : '';
+  ctx.slots.push({ name: 'request-sheet', rendered: true }, { name: 'install-button', rendered: true }, ...(ctx.ent.chat ? [{ name: 'chat-drawer', rendered: true }] : []));
+  return sheet + install + chat;
+}
+
 function trailerHtml(ctx) {
   return buildTrailer({ listingOnly: !ctx.ent.callsToAction, texts: ctx.host.texts, lifecycle: ctx.host.lifecycle, claimFallback: ctx.ui.claim });
 }
@@ -337,8 +372,10 @@ function renderSlot(ctx, name, attrs, childNodes) {
       return `<a class="g4d-slot g4d-slot--action g4d-action${cls(attrs.class) ? ` ${cls(attrs.class)}` : ''}" data-g4d-slot="action" data-track="cta" href="${esc(href)}">${esc(label)}</a>`;
     }
     case 'bottom-nav': {
-      const items = [[contact.phoneHref || (contact.phone ? `tel:${String(contact.phone).replace(/[^+\d]/g, '')}` : ''), ui.call, 'call'], [contact.whatsappHref, ui.whatsapp, 'whatsapp'], [contact.mapUrl, ui.directions, 'directions']].filter(([h]) => safeUrl(h));
-      return wrap(ctx, name, 'nav', `<ul>${items.map(([h, t, k]) => `<li><a href="${esc(safeUrl(h))}" data-track="${k}">${esc(t)}</a></li>`).join('')}</ul>`, attrs).replace('<nav ', `<nav aria-label="${esc(ui.call)}" `);
+      const phoneHref = contact.phoneHref || (contact.phone ? `tel:${String(contact.phone).replace(/[^+\d]/g, '')}` : '');
+      const hasItems = Array.isArray(ctx.c.items) && ctx.c.items.length > 0;
+      const items = [['/', ui.home, 'home'], [hasItems ? '/services' : '', ctx.c.terms?.items || ui.services, 'services'], ['#g4d-request', ui.request, 'request'], [phoneHref, ui.call, 'call'], [contact.whatsappHref, ui.whatsapp, 'whatsapp']].filter(([h]) => safeUrl(h));
+      return wrap(ctx, name, 'nav', `<ul>${items.map(([h, t, k]) => `<li><a href="${esc(safeUrl(h))}" data-track="${k}"${k === 'home' && ctx.page.slug === 'home' ? ' aria-current="page"' : ''}>${esc(t)}</a></li>`).join('')}</ul>`, attrs).replace('<nav ', `<nav aria-label="${esc(ui.mainNav)}" `);
     }
     case 'footer': {
       const variant = ['columns', 'centered', 'minimal'].includes(attrs.variant) ? attrs.variant : 'columns';
@@ -645,7 +682,7 @@ export function renderPage(input) {
     ctx.preset?.hero?.pattern ? `data-pattern="${esc(ctx.preset.hero.pattern)}"` : '',
     style.size ? `style="${[...style].map(([k, val]) => `${k}:${val}`).join(';')}"` : '',
   ].filter(Boolean).join(' ');
-  const whole = `<div ${attrs}>${body}${trailerHtml(ctx)}</div>`;
+  const whole = `<div ${attrs}>${body}${shellHtml(ctx)}${trailerHtml(ctx)}</div>`;
   const html = ctx.ent.callsToAction ? whole : stripCtas(whole);
 
   return { html, lang, seo: buildSeo(ctx), slots: ctx.slots, warnings: ctx.warnings, template: templateName, variant: v };

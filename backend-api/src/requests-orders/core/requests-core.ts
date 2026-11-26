@@ -71,13 +71,16 @@ export function consentValid(c: { contactByBusiness?: unknown; contactByPlatform
 
 const str = (v: unknown, min: number, max: number): string | null => { if (typeof v !== 'string') return null; const t = v.trim().replace(/\s+/g, ' '); return t.length >= min && t.length <= max ? t : null; };
 const ALLOWED: Record<string, readonly string[]> = {
-  ENQUIRY: ['message'], APPOINTMENT: ['preferredAt', 'service', 'message'], QUOTE: ['service', 'details', 'budget'], PRODUCT_ENQUIRY: ['productRef', 'message'],
+  ENQUIRY: ['message', 'answers'], APPOINTMENT: ['preferredAt', 'service', 'message'], QUOTE: ['service', 'details', 'budget'], PRODUCT_ENQUIRY: ['productRef', 'message', 'answers'],
 };
 /** Each public kind has a fixed, small set of fields; an unknown field is refused (nothing is stored that was not asked for). */
-export function validatePayload(kind: RequestKind, raw: unknown): { ok: true; payload: Record<string, string> } | { ok: false; errors: string[] } {
+/** The answers to the business's own request-form questions (S1 shell): at most 8 of them, each a short plain text under a lower-case key. */
+export type RequestAnswers = Record<string, string>;
+export type RequestPayload = Record<string, string | RequestAnswers>;
+export function validatePayload(kind: RequestKind, raw: unknown): { ok: true; payload: RequestPayload } | { ok: false; errors: string[] } {
   if (!PUBLIC_KINDS.includes(kind)) return { ok: false, errors: ['kind: not a request a visitor can send'] };
   const src = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
-  const errors: string[] = []; const out: Record<string, string> = {};
+  const errors: string[] = []; const out: RequestPayload = {};
   for (const k of Object.keys(src)) if (!ALLOWED[kind].includes(k)) errors.push(`${k}: not a field of ${kind}`);
   const take = (k: string, min: number, max: number, required: boolean): void => {
     if (src[k] === undefined || src[k] === '') { if (required) errors.push(`${k}: required`); return; }
@@ -91,6 +94,21 @@ export function validatePayload(kind: RequestKind, raw: unknown): { ok: true; pa
   }
   if (kind === 'QUOTE') { take('service', 2, 120, true); take('details', 2, 1500, true); take('budget', 1, 60, false); }
   if (kind === 'PRODUCT_ENQUIRY') { take('productRef', 1, 80, true); take('message', 2, 1000, false); }
+  if ((kind === 'ENQUIRY' || kind === 'PRODUCT_ENQUIRY') && src.answers !== undefined) {
+    const a = src.answers;
+    if (!a || typeof a !== 'object' || Array.isArray(a)) errors.push('answers: must be an object');
+    else {
+      const clean: RequestAnswers = {}; const keys = Object.keys(a as Record<string, unknown>);
+      if (keys.length > 8) errors.push('answers: at most 8');
+      for (const k of keys.slice(0, 8)) {
+        const v = (a as Record<string, unknown>)[k];
+        if (!/^[a-z][a-z0-9_]{0,31}$/.test(k)) errors.push(`answers.${k}: bad name`);
+        else if (typeof v !== 'string' || v.length < 1 || v.length > 1000 || /[<>]/.test(v)) errors.push(`answers.${k}: 1 to 1000 plain characters`);
+        else clean[k] = v;
+      }
+      if (Object.keys(clean).length) out.answers = clean;
+    }
+  }
   return errors.length ? { ok: false, errors } : { ok: true, payload: out };
 }
 
@@ -112,4 +130,4 @@ export function spamScore(i: SpamInput): { score: number; reasons: string[] } {
 }
 export function spamDecision(score: number, t: { otp: number; block: number }): 'ACCEPT' | 'ASK_OTP' | 'BLOCK' { return score >= t.block ? 'BLOCK' : score >= t.otp ? 'ASK_OTP' : 'ACCEPT'; }
 /** The same sender, the same kind and the same words inside a window is a duplicate. */
-export function duplicateKey(phone: string, kind: string, payload: Record<string, string>): string { return createHash('sha256').update(`${phone}|${kind}|${JSON.stringify(payload)}`).digest('hex'); }
+export function duplicateKey(phone: string, kind: string, payload: RequestPayload): string { return createHash('sha256').update(`${phone}|${kind}|${JSON.stringify(payload)}`).digest('hex'); }

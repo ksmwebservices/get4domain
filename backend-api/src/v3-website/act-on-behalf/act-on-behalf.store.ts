@@ -8,6 +8,8 @@ export type NewSession = Pick<SessionRow, 'staffId' | 'vendorId' | 'reason' | 's
 /** Act-on-behalf sessions (slice 5.13b). Prisma below; a memory twin lives in test/support. A staff member has at most one live session (the nullable unique `activeStaffId`). */
 export abstract class ActOnBehalfStore {
   abstract vendorExists(vendorId: string): Promise<boolean>;
+  /** The staff login that registered the business, or null (nobody on the staff, or no such business). */
+  abstract registeredBy(vendorId: string): Promise<string | null>;
   /** Creates a live session, or returns null when this staff member already has one. */
   abstract createIfNoneActive(s: NewSession): Promise<SessionRow | null>;
   abstract get(id: string): Promise<SessionRow | null>;
@@ -26,6 +28,7 @@ const map = (r: Db): SessionRow => ({ id: r.id, staffId: r.staffId, vendorId: r.
 export class PrismaActOnBehalfStore extends ActOnBehalfStore {
   constructor(private readonly prisma: PrismaService) { super(); }
   async vendorExists(vendorId: string) { return (await this.prisma.vendor.count({ where: { id: vendorId } })) > 0; }
+  async registeredBy(vendorId: string) { return (await this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { registeredByStaffId: true } }))?.registeredByStaffId ?? null; }
   async createIfNoneActive(s: NewSession) {
     try { return map(await this.prisma.v3ActOnBehalfSession.create({ data: { ...s, activeStaffId: s.staffId } })); }
     catch (e) { if ((e as { code?: string }).code === 'P2002') return null; throw e; }

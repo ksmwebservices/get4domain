@@ -55,5 +55,5 @@ export const WEBSITE_CONTROLLERS = [MeWebsiteController, MeMediaController, Admi
  * The Website manager (slice 5.5): drafts, preview, publish, revisions. It builds and publishes only through the site publish module (SitePublishModule) and reads
  * the legacy site document only through that module's content source. PlansModule (entitlements, audit) and the trust module (prohibited-term scan) are global.
  */
-@Module({ imports: [PrismaModule, SitePublishModule], controllers: WEBSITE_CONTROLLERS, providers: WEBSITE_PROVIDERS, exports: [WebsiteService, WebsiteStore] })
+@Module({ imports: [PrismaModule, SitePublishModule], controllers: WEBSITE_CONTROLLERS, providers: WEBSITE_PROVIDERS, exports: [WebsiteService, WebsiteStore, ActOnBehalfService] })
 export class WebsiteModule {}

@@ -130,6 +130,26 @@ describe('site API', () => {
   });
 
   describe('staff routes (/v3/admin)', () => {
+    it('E9b: every row of the sites list carries indexable and publishedIndexable, equal to the one-vendor route, before and after the facts change', async () => {
+      const both = async () => {
+        const row = (await get('/v3/admin/sites', 'OPERATIONS')).body.data.items.find((i: { vendorId: string }) => i.vendorId === V);
+        const one = (await get(`/v3/admin/vendors/${V}/site`, 'OPERATIONS')).body.data;
+        expect({ indexable: row.indexable, publishedIndexable: row.publishedIndexable }).toEqual({ indexable: one.indexable, publishedIndexable: one.publishedIndexable });
+        return row as { indexable: boolean; publishedIndexable: boolean | null };
+      };
+      await buildAndPublish();
+      expect(await both()).toMatchObject({ indexable: true, publishedIndexable: true });
+      expect((await send('put', `/v3/admin/vendors/${V}/site/noindex`, 'OPERATIONS', { forceNoindex: true })).status).toBe(200);
+      expect(await both()).toMatchObject({ indexable: false, publishedIndexable: false });
+    });
+    it('E9b: a site with a preview only has publishedIndexable null; a business whose check fails gets indexable null and the list still answers', async () => {
+      expect((await send('post', '/v3/me/site/build', 'owner')).status).toBe(200);
+      const draft = (await get('/v3/admin/sites', 'MARKETING')).body.data.items[0];
+      expect(draft).toMatchObject({ vendorId: V, publishedIndexable: null }); expect(typeof draft.indexable).toBe('boolean');
+      const spy = jest.spyOn(w.settings as unknown as { context: () => Promise<unknown> }, 'context').mockRejectedValue(new Error('broken record'));
+      const r = await get('/v3/admin/sites', 'OPERATIONS'); expect(r.status).toBe(200); expect(r.body.data.items[0].indexable).toBeNull();
+      spy.mockRestore();
+    });
     it('MARKETING reads summaries (list and one site) but never html, and writes nothing', async () => {
       await buildAndPublish();
       const list = await get('/v3/admin/sites', 'MARKETING'); expect(list.status).toBe(200);

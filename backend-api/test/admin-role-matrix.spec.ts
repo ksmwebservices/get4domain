@@ -74,6 +74,8 @@ const MARKETING_DENIED = [
   'GET /v3/admin/alerts', 'GET /v3/admin/alerts/:id', 'PATCH /v3/admin/alerts/:id', 'GET /v3/admin/vendors/:vendorId/activity', 'GET /v3/admin/attention',
   'GET /v3/admin/mail-rules',   // Block 4b slice 11: the recorded mail lanes and promotion rules
   // Block 4b slice 9: staff actions on a business: a plan change with a date, the business name and its history, the per-host visit report (OPERATIONS and SUPER_ADMIN; MARKETING refused)
+  'POST /v3/admin/vendors/:id/content-pack/import',   // E5: operations and super admin only
+  'POST /v3/admin/vendors/:id/send-password-reset',   // Website Manager lane A: operations and super admin only
   'PUT /v3/admin/vendors/:id/business-name', 'GET /v3/admin/vendors/:id/business-name-history', 'POST /v3/admin/vendors/:id/plan-change', 'GET /v3/admin/vendors/:id/plan-changes', 'POST /v3/admin/plan-changes/:id/cancel', 'GET /v3/admin/vendors/:id/visits',
   // Block 4b slice 4: the support desk (OPERATIONS and SUPER_ADMIN; MARKETING refused)
   'GET /v3/admin/tickets', 'GET /v3/admin/tickets/:id', 'PUT /v3/admin/tickets/:id/assignee', 'PUT /v3/admin/tickets/:id/status', 'POST /v3/admin/tickets/:id/messages',
@@ -110,10 +112,10 @@ const MARKETING_DENIED = [
   'POST /v3/admin/provisioning/jobs/:id/retry', 'POST /v3/admin/provisioning/jobs/:id/cancel', 'POST /v3/admin/provisioning/jobs/:id/run',
   'POST /v3/admin/vendors/:id/claim-link/reissue', 'POST /v3/admin/vendors/:id/claim-link/revoke', 'GET /v3/admin/invites',
   // S54.7: sites. Anything that carries html, and every write, is OPERATIONS and SUPER_ADMIN; MARKETING only reads summaries (the two ALL_STAFF routes below)
-  'PUT /v3/admin/vendors/:id/site/theme', 'POST /v3/admin/vendors/:id/site/build', 'POST /v3/admin/vendors/:id/site/publish', 'POST /v3/admin/vendors/:id/site/rollback',
+  'PUT /v3/admin/vendors/:id/site/theme', 'POST /v3/admin/vendors/:id/site/theme/assign', 'POST /v3/admin/vendors/:id/site/build', 'POST /v3/admin/vendors/:id/site/publish', 'POST /v3/admin/vendors/:id/site/rollback',
   'GET /v3/admin/vendors/:id/site/preview/:publicationId/:path', 'PUT /v3/admin/vendors/:id/site/noindex',
   // 5.13b: act on behalf and the onboarding queue
-  'POST /v3/admin/vendors/:id/act-on-behalf', 'POST /v3/admin/act-on-behalf/:sessionId/end', 'GET /v3/admin/act-on-behalf', 'GET /v3/admin/onboarding-queue',
+  'GET /v3/admin/act-on-behalf', 'GET /v3/admin/onboarding-queue',
   // 5.6d: domain sales and identity checks
   'GET /v3/admin/domain-orders', 'POST /v3/admin/vendors/:id/domains/register', 'GET /v3/admin/domain-margins', 'POST /v3/admin/registrar/recover', 'POST /v3/admin/registrar/reconcile', 'GET /v3/admin/registrar/runs',
   'GET /v3/admin/identity-checks', 'GET /v3/admin/vendors/:id/identity', 'POST /v3/admin/vendors/:id/identity/document', 'POST /v3/admin/vendors/:id/identity/approve', 'POST /v3/admin/vendors/:id/identity/reject',
@@ -193,6 +195,8 @@ SUPER_ONLY_ROUTES.push('GET /v3/admin/firm-profile', 'PUT /v3/admin/firm-profile
 // Wave 2 Part H2: add-on eligibility (ADMIN edits through STAFF_ROLE_EXTENSIONS.ADMIN.allow)
 SUPER_ONLY_ROUTES.push('PUT /v3/admin/pack-engine/addon-eligibility'); MARKETING_DENIED.push('GET /v3/admin/pack-engine/addon-eligibility');
 // Wave 3 Part A: referral partners. Reads OPERATIONS and SUPER_ADMIN (ADMIN inherits); writes SUPER_ADMIN in the base table and ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in wave3-roles.spec.ts)
+SUPER_ONLY_ROUTES.push('POST /v3/admin/telecallers'); MARKETING_DENIED.push('GET /v3/admin/telecallers/monitor'); ALL_STAFF_ROUTES.push('GET /v3/admin/telecaller/monitor', 'POST /v3/admin/telecaller/vendors', 'POST /v3/admin/telecaller/vendors/:id/collections');   // E6 telecallers
+MARKETING_DENIED.push('GET /v3/admin/telecallers/settings'); SUPER_ONLY_ROUTES.push('GET /v3/admin/telecallers/:partnerId/pay', 'PUT /v3/admin/telecallers/:partnerId/pay');   // E9c
 SUPER_ONLY_ROUTES.push('POST /v3/admin/partners', 'PUT /v3/admin/partners/:id'); MARKETING_DENIED.push('GET /v3/admin/partners', 'GET /v3/admin/partners/:id');
 // Wave 3 Part C: the payment gateway setting. Read OPERATIONS and SUPER_ADMIN (ADMIN inherits); write SUPER_ADMIN in the base table and ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in wave3-gateways.spec.ts)
 SUPER_ONLY_ROUTES.push('PUT /v3/admin/payment-gateway'); MARKETING_DENIED.push('GET /v3/admin/payment-gateway');
@@ -226,10 +230,15 @@ SUPER_ONLY_ROUTES.push('POST /v3/admin/theme-market/themes', 'POST /v3/admin/the
 MARKETING_DENIED.push('GET /v3/admin/duplicates/reviews', 'POST /v3/admin/duplicates/reviews/:id/clear', 'POST /v3/admin/duplicates/reviews/:id/reject');
 MARKETING_DENIED.push('GET /v3/admin/theme-market/themes', 'GET /v3/admin/theme-market/themes/:id', 'GET /v3/admin/theme-market/themes/:id/preview', 'POST /v3/admin/theme-market/validate');
 
+ALL_STAFF_ROUTES.push(   // E9a: open at the door so a TELECALLER can reach them; the service narrows SALES to the telecaller who created the business (test/e9-admin-draft.spec.ts)
+  'POST /v3/admin/vendors/:id/act-on-behalf', 'POST /v3/admin/act-on-behalf/:sessionId/end', 'GET /v3/admin/vendors/:id/site/draft', 'GET /v3/admin/vendors/:id/site/editor/map',
+  ...['field', 'list/:name', 'sections', 'brand', 'navigation', 'seo/:pageKey', 'location', 'review-link', 'testimonials', 'hours', 'profile'].map((p) => `PUT /v3/admin/vendors/:id/site/draft/${p}`),
+);
+
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(444);
+    expect(oracle).toHaveLength(468);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

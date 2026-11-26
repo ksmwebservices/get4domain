@@ -39,5 +39,5 @@ export function parseLanguages(setting: string | null | undefined, tamilAllowed:
   return { languages, notes };
 }
 
-export const contentTypeFor = (path: string): string => (path.endsWith('.css') ? 'text/css; charset=utf-8' : path.endsWith('.xml') ? 'application/xml; charset=utf-8' : path.endsWith('.txt') ? 'text/plain; charset=utf-8' : 'text/html; charset=utf-8');
+export const contentTypeFor = (path: string): string => (path.endsWith('.css') ? 'text/css; charset=utf-8' : path.endsWith('.js') ? 'text/javascript; charset=utf-8' : path.endsWith('.webmanifest') ? 'application/manifest+json; charset=utf-8' : path.endsWith('.xml') ? 'application/xml; charset=utf-8' : path.endsWith('.txt') ? 'text/plain; charset=utf-8' : 'text/html; charset=utf-8');
 export const isPlatformFile = (path: string): boolean => path === '/sitemap.xml' || path === '/robots.txt' || path === '/llms.txt' || path.startsWith('/assets/');

@@ -95,5 +95,5 @@ describe('who sees what', () => {
 });
 
 describe('role', () => {
-  it('the stage file\'s Website Developer and Customer Support roles do not exist here: OPERATIONS and SUPER_ADMIN may act on behalf, MARKETING never (checked by the role matrix)', () => { expect(SUPER.adminRole).toBe('SUPER_ADMIN'); });
+  it('the stage file\'s Website Developer and Customer Support roles do not exist here: OPERATIONS and SUPER_ADMIN may act on behalf; of SALES only a telecaller, for their own business (E9a, e9-admin-draft.spec.ts)', () => { expect(SUPER.adminRole).toBe('SUPER_ADMIN'); });
 });

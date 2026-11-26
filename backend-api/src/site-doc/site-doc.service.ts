@@ -1,4 +1,5 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { SiteRebuildScheduler } from '../site-domains/site-rebuild-scheduler';
 import { Prisma, VendorCMS } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CmsService } from '../cms/cms.service';
@@ -40,7 +41,7 @@ const PICK_SNAPSHOT = [...SITE_FIELDS, 'packKey'] as const;
 
 @Injectable()
 export class SiteDocService {
-  constructor(private readonly prisma: PrismaService, private readonly cms: CmsService, private readonly refresh: SiteRefreshService, private readonly themes: ThemeCatalogService) {}
+  constructor(private readonly prisma: PrismaService, private readonly cms: CmsService, private readonly refresh: SiteRefreshService, private readonly themes: ThemeCatalogService, @Optional() private readonly rebuild?: SiteRebuildScheduler) {}
 
   async enabled(vendorId: string): Promise<boolean> {
     const a = await this.prisma.vendorAddon.findUnique({ where: { vendorId_addonKey: { vendorId, addonKey: SITE_FLAG_ADDON } }, select: { enabled: true } });
@@ -267,6 +268,7 @@ export class SiteDocService {
     }
     const v = await this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { subdomain: true } });
     const r = await this.refresh.refresh(v?.subdomain ?? null);
+    this.rebuild?.request(vendorId, 'site-doc-publish');   // address, areas, home content or category may have changed: one debounced rebuild
     return { view: await this.view(vendorId), refreshed: r.refreshed, message: r.detail };
   }
 
