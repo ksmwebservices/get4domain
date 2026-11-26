@@ -10,7 +10,8 @@ export type CashCheck =
   | { ok: false; code: 'CASH_ONLY' | 'CASH_DETAILS_INVALID' | 'OFFLINE_AMOUNT_MISMATCH'; fields: Record<string, string> };
 
 export const CASH_NOTE_MIN = 10;
-const MAX_AGE_DAYS = 366;
+/** The oldest day of receipt a confirmation accepts, counted back from today. */
+export const CASH_MAX_AGE_DAYS = 366;
 const DAY_MS = 86_400_000;
 const CONTROL = /[\u0000-\u001f\u007f]/;
 
@@ -39,7 +40,7 @@ export function checkCashConfirmation(input: CashInput, orderTotalPaise: number,
   const todayMs = dayOf(today);
   if (onMs === null) fields.receivedOn = 'the day the cash was received is required, as YYYY-MM-DD';
   else if (todayMs !== null && onMs > todayMs) fields.receivedOn = 'the day received cannot be in the future';
-  else if (todayMs !== null && todayMs - onMs > MAX_AGE_DAYS * DAY_MS) fields.receivedOn = 'the day received is too long ago';
+  else if (todayMs !== null && todayMs - onMs > CASH_MAX_AGE_DAYS * DAY_MS) fields.receivedOn = 'the day received is too long ago';
 
   if (typeof input.amountPaise !== 'number' || !Number.isInteger(input.amountPaise) || input.amountPaise <= 0) fields.amountPaise = 'the amount received is required, in whole paise';
 

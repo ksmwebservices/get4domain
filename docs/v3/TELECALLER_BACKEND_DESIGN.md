@@ -21,7 +21,7 @@ All paths are in `C:\Get4Domain\get4domain-w2\backend-api\src\` unless a full pa
 |---|---|---|---|
 | A | One-step employee account | No | `POST /v3/admin/telecallers` {name, email, phone, payType?} (ADMIN and SUPER_ADMIN since E9): invites a staff login with role TELECALLER (the invite mail as today), creates a SALES_TEAM partner linked to that login, issues the referral code. A later failure undoes the earlier steps. The link rule accepts TELECALLER as well as REFERRAL_PARTNER. |
 | B | Create a business, as a telecaller | Partly (WhatsApp) | `POST /v3/admin/telecaller/vendors`: the same fields as `vendor-sites`, minus the duplicate override (admins only). Creates through the same service, so every rule is the same; attributes the business to the telecaller (`ON_BEHALF`); a daily cap per telecaller (20 since E9, a setting); sends the owner a **set-your-password link** by e-mail. The owner is never sent a password and the telecaller never sees one. A WhatsApp copy goes only when its message template is approved (decision 1). |
-| C | Payment collection record | Partly (cash policy) | `POST /v3/admin/telecaller/vendors/:id/collections` {planKey, termMonths, idempotencyKey}: only for a business attributed to this telecaller; creates the CASH plan order at the server price. It stays "waiting for the office". An admin confirms the cash with the existing mark-paid route (receipt reference, day, amount equal to the total); that issues the invoice, starts the plan and creates the commission line. No new table. |
+| C | Payment collection record | Partly (cash policy) | `POST /v3/admin/telecaller/vendors/:id/collections` {planKey, termMonths, idempotencyKey}: only for a business attributed to this telecaller; creates the CASH plan order at the server price. It stays "waiting for the office" (order status `PENDING_PAYMENT`). An admin confirms the cash with the existing mark-paid route (receipt reference, day, amount equal to the total); that issues the invoice, starts the plan and creates the commission line. No new table. |
 | D | Commission | Yes (amounts) | Ledger, slabs, month close and payouts exist. Nothing to build until the owner enters slabs. |
 | E | Monitoring | No | `GET /v3/admin/telecaller/monitor` (my counts: created, paid, waiting for the office, commission by state) and `GET /v3/admin/telecallers/monitor` (the same for every telecaller). Read only. |
 
@@ -29,7 +29,7 @@ All paths are in `C:\Get4Domain\get4domain-w2\backend-api\src\` unless a full pa
 
 - Every telecaller route finds the partner from the login and works only on businesses attributed to that partner. A business of someone else answers the same as an unknown one.
 - The telecaller never receives a password, a token, bank details or another telecaller's businesses.
-- Cash is never "paid" by the telecaller: only an admin confirms it. The telecaller's record is an order in the CREATED state with the telecaller as the creator.
+- Cash is never "paid" by the telecaller: only an admin confirms it. The telecaller's record is an order waiting for payment (`PENDING_PAYMENT`) with the telecaller as the creator.
 - Everything is audited (activity log) with the telecaller as the actor.
 - Commission follows the existing rule: the first paid payment of a business, counted once; reversing a payment reverses the line.
 
@@ -65,7 +65,7 @@ A, B (e-mail link; WhatsApp left off), C (order creation; the office confirms wi
 | Commission | Unchanged: the owner's slab rows (`POST /v3/admin/commission/slabs`), the first paid plan payment of a business, month close, payouts | `v3-referrals` |
 | Settings | `telecallerDailyCap` (20) and `telecallerCashOverdueDays` (60), changed by SUPER_ADMIN on `PUT /v3/admin/plan-settings/:key`, read on `GET /v3/admin/telecallers/settings` | `v3-telecaller\settings\telecaller-settings.ts` |
 | Daily cap | Counted per day in India time, applied inside the business-creation service, so `POST /v3/admin/telecaller/vendors` and `POST /v3/admin/vendor-sites` both obey it; refusal `TELECALLER_DAILY_CAP`. A telecaller cannot override the duplicate check on either route | `v3-telecaller\telecaller-cap.service.ts` |
-| Overdue cash | Each monitor row has `cashOverdue` (waiting cash orders older than the setting) and `cashOverdueAfterDays`. A notice only: nothing is cancelled | `v3-telecaller\core\telecaller-core.ts` |
+| Overdue cash | Each monitor row has `cashOverdue` (waiting cash orders older than the setting) and `cashOverdueAfterDays`. A notice only: nothing is cancelled. A telecaller's collection stays open (`PENDING_PAYMENT`) for 366 days, the oldest receipt day a confirmation accepts, so the setting must be below 366; an admin's own cash order still closes after 14 days. Corrected after the first E9 push (UD9): the monitor had counted only `CREATED`, and collections expired after 14 days | `v3-telecaller\core\telecaller-core.ts` |
 | Editing a website | A telecaller starts an act-on-behalf session (a reason) for a business they created and uses the staff draft routes `PUT /v3/admin/vendors/:id/site/draft/*`. Sessions need the setting `actOnBehalfMaxMinutes`. Publishing and picture upload stay OPERATIONS, ADMIN and SUPER_ADMIN | `v3-admin-draft` |
 
 **Deploy order:** apply the migration before the new API image starts; the telecaller monitor reads the new table.

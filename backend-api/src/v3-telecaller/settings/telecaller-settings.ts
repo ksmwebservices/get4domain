@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { CASH_MAX_AGE_DAYS } from '../../plan-billing/core/cash-core';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /**
@@ -12,7 +13,11 @@ export const DEFAULT_TELECALLER_SETTINGS: Readonly<TelecallerSettings> = { telec
 export const TELECALLER_SETTING_KEYS = Object.keys(DEFAULT_TELECALLER_SETTINGS) as Array<keyof TelecallerSettings>;
 export const isTelecallerSettingKey = (key: string): key is keyof TelecallerSettings => (TELECALLER_SETTING_KEYS as string[]).includes(key);
 
-export const telecallerSettingProblem = (_key: keyof TelecallerSettings, v: unknown): string | null => (typeof v === 'number' && Number.isInteger(v) && v >= 1 ? null : 'must be a whole number above zero');
+export const telecallerSettingProblem = (key: keyof TelecallerSettings, v: unknown): string | null => {
+  if (!(typeof v === 'number' && Number.isInteger(v) && v >= 1)) return 'must be a whole number above zero';
+  // a telecaller's cash record closes after CASH_MAX_AGE_DAYS: a limit that long or longer could never show anything as overdue
+  return key === 'telecallerCashOverdueDays' && v >= CASH_MAX_AGE_DAYS ? `must be less than ${CASH_MAX_AGE_DAYS}` : null;
+};
 
 export function validateTelecallerSetting(key: string, value: unknown): void {
   if (!isTelecallerSettingKey(key)) throw new BadRequestException(`${key}: is not a known plan setting`);
