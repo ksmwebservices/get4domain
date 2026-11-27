@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, Res, UploadedFile, UseFilters, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Req, Res, UploadedFile, UseFilters, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -89,4 +89,8 @@ export class AdminThemeMarketController {
 
   @Post('themes/:id/archive') @HttpCode(200) @ApiOperation({ summary: 'Archive a theme: it is no longer offered; a business already using it keeps it until it switches' })
   archive(@Param('id') id: string, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.themes.archive(id, actorOf(u, req)); }
+
+  @Delete('themes/:id') @HttpCode(200)
+  @ApiOperation({ summary: 'Delete a whole theme, named by any one of its versions: every version and package file (SUPER_ADMIN and ADMIN). Only a theme that was never published and is not, and never was, a business\'s; anything else is 409 THEME_DELETE_BLOCKED with the reason. The records are kept and audited, the files are removed for good, the version numbers stay taken.' })
+  remove(@Param('id') id: string, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.themes.remove(id, actorOf(u, req)); }
 }

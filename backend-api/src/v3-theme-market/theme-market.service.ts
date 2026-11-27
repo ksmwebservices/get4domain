@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import { Actor } from '../plans/admin/audit.service';
 import { Kit, KIT, loadKit } from '../site-publish/renderer/renderer-loader';
 import { inspectPackage, PackageContext, PackageProblem, PACK_KEYS, ADDON_KEYS, CAPABILITY_KEYS, COMBINATION_TAGS } from './core/theme-package-core';
+import { THEME_DELETE_BLOCK_MESSAGES, ThemeDeleteBlock, versionsDeleteBlock } from './core/theme-delete-core';
 import { ThemeChangeNotifier } from './theme-change-notifier';
 import { ThemePreviewService } from './theme-preview.service';
 import { packageInvalid, themeError } from './theme-market.errors';
@@ -31,7 +32,7 @@ export type ThemeView = ReturnType<typeof themeView>;
 /**
  * The admin side of the theme marketplace (TM1 M2). A theme package is untrusted input: it is inspected in memory (the kit's validator, the marketplace rules, the content-free rules, the lint) and
  * stored only when EVERY check passes. It then moves DRAFT, REVIEW, PUBLISHED, ARCHIVED; only an ADMIN or SUPER_ADMIN reaches these routes (the role matrix), every change writes an audit row in the same
- * transaction, and a publish or archive tells the runtime loader (M3) so no restart is needed. A row is never deleted.
+ * transaction, and a publish, archive or delete tells the runtime loader (M3) so no restart is needed. A row is never removed: deleting a theme that never went live and never was a business's stamps its rows and empties their package files.
  */
 @Injectable()
 export class ThemeMarketService {
@@ -87,6 +88,7 @@ export class ThemeMarketService {
     // the same bytes sent again are the same upload (idempotent); a different package under a used version is refused, and a key stays with one business or the marketplace
     const existing = await this.store.findByKeyVersion(m.id, m.version);
     if (existing) {
+      if (existing.deletedAt) throw themeError(409, 'THEME_VERSION_EXISTS', `Version ${m.version} of ${m.id} was deleted and its number stays taken. Upload a higher version.`);
       if (existing.contentHash === r.contentHash && existing.privateVendorId === vendorId) return { theme: themeView(existing), replayed: true };
       throw themeError(409, 'THEME_VERSION_EXISTS', `Version ${m.version} of ${m.id} already exists with different content. Upload a higher version.`);
     }
@@ -113,6 +115,26 @@ export class ThemeMarketService {
   }
 
   async get(id: string) { return themeView(await this.mustFind(id)); }
+
+  /**
+   * Deletes a whole theme, named by any one of its versions: every version and every stored package file, together or not at all, with one audit row. Allowed only for a theme that never went live and
+   * is not, and never was, a business's (409 THEME_DELETE_BLOCKED with the reason otherwise). The records are stamped, not removed; the package files are emptied and cannot be brought back.
+   */
+  async remove(id: string, actor: Actor) {
+    const cur = await this.mustFind(id);
+    const versions = (await this.store.list({ key: cur.key }, 0, 1000)).items.sort((a, b) => a.version - b.version);
+    const reason: ThemeDeleteBlock | null = versionsDeleteBlock(versions) ?? ((await this.store.keyUsedByVendor(cur.key)) ? 'USED_BY_BUSINESS' : null);
+    if (reason) throw themeError(409, 'THEME_DELETE_BLOCKED', THEME_DELETE_BLOCK_MESSAGES[reason], { reason });
+    const numbers = versions.map((v) => v.version);
+    const done = await this.store.softDeleteTheme(cur.key, versions.map((v) => v.id), { deletedAt: this.clock(), deletedById: actor.id }, {
+      actor, action: 'theme.delete',
+      before: { key: cur.key, name: cur.name, versions: versions.map((v) => ({ id: v.id, version: v.version, status: v.status, contentHash: v.contentHash, sizeBytes: v.sizeBytes })) },
+      after: { deleted: true, key: cur.key, versions: numbers, filesRemoved: numbers.length },
+    });
+    if (!done) throw themeError(409, 'THEME_STATE_INVALID', 'The theme was changed by someone else; reload and try again.');
+    await this.notifier.notify();
+    return { deleted: true, id: cur.id, key: cur.key, versions: numbers };
+  }
 
   async list(filter: ThemeFilter, page = 1, pageSize = 25) {
     this.checkFilter(filter);
