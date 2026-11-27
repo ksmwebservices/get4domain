@@ -33,7 +33,14 @@ ALTER TABLE "g4d_theme_market_packages" ADD CONSTRAINT "g4d_theme_market_package
 
 ## Before the go (PC, recommended)
 
-The full backend suite has **not** run on this release (the last E11 full run was stopped for low memory). About 10 minutes and 4 GB; close other programs first:
+The full backend suite has **not** run on this release. What is known from GitHub CI (Linux), on the two branches before the merge:
+
+| Branch and commit | Suites | Failing |
+|---|---|---|
+| `v3-eng-e11` `dcf9d939` | 356 passed, 1 failed (6605 tests passed, 2 failed, 2 skipped) | `smoke-kit.spec.ts` |
+| `v3-lane-e1-theme-delete` `9a972193` | 333 passed, 1 failed (6260 tests passed, 2 failed, 1 skipped) | `smoke-kit.spec.ts` |
+
+That suite uses Windows file paths, so its 2 tests fail on Linux; it passes on this PC (16 of 16) and no smoke file changed since `d584d6fc`. To run the full suite on the merged release (about 10 minutes and 4 GB; close other programs first):
 ```
 cd C:\Get4Domain\get4domain-w2\.lanes\rel27d4\backend-api
 npm run test:ci
