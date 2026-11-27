@@ -4,7 +4,7 @@ import type { PackageProblem } from './core/theme-package-core';
 /** Stable machine codes of the theme marketplace. A screen switches on `code`, never on the sentence. Registered with the exception filter through BUSINESS_ERROR_CODES (see v3-business/business.errors.ts). */
 export const THEME_MARKET_ERROR_CODES = [
   'THEME_PACKAGE_MISSING', 'THEME_PACKAGE_TOO_LARGE', 'THEME_PACKAGE_INVALID', 'THEME_KEY_RESERVED', 'THEME_VERSION_EXISTS', 'THEME_NOT_FOUND', 'THEME_STATE_INVALID', 'THEME_PUBLISH_BLOCKED',
-  'THEME_VENDOR_NOT_FOUND', 'THEME_CONSENT_REQUIRED', 'THEME_PRIVATE_CONTENT', 'THEME_NOT_AVAILABLE', 'THEME_PREVIEW_FAILED', 'THEME_FILTER_INVALID',
+  'THEME_VENDOR_NOT_FOUND', 'THEME_CONSENT_REQUIRED', 'THEME_PRIVATE_CONTENT', 'THEME_NOT_AVAILABLE', 'THEME_PREVIEW_FAILED', 'THEME_FILTER_INVALID', 'THEME_DELETE_BLOCKED',
 ] as const;
 export type ThemeMarketErrorCode = (typeof THEME_MARKET_ERROR_CODES)[number];
 

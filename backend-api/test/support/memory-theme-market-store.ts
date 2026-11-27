@@ -7,33 +7,44 @@ export class MemoryThemeMarketStore extends ThemeMarketStore {
   vendors = new Map<string, { name: string; email: string | null; phone: string | null; subdomain: string | null; customDomain: string | null; mediaHashes: string[] }>();
   private n = 0;
   private strip(r: ThemeRowWithBytes): ThemeRow { const { bytes: _bytes, ...rest } = r; void _bytes; return { ...rest }; }
+  private get live(): ThemeRowWithBytes[] { return this.rows.filter((r) => !r.deletedAt); }
+  /** the keys a business's site, publication, theme change or bought year names */
+  usedKeys = new Set<string>();
 
   async create(t: NewTheme, a: AuditSpec): Promise<ThemeRow | null> {
     if (this.rows.some((r) => r.key === t.key && r.version === t.version)) return null;
     const now = new Date('2026-12-01T00:00:00Z'); this.n += 1;
-    const row: ThemeRowWithBytes = { ...t, id: `theme-id-${String(this.n).padStart(4, '0')}`, createdAt: now, updatedAt: now, submittedAt: null, publishedAt: null, publishedById: null, archivedAt: null, consentAt: null, consentById: null, reviewNote: null };
+    const row: ThemeRowWithBytes = { ...t, id: `theme-id-${String(this.n).padStart(4, '0')}`, createdAt: now, updatedAt: now, submittedAt: null, publishedAt: null, publishedById: null, archivedAt: null, deletedAt: null, consentAt: null, consentById: null, reviewNote: null };
     this.rows.push(row); this.audits.push({ ...a, entityId: row.id }); return this.strip(row);
   }
-  async find(id: string): Promise<ThemeRow | null> { const r = this.rows.find((x) => x.id === id); return r ? this.strip(r) : null; }
-  async findWithBytes(id: string): Promise<ThemeRowWithBytes | null> { return this.rows.find((x) => x.id === id) ?? null; }
+  async find(id: string): Promise<ThemeRow | null> { const r = this.live.find((x) => x.id === id); return r ? this.strip(r) : null; }
+  async findWithBytes(id: string): Promise<ThemeRowWithBytes | null> { return this.live.find((x) => x.id === id) ?? null; }
+  async keyUsedByVendor(key: string): Promise<boolean> { return this.usedKeys.has(key); }
+  async softDeleteTheme(key: string, ids: readonly string[], stamp: { deletedAt: Date; deletedById: string | null }, a: AuditSpec): Promise<boolean> {
+    const found = this.live.filter((x) => x.key === key);
+    const clean = found.every((r) => ids.includes(r.id) && r.publishedAt === null && r.status !== 'PUBLISHED' && r.privateVendorId === null && r.sourceVendorId === null);
+    if (found.length !== ids.length || !clean || this.usedKeys.has(key)) return false;
+    for (const r of found) Object.assign(r, { deletedAt: stamp.deletedAt, bytes: Buffer.alloc(0) });
+    this.audits.push({ ...a, entityId: ids[ids.length - 1] }); return true;
+  }
   async findByKeyVersion(key: string, version: number): Promise<ThemeRow | null> { const r = this.rows.find((x) => x.key === key && x.version === version); return r ? this.strip(r) : null; }
   async maxVersion(key: string): Promise<number> { return Math.max(0, ...this.rows.filter((r) => r.key === key).map((r) => r.version)); }
   async list(f: ThemeFilter, skip: number, take: number): Promise<{ items: ThemeRow[]; total: number }> {
-    const m = this.rows.filter((r) => (!f.status || r.status === f.status) && (!f.visibility || r.visibility === f.visibility) && (!f.pack || r.packs.includes(f.pack)) && (!f.addon || r.addons.includes(f.addon)) && (!f.capability || r.capabilities.includes(f.capability))
+    const m = this.live.filter((r) => (!f.status || r.status === f.status) && (!f.visibility || r.visibility === f.visibility) && (!f.pack || r.packs.includes(f.pack)) && (!f.addon || r.addons.includes(f.addon)) && (!f.capability || r.capabilities.includes(f.capability))
       && (!f.tag || r.tags.includes(f.tag)) && (!f.category || r.catalogueCategories.includes(f.category)) && (!f.tier || r.tier === f.tier) && (!f.key || r.key === f.key) && (!f.privateVendorId || r.privateVendorId === f.privateVendorId)
       && (typeof f.starter !== 'boolean' || r.starter === f.starter) && (!f.q || r.name.toLowerCase().includes(f.q.toLowerCase()) || r.key.includes(f.q.toLowerCase())))
       .sort((a, b) => a.name.localeCompare(b.name) || a.key.localeCompare(b.key) || b.version - a.version);
     return { items: m.slice(skip, skip + take).map((r) => this.strip(r)), total: m.length };
   }
   async transition(id: string, from: readonly ThemeStatus[], patch: ThemePatch, a: AuditSpec, older?: { key: string; below: number }): Promise<ThemeRow | null> {
-    const r = this.rows.find((x) => x.id === id);
+    const r = this.live.find((x) => x.id === id);
     if (!r || !from.includes(r.status)) return null;
     Object.assign(r, patch, { updatedAt: new Date('2026-12-02T00:00:00Z') });
     if (older) for (const x of this.rows) if (x.key === older.key && x.status === 'PUBLISHED' && x.version < older.below) { x.status = 'ARCHIVED'; x.archivedAt = new Date('2026-12-02T00:00:00Z'); this.audits.push({ actor: a.actor, action: 'theme.archive', before: { status: 'PUBLISHED' }, after: { status: 'ARCHIVED' }, entityId: x.id }); }
     this.audits.push({ ...a, entityId: id }); return this.strip(r);
   }
-  async loadServable(): Promise<ThemeRowWithBytes[]> { return this.rows.filter((r) => r.status === 'PUBLISHED' || r.status === 'ARCHIVED'); }
-  async servableMeta(): Promise<ThemeRow[]> { return this.rows.filter((r) => r.status === 'PUBLISHED' || r.status === 'ARCHIVED').sort((a, b) => a.key.localeCompare(b.key) || b.version - a.version).map((r) => this.strip(r)); }
+  async loadServable(): Promise<ThemeRowWithBytes[]> { return this.live.filter((r) => r.status === 'PUBLISHED' || r.status === 'ARCHIVED'); }
+  async servableMeta(): Promise<ThemeRow[]> { return this.live.filter((r) => r.status === 'PUBLISHED' || r.status === 'ARCHIVED').sort((a, b) => a.key.localeCompare(b.key) || b.version - a.version).map((r) => this.strip(r)); }
   async vendorExists(vendorId: string): Promise<boolean> { return this.vendors.has(vendorId); }
   async vendorFacts(vendorId: string) { return this.vendors.get(vendorId) ?? null; }
 }

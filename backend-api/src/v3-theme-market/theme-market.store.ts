@@ -11,16 +11,17 @@ export interface ThemeRow {
   tracks: string[]; packs: string[]; addons: string[]; capabilities: string[]; tags: string[]; catalogueCategories: string[]; kitCategories: string[];
   manifest: unknown; contentHash: string; sizeBytes: number; fileCount: number;
   consentObtained: boolean | null; consentNote: string | null; consentAt: Date | null; consentById: string | null; reviewNote: string | null;
-  createdByType: string; createdById: string | null; createdAt: Date; updatedAt: Date; submittedAt: Date | null; publishedAt: Date | null; publishedById: string | null; archivedAt: Date | null;
+  createdByType: string; createdById: string | null; createdAt: Date; updatedAt: Date; submittedAt: Date | null; publishedAt: Date | null; publishedById: string | null; archivedAt: Date | null; deletedAt: Date | null;
 }
 export interface ThemeRowWithBytes extends ThemeRow { bytes: Buffer }
-export type NewTheme = Omit<ThemeRow, 'id' | 'createdAt' | 'updatedAt' | 'submittedAt' | 'publishedAt' | 'publishedById' | 'archivedAt' | 'consentAt' | 'consentById' | 'reviewNote'> & { bytes: Buffer };
+export type NewTheme = Omit<ThemeRow, 'id' | 'createdAt' | 'updatedAt' | 'submittedAt' | 'publishedAt' | 'publishedById' | 'archivedAt' | 'deletedAt' | 'consentAt' | 'consentById' | 'reviewNote'> & { bytes: Buffer };
 export interface AuditSpec { actor: Actor; action: string; before: unknown; after: unknown }
 export interface ThemeFilter { status?: ThemeStatus; visibility?: ThemeVisibility; pack?: string; addon?: string; capability?: string; tag?: string; category?: string; tier?: string; key?: string; privateVendorId?: string; q?: string; starter?: boolean }
 export type ThemePatch = Partial<Pick<ThemeRow, 'status' | 'visibility' | 'privateVendorId' | 'reviewNote' | 'consentObtained' | 'consentNote' | 'consentAt' | 'consentById' | 'submittedAt' | 'publishedAt' | 'publishedById' | 'archivedAt'>>;
 
 /**
- * Where theme packages are kept. A change and its audit row are saved together or not at all (the store takes the audit spec). Rows are never deleted.
+ * Where theme packages are kept. A change and its audit row are saved together or not at all (the store takes the audit spec). A row is never removed: a delete only stamps it, and every read below
+ * except findByKeyVersion leaves stamped rows out.
  * The Prisma adapter is the real one; an in-memory one serves the unit tests.
  */
 export abstract class ThemeMarketStore {
@@ -28,7 +29,15 @@ export abstract class ThemeMarketStore {
   abstract create(row: NewTheme, audit: AuditSpec): Promise<ThemeRow | null>;
   abstract find(id: string): Promise<ThemeRow | null>;
   abstract findWithBytes(id: string): Promise<ThemeRowWithBytes | null>;
+  /** deleted rows included: a deleted version number stays taken */
   abstract findByKeyVersion(key: string, version: number): Promise<ThemeRow | null>;
+  /** does any business's site, publication, theme change or bought year name this key? */
+  abstract keyUsedByVendor(key: string): Promise<boolean>;
+  /**
+   * stamps every version of a theme as deleted and empties its package file, with one audit row. All or nothing: false, and nothing changed, unless `ids` are exactly the live versions of the key,
+   * each still unpublished and belonging to no business, and no business uses the key (a concurrent change)
+   */
+  abstract softDeleteTheme(key: string, ids: readonly string[], stamp: { deletedAt: Date; deletedById: string | null }, audit: AuditSpec): Promise<boolean>;
   abstract maxVersion(key: string): Promise<number>;
   abstract list(filter: ThemeFilter, skip: number, take: number): Promise<{ items: ThemeRow[]; total: number }>;
   /** moves a row only while its status is one of `from`; null when it is not (a concurrent change) */

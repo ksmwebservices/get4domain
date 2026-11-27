@@ -8429,6 +8429,9 @@ model V3ThemeMarketPackage {
   publishedAt         DateTime?
   publishedById       String?
   archivedAt          DateTime?
+  /// set when an admin deleted a theme that was never published and never given to a business; the row is kept (soft delete) with its package file emptied, and only the version-number check reads it
+  deletedAt           DateTime?
+  deletedById         String?
 
   privateVendor Vendor? @relation("ThemePrivateVendor", fields: [privateVendorId], references: [id], onDelete: Cascade)
 

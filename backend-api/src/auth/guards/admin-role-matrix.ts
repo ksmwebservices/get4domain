@@ -65,7 +65,7 @@ export const SEO_ROUTES: Readonly<Record<string, readonly StaffRole[]>> = {
 export const SEO_SUPER_ROUTES: Readonly<Record<string, readonly StaffRole[]>> = { 'PUT /v3/admin/seo-directory/crawlers': SUPER_ONLY };
 
 /**
- * TM1: the theme marketplace. Reading and the dry-run check are OPERATIONS, ADMIN (inherits) and SUPER_ADMIN; uploading, submitting, returning, publishing and archiving a theme are ADMIN and SUPER_ADMIN
+ * TM1: the theme marketplace. Reading and the dry-run check are OPERATIONS, ADMIN (inherits) and SUPER_ADMIN; uploading, submitting, returning, publishing, archiving and deleting a theme are ADMIN and SUPER_ADMIN
  * (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow, built from THEME_MARKET_ADMIN_WRITES). SALES, SUPPORT and every label are refused.
  */
 export const THEME_MARKET_READS: Readonly<Record<string, readonly StaffRole[]>> = {
@@ -73,6 +73,7 @@ export const THEME_MARKET_READS: Readonly<Record<string, readonly StaffRole[]>> 
 };
 export const THEME_MARKET_ADMIN_WRITES: readonly string[] = [
   'POST /v3/admin/theme-market/themes', 'POST /v3/admin/theme-market/themes/:id/submit', 'POST /v3/admin/theme-market/themes/:id/return', 'POST /v3/admin/theme-market/themes/:id/publish', 'POST /v3/admin/theme-market/themes/:id/publish-to-marketplace', 'POST /v3/admin/theme-market/themes/:id/archive',
+  'DELETE /v3/admin/theme-market/themes/:id',
 ];
 const THEME_MARKET_WRITES: Readonly<Record<string, readonly StaffRole[]>> = Object.fromEntries(THEME_MARKET_ADMIN_WRITES.map((r) => [r, SUPER_ONLY]));
 
